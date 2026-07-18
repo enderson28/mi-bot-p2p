@@ -2,7 +2,7 @@ import requests
 import telebot
 
 # Coloca aquí tu Token de Telegram real entre las comillas
-TOKEN_TELEGRAM = "8632019517:AAHMlr_OuSYBfjPVWyUuFXHWTNf8OeIehI4"
+TOKEN_TELEGRAM = "8632019517:AAHEegmOwcC35emzY5q75o6NUbs704cMD6g"
 bot = telebot.TeleBot(TOKEN_TELEGRAM)
 
 MONTO_USD_FILTRO = 500.0  # Capital de referencia base fijo en dólares

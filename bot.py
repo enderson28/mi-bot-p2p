@@ -1,18 +1,10 @@
-import os
-import threading
-import http.server
-import socketserver
 import requests
 import telebot
 
-# 1. Tu Token de Telegram
 TOKEN_TELEGRAM = "8632019517:AAHMlr_OuSYBfjPVWyUuFXHWTNf8OeIehI4"
 bot = telebot.TeleBot(TOKEN_TELEGRAM)
 
 def obtener_tasa_binance_p2p(tipo_operacion):
-    """
-    Consulta la API oficial de Binance P2P sin bloqueos de proxy.
-    """
     url = "https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search"
     trade_type = "BUY" if tipo_operacion.lower() == "compra" else "SELL"
     
@@ -54,20 +46,7 @@ def enviar_precio(message):
         
     bot.reply_to(message, texto, parse_mode="Markdown")
 
-# --- TRUCO PARA KOYEB (Servidor Web en paralelo) ---
-def iniciar_servidor_falso():
-    # Koyeb le asigna un puerto automáticamente en la variable PORT, si no usa el 8080
-    port = int(os.environ.get("PORT", 8080))
-    handler = http.server.SimpleHTTPRequestHandler
-    with socketserver.TCPServer(("", port), handler) as httpd:
-        print(f"Servidor de mantenimiento activo en el puerto {port}")
-        httpd.serve_forever()
-
 if __name__ == "__main__":
-    # Arrancamos el servidor falso en un hilo secundario para engañar a Koyeb
-    t = threading.Thread(target=iniciar_servidor_falso, daemon=True)
-    t.start()
-    
-    print("🚀 Bot de Telegram escuchando de forma limpia...")
+    print("🚀 Bot escuchando de forma limpia en Railway...")
     bot.infinity_polling()
-  
+    

@@ -25,7 +25,7 @@ TEXTO_START = (
     "🔹 `/precio` — Muestra las tasas reales BCV, precios P2P (pequeño, medio y alto) y la regla de oro para no perder dinero.\n"
     "🔹 `/bpay` — Guía paso a paso para cargar USD bancarios a Binance con tarjeta nacional.\n"
     "🔹 `/gpay` — Ruta alternativa para fonear usando Google Pay de forma rápida.\n\n"
-    "💡 _Nota: Si eres nuevo, lee con atención la 'Regla de Oro' al final del comando /precio. ¡Evita comprar costoso en el P2P!_"
+    "💡 _Nota: If eres nuevo, lee con atención la 'Regla de Oro' al final del comando /precio. ¡Evita comprar costoso en el P2P!_"
 )
 
 TEXTO_BPAY = (
@@ -178,7 +178,7 @@ def construir_monitor_texto():
         p_150 = (s_150 / c_150) * 100
         texto += (
             f"🔹 **Rango Mediano ($100 - $300)**\n"
-            f"🟢 Compra: `{c_150:.2f} Bs` | 🔴 Venta: `{v_150:.2f} VES`\n"
+            f"🟢 Compra: `{c_150:.2f} Bs` | 🔴 Venta: `{v_150:.2f} Bs`\n"
             f"📉 Spread: `{s_150:.2f} Bs` (`{p_150:.2f}%`)\n\n"
         )
     else:
@@ -231,12 +231,19 @@ def handle_precio(message):
             espera = int(RATE_LIMIT - (ahora - ultima_vez))
             bot.reply_to(message, f"⏳ **Modo ahorro de chat:** Por favor espera {espera} segundos para volver a consultar en el grupo. O consulta en mi chat privado sin restricciones.")
         else:
+            # CORRECCIÓN: Guardamos el tiempo de ejecución actual
             usuarios_tiempo[user_id] = ahora
-            texto_grupo_usuario = construir_monitor_texto() + (
+            
+            # Traemos el monitor limpio de las APIs
+            monitor_limpio = construir_monitor_texto()
+            
+            # Estructuramos el mensaje final agregando el recordatorio al privado
+            texto_grupo_usuario = monitor_limpio + (
                 f"\n----------------------------------------\n"
                 f"💡 **¿Eres nuevo en el arbitraje?**\n"
                 f"Para conocer la **Regla de Oro** y aprender a generar ganancias reales usando este monitor, consulta este comando en mi chat privado: @{bot.get_me().username}"
             )
+            # Enviamos el mensaje completo al usuario común
             bot.reply_to(message, texto_grupo_usuario, parse_mode="Markdown")
 
 @bot.message_handler(commands=['bpay', 'gpay'])
@@ -248,10 +255,10 @@ def handle_guias(message):
         else:
             bot.reply_to(message, TEXTO_GPAY, parse_mode="Markdown")
     else:
-        # Si un usuario corriente o administrador intenta usarlos en el grupo, se silencia enviando un aviso corto
+        # Si intentan usarlos en el grupo, se silencia enviando un aviso corto
         bot.reply_to(message, "🚫 **Comando solo disponible en chat privado para evitar la saturación del grupo.**")
 
 if __name__ == "__main__":
     print("🚀 Bot profesional adaptado a canales congestionados activo...")
     bot.infinity_polling()
-    
+        

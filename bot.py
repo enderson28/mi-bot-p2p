@@ -1,13 +1,32 @@
 import requests
 import telebot
+import time
 
+# ==========================================
+# CONFIGURACIÓN Y TOKEN
+# ==========================================
 # Coloca aquí tu Token de Telegram real entre las comillas
 TOKEN_TELEGRAM = "8632019517:AAHEegmOwcC35emzY5q75o6NUbs704cMD6g"
 bot = telebot.TeleBot(TOKEN_TELEGRAM)
 
+# Configuración de límites (Cooldown)
+RATE_LIMIT = 120  # Segundos de espera para usuarios corrientes (2 minutos)
+usuarios_tiempo = {} 
+
 # ==========================================
 #  TEXTOS ESTRATÉGICOS DE ARBITRAJE DEL CANAL
 # ==========================================
+
+TEXTO_START = (
+    "👋 **¡Bienvenido al Monitor Oficial de Arbitraje P2P!**\n\n"
+    "Este bot es tu herramienta aliada para proteger tu capital y generar ganancias reales en Venezuela 🇻🇪. "
+    "Aquí no tienes que adivinar; el sistema calcula todo por ti.\n\n"
+    "🚀 **¿Cómo empezar? Usa estos comandos:**\n"
+    "🔹 `/precio` — Muestra las tasas reales BCV, precios P2P (pequeño, medio y alto) y la regla de oro para no perder dinero.\n"
+    "🔹 `/bpay` — Guía paso a paso para cargar USD bancarios a Binance con tarjeta nacional.\n"
+    "🔹 `/gpay` — Ruta alternativa para fonear usando Google Pay de forma rápida.\n\n"
+    "💡 _Nota: Si eres nuevo, lee con atención la 'Regla de Oro' al final del comando /precio. ¡Evita comprar costoso en el P2P!_"
+)
 
 TEXTO_BPAY = (
     "💳 **Estrategia BPay: Carga de USD Bancarios a Binance**\n\n"
@@ -43,6 +62,21 @@ TEXTO_GPAY = (
     "👉 _Coloca en GPay únicamente el resultado neto de esa resta._\n\n"
     "4️⃣ Con los USD Fiat ya disponibles, realiza el intercambio desde trade (convertir) a **USDT**.\n\n"
     "🔥 **Finalidad:** Saltarse el P2P de compra para obtener el USDT mucho más económico. El beneficio real se consolida al vender esos USDT en el P2P de salida utilizando los precios verificados que te da el comando `/precio`."
+)
+
+TEXTO_REGLA_ORO = (
+    f"\n----------------------------------------\n"
+    f"💡 **REGLA DE ORO PARA GENERAR GANANCIAS**\n\n"
+    f"⚠️ **¿Quieres comerciar? No compres USDT en el P2P:**\n"
+    f"Usar la opción de `🟢 Compra P2P` reduce casi a cero tu margen de ganancia comercial. El verdadero beneficio se obtiene haciendo la ruta institucional.\n\n"
+    f"📌 **Excepción (Uso como Ahorro):**\n"
+    f"Si deseas comprar USDT por el arbitraje de `🟢 Compra`, también es perfectamente viable siempre y cuando tengas en cuenta que será una inversión estable sin margen de ganancias al momento (un tipo de ahorro en criptoactivo), porque no estás comprando al USDT oficial sino al paralelo de arbitraje.\n\n"
+    f"🔄 **La Ruta para Arbitraje Activo:**\n"
+    f"1️⃣ Adquiere USD oficiales en tu banco a tasa BCV.\n"
+    f"2️⃣ Pásalos a Binance mediante `/bpay` o `/gpay` (Depósito USD).\n"
+    f"3️⃣ Convierte a USDT y vende usando la tasa de `🔴 Venta` de este monitor.\n\n"
+    f"🛡️ **Estrategia de Capital Seguro:**\n"
+    f"Al vender en VES, consulta mañana este bot. Usa solo los bolívares necesarios para volver a comprar tu capital base en el banco (`BCV + 0.5%`). **¡Deja tus ganancias acumuladas en USDT dentro de Binance como tu colchón de ahorro seguro!**"
 )
 
 # ==========================================
@@ -88,35 +122,38 @@ def obtener_tasa_binance_p2p(tipo_operacion, monto_ves_filtro):
         print(f"Error en consulta Binance P2P: {e}")
     return None
 
-# ==========================================
-#           MANEJADORES DE COMANDOS
-# ==========================================
+def es_administrador(chat_id, user_id):
+    """Verifica si el usuario tiene rango de administrador en el grupo"""
+    try:
+        miembros_admin = bot.get_chat_administrators(chat_id)
+        for admin in miembros_admin:
+            if admin.user.id == user_id:
+                return True
+    except Exception:
+        return False
+    return False
 
-@bot.message_handler(commands=['precio'])
-def enviar_precio(message):
+def construir_monitor_texto():
+    """Realiza las consultas API en vivo y arma el bloque de precios limpio"""
     tasa_bcv_cruda = obtener_tasa_bcv_real()
     if not tasa_bcv_cruda:
-        bot.reply_to(message, "❌ Error temporal al conectar con la tasa base. Intenta en unos segundos.")
-        return
+        return "❌ Error temporal al conectar con la tasa base. Intenta en unos segundos."
 
     tasa_bcv_ajustada = tasa_bcv_cruda * 1.005
 
-    # 1. CONSULTA PARA FILTRO CAPITALES BAJOS ($50 a $100)
+    # Filtros por rangos de capital
     filtro_50 = 50.0 * tasa_bcv_ajustada
     c_50 = obtener_tasa_binance_p2p("compra", filtro_50)
     v_50 = obtener_tasa_binance_p2p("venta", filtro_50)
 
-    # 2. CONSULTA PARA FILTRO CAPITALES MEDIOS ($100 a $300)
     filtro_150 = 150.0 * tasa_bcv_ajustada
     c_150 = obtener_tasa_binance_p2p("compra", filtro_150)
     v_150 = obtener_tasa_binance_p2p("venta", filtro_150)
 
-    # 3. CONSULTA PARA FILTRO INSTITUCIONAL ($500+)
     filtro_500 = 500.0 * tasa_bcv_ajustada
     c_500 = obtener_tasa_binance_p2p("compra", filtro_500)
     v_500 = obtener_tasa_binance_p2p("venta", filtro_500)
     
-    # Construcción del bloque de texto principal
     texto = (
         f"📊 **Monitor de Tasas Arbitraje P2P**\n"
         f"🏛️ BCV Oficial: `{tasa_bcv_cruda:.2f} Bs`\n"
@@ -125,7 +162,6 @@ def enviar_precio(message):
         f"----------------------------------------\n\n"
     )
 
-    # Añadir bloque de $50-$100
     if c_50 and v_50:
         s_50 = v_50 - c_50
         p_50 = (s_50 / c_50) * 100
@@ -137,19 +173,17 @@ def enviar_precio(message):
     else:
         texto += "🔹 **Rango Pequeño ($50 - $100):** _No hay anunciantes activos_\n\n"
 
-    # Añadir bloque de $100-$300
     if c_150 and v_150:
         s_150 = v_150 - c_150
         p_150 = (s_150 / c_150) * 100
         texto += (
             f"🔹 **Rango Mediano ($100 - $300)**\n"
-            f"🟢 Compra: `{c_150:.2f} Bs` | 🔴 Venta: `{v_150:.2f} Bs`\n"
+            f"🟢 Compra: `{c_150:.2f} Bs` | 🔴 Venta: `{v_150:.2f} VES`\n"
             f"📉 Spread: `{s_150:.2f} Bs` (`{p_150:.2f}%`)\n\n"
         )
     else:
         texto += "🔹 **Rango Mediano ($100 - $300):** _No hay anunciantes activos_\n\n"
 
-    # Añadir bloque institucional de $500
     if c_500 and v_500:
         s_500 = v_500 - c_500
         p_500 = (s_500 / c_500) * 100
@@ -161,35 +195,63 @@ def enviar_precio(message):
     else:
         texto += "🔸 **Rango Mayor ($500+):** _No hay anunciantes activos_"
 
-    # ==========================================
-    #      ANÁLISIS Y ENUNCIADO EDUCATIVO
-    # ==========================================
-    texto += (
-        f"\n----------------------------------------\n"
-        f"💡 **REGLA DE ORO PARA GENERAR GANANCIAS**\n\n"
-        f"⚠️ **¿Quieres comerciar? No compres USDT en el P2P:**\n"
-        f"Usar la opción de `🟢 Compra P2P` reduce casi a cero tu margen de ganancia comercial. El verdadero beneficio se obtiene haciendo la ruta institucional.\n\n"
-        f"📌 **Excepción (Uso como Ahorro):**\n"
-        f"Si deseas comprar USDT por el arbitraje de `🟢 Compra`, también es perfectamente viable siempre y cuando tengas en cuenta que será una inversión estable sin margen de ganancias al momento (un tipo de ahorro en criptoactivo), porque no estás comprando al USDT oficial sino al paralelo de arbitraje.\n\n"
-        f"🔄 **La Ruta para Arbitraje Activo:**\n"
-        f"1️⃣ Adquiere USD oficiales en tu banco a tasa BCV.\n"
-        f"2️⃣ Pásalos a Binance mediante `/bpay` o `/gpay` (Depósito USD).\n"
-        f"3️⃣ Convierte a USDT y vende usando la tasa de `🔴 Venta` de este monitor.\n\n"
-        f"🛡️ **Estrategia de Capital Seguro:**\n"
-        f"Al vender en VES, consulta mañana este bot. Usa solo los bolívares necesarios para volver a comprar tu capital base en el banco (`BCV + 0.5%`). **¡Deja tus ganancias acumuladas en USDT dentro de Binance como tu colchón de ahorro seguro!**"
-    )
+    return texto
 
-    bot.reply_to(message, texto, parse_mode="Markdown")
+# ==========================================
+#           MANEJADORES DE COMANDOS
+# ==========================================
 
-@bot.message_handler(commands=['bpay'])
-def enviar_guia_bpay(message):
-    bot.reply_to(message, TEXTO_BPAY, parse_mode="Markdown")
+@bot.message_handler(commands=['start'])
+def handle_start(message):
+    # El comando /start solo funciona en privado para evitar saturar el canal
+    if message.chat.type == "private":
+        bot.reply_to(message, TEXTO_START, parse_mode="Markdown")
 
-@bot.message_handler(commands=['gpay'])
-def enviar_guia_gpay(message):
-    bot.reply_to(message, TEXTO_GPAY, parse_mode="Markdown")
+@bot.message_handler(commands=['precio'])
+def handle_precio(message):
+    user_id = message.from_user.id
+    chat_id = message.chat.id
+    
+    # 1. --- SI EL USUARIO CONSULTA POR CHAT PRIVADO ---
+    if message.chat.type == "private":
+        texto_completo = construir_monitor_texto() + TEXTO_REGLA_ORO
+        bot.reply_to(message, texto_completo, parse_mode="Markdown")
+        return
+
+    # 2. --- SI LA CONSULTA ES DENTRO DEL GRUPO/CANAL ---
+    if es_administrador(chat_id, user_id):
+        # Administrador: Devuelve el monitor limpio sin restricción de tiempo
+        bot.reply_to(message, construir_monitor_texto(), parse_mode="Markdown")
+    else:
+        # Usuario Corriente: Validar límite de tiempo (Cooldown)
+        ahora = time.time()
+        ultima_vez = usuarios_tiempo.get(user_id, 0)
+        
+        if ahora - ultima_vez < RATE_LIMIT:
+            espera = int(RATE_LIMIT - (ahora - ultima_vez))
+            bot.reply_to(message, f"⏳ **Modo ahorro de chat:** Por favor espera {espera} segundos para volver a consultar en el grupo. O consulta en mi chat privado sin restricciones.")
+        else:
+            usuarios_tiempo[user_id] = ahora
+            texto_grupo_usuario = construir_monitor_texto() + (
+                f"\n----------------------------------------\n"
+                f"💡 **¿Eres nuevo en el arbitraje?**\n"
+                f"Para conocer la **Regla de Oro** y aprender a generar ganancias reales usando este monitor, consulta este comando en mi chat privado: @{bot.get_me().username}"
+            )
+            bot.reply_to(message, texto_grupo_usuario, parse_mode="Markdown")
+
+@bot.message_handler(commands=['bpay', 'gpay'])
+def handle_guias(message):
+    # Si están en el chat privado, envía el texto completo correspondiente
+    if message.chat.type == "private":
+        if 'bpay' in message.text:
+            bot.reply_to(message, TEXTO_BPAY, parse_mode="Markdown")
+        else:
+            bot.reply_to(message, TEXTO_GPAY, parse_mode="Markdown")
+    else:
+        # Si un usuario corriente o administrador intenta usarlos en el grupo, se silencia enviando un aviso corto
+        bot.reply_to(message, "🚫 **Comando solo disponible en chat privado para evitar la saturación del grupo.**")
 
 if __name__ == "__main__":
-    print("🚀 Bot multi-filtro y educativo activo en Railway...")
+    print("🚀 Bot profesional adaptado a canales congestionados activo...")
     bot.infinity_polling()
-                 
+    

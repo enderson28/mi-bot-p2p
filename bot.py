@@ -7,11 +7,39 @@ bot = telebot.TeleBot(TOKEN_TELEGRAM)
 
 MONTO_USD_FILTRO = 500.0  # Capital de referencia base fijo en dólares
 
+# ==========================================
+#  TEXTOS ESTRATÉGICOS DE ARBITRAJE DEL CANAL
+# ==========================================
+
+TEXTO_BPAY = (
+    "💳 **Estrategia BPay: Carga de USD Bancarios a Binance**\n\n"
+    "Este método te permite meter tus USD de intervención del banco nacional a la plataforma para generar ganancias en USDT:\n\n"
+    "⚠️ **Costos Fijos:** Comisión de **3.6% a 4.1%** por depósito con tarjetas nacionales en moneda extranjera.\n\n"
+    "📌 **Pasos para la Operación:**\n"
+    "1️⃣ Adquiere tus dólares por intervención en tu banco nacional (BDV, Provincial, Banesco, etc.).\n"
+    "2️⃣ Ve a la plataforma, selecciona la opción de **Depósito en USD (Fiat)** mediante tarjeta de débito o crédito.\n"
+    "3️⃣ Introduce los datos de la tarjeta MasterCard de tu cuenta nacional en divisas. Se te debitará el monto en USD sumando la comisión fija de la pasarela.\n"
+    "4️⃣ Una vez reflejado tu saldo Fiat, conviértelo directamente a **USDT** dentro de la opcion trade (Convertir).\n\n"
+    "🔥 **Finalidad:** Al tener tus USDT, usa nuestro comando `/precio` para evaluar la tasa de venta actual en el P2P y liquidar en bolívares, asegurando tu margen de ganancia sobre la tasa base del BCV."
+)
+
+TEXTO_GPAY = (
+    "📱 **Estrategia GPay: Carga de USD Bancarios a Binance**\n\n"
+    "Una ruta alternativa y rápida utilizando la pasarela de Google para procesar tus dólares de intervención:\n\n"
+    "⚠️ **Costos Fijos:** Comisión fija del **4.1%** por el procesamiento del método.\n\n"
+    "📌 **Pasos para la Operación:**\n"
+    "1️⃣ Compra tus USD oficiales en la banca nacional a tasa de intervención del BCV.\n"
+    "2️⃣ Vincula la tarjeta internacional/nacional en divisas de tu banco a tu billetera de Google Pay (GPay).\n"
+    "3️⃣ En la plataforma, selecciona la opción de Deposito USD utilizando **GPay** como procesador instantáneo.\n"
+    "4️⃣ Con los USD Fiat ya disponibles, realiza el intercambio - Trade (Convertir) a **USDT**.\n\n"
+    "🔥 **Finalidad:** Saltarse el P2P de compra para obtener el USDT mucho más económico. El beneficio real se consolida al vender esos USDT en el P2P de salida utilizando los precios verificados que te da el comando `/precio`."
+)
+
+# ==========================================
+#          LÓGICA DE CONSULTAS API
+# ==========================================
+
 def obtener_tasa_bcv_real():
-    """
-    Obtiene de forma automatizada la tasa oficial en dólares del BCV.
-    Si el lector principal falla, recurre a una API global de respaldo.
-    """
     url_bcv = "https://pydolarvenezuela-api.vercel.app/api/v1/dollar?page=bcv"
     try:
         res = requests.get(url_bcv, timeout=5)
@@ -26,10 +54,6 @@ def obtener_tasa_bcv_real():
             return None
 
 def obtener_tasa_binance_p2p(tipo_operacion, monto_ves_filtro):
-    """
-    Consulta el libro de órdenes real de Binance P2P filtrando por monto
-    y exigiendo de forma estricta ÚNICAMENTE comerciantes verificados.
-    """
     url = "https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search"
     trade_type = "BUY" if tipo_operacion.lower() == "compra" else "SELL"
     
@@ -39,10 +63,10 @@ def obtener_tasa_binance_p2p(tipo_operacion, monto_ves_filtro):
         "merchantCheck": False,
         "page": 1,
         "payTypes": [],
-        "publisherType": "merchant",  # Exige solo comerciantes verificados (Check amarillo)
+        "publisherType": "merchant",
         "rows": 1,
         "tradeType": trade_type,
-        "transAmount": str(int(monto_ves_filtro))  # Filtro dinámico según la tasa del día
+        "transAmount": str(int(monto_ves_filtro))
     }
     
     try:
@@ -54,22 +78,20 @@ def obtener_tasa_binance_p2p(tipo_operacion, monto_ves_filtro):
         print(f"Error en consulta Binance P2P: {e}")
     return None
 
+# ==========================================
+#           MANEJADORES DE COMANDOS
+# ==========================================
+
 @bot.message_handler(commands=['precio'])
 def enviar_precio(message):
-    # 1. Obtener la tasa oficial del día de manera automática
     tasa_bcv_cruda = obtener_tasa_bcv_real()
-    
     if not tasa_bcv_cruda:
         bot.reply_to(message, "❌ Error temporal al conectar con la tasa base. Intenta en unos segundos.")
         return
 
-    # 2. Aplicar el ajuste del +0.5% sobre la tasa del día
     tasa_bcv_ajustada = tasa_bcv_cruda * 1.005
-    
-    # 3. Calcular los bolívares requeridos para mover los $500 base
     monto_ves_filtro = MONTO_USD_FILTRO * tasa_bcv_ajustada
 
-    # 4. Traer precios del P2P correspondientes a comerciantes verificados
     compra = obtener_tasa_binance_p2p("compra", monto_ves_filtro)
     venta = obtener_tasa_binance_p2p("venta", monto_ves_filtro)
     
@@ -92,7 +114,32 @@ def enviar_precio(message):
         
     bot.reply_to(message, texto, parse_mode="Markdown")
 
+@bot.message_handler(commands=['bpay'])
+def enviar_guia_bpay(message):
+    bot.reply_to(message, TEXTO_BPAY, parse_mode="Markdown")
+
+@bot.message_handler(commands=['gpay'])
+def enviar_guia_gpay(message):
+    bot.reply_to(message, TEXTO_GPAY, parse_mode="Markdown")
+
+# ==========================================
+#    FILTRO ANTI-CONFUSIÓN (TEXTO LIBRE)
+# ==========================================
+
+@bot.message_handler(func=lambda message: True)
+def manejar_texto_desconocido(message):
+    texto_ayuda = (
+        "🤖 **Asistente Virtual Automatizado**\n\n"
+        "Hola. No tengo la capacidad de interpretar preguntas abiertas en el chat.\n\n"
+        "Para obtener información exacta de las estrategias y tasas del canal, utiliza exclusivamente los comandos del menú:\n"
+        "👉 `/precio` - Ver tasas en vivo del P2P (Filtro verificados $500).\n"
+        "👉 `/bpay` - Ruta y comisiones para Depositar USD mediante BPay.\n"
+        "👉 `/gpay` - Ruta y comisiones para Depositar USD mediante GPay.\n\n"
+        "⚠️ _Por favor, mantén el uso correcto de los comandos para evitar la saturación del bot._"
+    )
+    bot.reply_to(message, texto_ayuda, parse_mode="Markdown")
+
 if __name__ == "__main__":
-    print("🚀 Bot 100% automatizado y verificado activo en Railway...")
+    print("🚀 Bot estratégico de arbitraje activo en Railway...")
     bot.infinity_polling()
         

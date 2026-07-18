@@ -234,7 +234,7 @@ def handle_precio(message):
                 f"----------------------------------------\n\n"
                 f"🔹 **Rango Pequeño ($50 - $100)**\n🟢 Compra: `{c_50:.2f} Bs` | 🔴 Venta: `{v_50:.2f} Bs`\n📉 Spread: `{v_50-c_50:.2f} Bs` (`{((v_50-c_50)/c_50)*100:.2f}%`)\n\n"
                 f"🔹 **Rango Mediano ($100 - $300)**\n🟢 Compra: `{c_150:.2f} Bs` | 🔴 Venta: `{v_150:.2f} Bs`\n📉 Spread: `{v_150-c_150:.2f} Bs` (`{((v_150-c_150)/c_150)*100:.2f}%`)\n\n"
-                f"🔸 **Rango Mayor ($500+)**\n🟢 Compra: `{c_500:.2f} Bs` | 🔴 Venta: `{v_500:.2f} VES`\n📉 Spread: `{v_500-c_500:.2f} Bs` (`{((v_500-c_500)/c_500)*100:.2f}%`)\n"
+                f"🔸 **Rango Mayor ($500+)**\n🟢 Compra: `{c_500:.2f} Bs` | 🔴 Venta: `{v_500:.2f} Bs`\n📉 Spread: `{v_500-c_500:.2f} Bs` (`{((v_500-c_500)/c_500)*100:.2f}%`)\n"
             )
             bot.reply_to(message, texto_p + TEXTO_REGLA_ORO, parse_mode="Markdown")
         except Exception:

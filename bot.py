@@ -5,8 +5,6 @@ import telebot
 TOKEN_TELEGRAM = "8632019517:AAHEegmOwcC35emzY5q75o6NUbs704cMD6g"
 bot = telebot.TeleBot(TOKEN_TELEGRAM)
 
-MONTO_USD_FILTRO = 500.0  # Capital de referencia base fijo en dólares
-
 # ==========================================
 #  TEXTOS ESTRATÉGICOS DE ARBITRAJE DEL CANAL
 # ==========================================
@@ -102,28 +100,67 @@ def enviar_precio(message):
         return
 
     tasa_bcv_ajustada = tasa_bcv_cruda * 1.005
-    monto_ves_filtro = MONTO_USD_FILTRO * tasa_bcv_ajustada
 
-    compra = obtener_tasa_binance_p2p("compra", monto_ves_filtro)
-    venta = obtener_tasa_binance_p2p("venta", monto_ves_filtro)
+    # 1. CONSULTA PARA FILTRO CAPITALES BAJOS ($50 a $100)
+    filtro_50 = 50.0 * tasa_bcv_ajustada
+    c_50 = obtener_tasa_binance_p2p("compra", filtro_50)
+    v_50 = obtener_tasa_binance_p2p("venta", filtro_50)
+
+    # 2. CONSULTA PARA FILTRO CAPITALES MEDIOS ($100 a $300)
+    filtro_150 = 150.0 * tasa_bcv_ajustada
+    c_150 = obtener_tasa_binance_p2p("compra", filtro_150)
+    v_150 = obtener_tasa_binance_p2p("venta", filtro_150)
+
+    # 3. CONSULTA PARA FILTRO INSTITUCIONAL ($500+)
+    filtro_500 = 500.0 * tasa_bcv_ajustada
+    c_500 = obtener_tasa_binance_p2p("compra", filtro_500)
+    v_500 = obtener_tasa_binance_p2p("venta", filtro_500)
     
-    if compra and venta:
-        spread = venta - compra
-        porcentaje_ganancia = (spread / compra) * 100
-        
-        texto = (
-            f"📊 **Tasas P2P trade (${MONTO_USD_FILTRO})**\n"
-            f"🏛️ BCV Oficial: `{tasa_bcv_cruda:.2f} Bs`\n"
-            f"⚙️ BCV + 0.5%: `{tasa_bcv_ajustada:.2f} Bs`\n"
-            f"🔍 Filtro de Orden: `{monto_ves_filtro:,.2f} Bs`\n\n"
-            f"🟢 **Compra:** `{compra} Bs`\n"
-            f"🔴 **Venta:** `{venta} Bs`\n\n"
-            f"📉 **Spread de Arbitraje:** `{spread:.2f} Bs` (`{porcentaje_ganancia:.2f}%`)\n"
-            f"🛡️ _Filtro: Solo Anunciantes Verificados._"
+    # Construcción del bloque de texto principal
+    texto = (
+        f"📊 **Monitor de Tasas Arbitraje P2P**\n"
+        f"🏛️ BCV Oficial: `{tasa_bcv_cruda:.2f} Bs`\n"
+        f"⚙️ BCV + 0.5%: `{tasa_bcv_ajustada:.2f} Bs`\n"
+        f"🛡️ _Filtros activos: Solo Anunciantes Verificados_\n"
+        f"----------------------------------------\n\n"
+    )
+
+    # Añadir bloque de $50-$100
+    if c_50 and v_50:
+        s_50 = v_50 - c_50
+        p_50 = (s_50 / c_50) * 100
+        texto += (
+            f"🔹 **Rango Pequeño ($50 - $100)**\n"
+            f"🟢 Compra: `{c_50:.2f} Bs` | 🔴 Venta: `{v_50:.2f} Bs`\n"
+            f"📉 Spread: `{s_50:.2f} Bs` (`{p_50:.2f}%`)\n\n"
         )
     else:
-        texto = "❌ No se pudieron obtener los datos de Binance para este volumen verificado."
-        
+        texto += "🔹 **Rango Pequeño ($50 - $100):** _No hay anunciantes activos_\n\n"
+
+    # Añadir bloque de $100-$300
+    if c_150 and v_150:
+        s_150 = v_150 - c_150
+        p_150 = (s_150 / c_150) * 100
+        texto += (
+            f"🔹 **Rango Mediano ($100 - $300)**\n"
+            f"🟢 Compra: `{c_150:.2f} Bs` | 🔴 Venta: `{v_150:.2f} Bs`\n"
+            f"📉 Spread: `{s_150:.2f} Bs` (`{p_150:.2f}%`)\n\n"
+        )
+    else:
+        texto += "🔹 **Rango Mediano ($100 - $300):** _No hay anunciantes activos_\n\n"
+
+    # Añadir bloque institucional de $500
+    if c_500 and v_500:
+        s_500 = v_500 - c_500
+        p_500 = (s_500 / c_500) * 100
+        texto += (
+            f"🔸 **Rango Mayor ($500+)**\n"
+            f"🟢 Compra: `{c_500:.2f} Bs` | 🔴 Venta: `{v_500:.2f} Bs`\n"
+            f"📉 Spread: `{s_500:.2f} Bs` (`{p_500:.2f}%`)\n"
+        )
+    else:
+        texto += "🔸 **Rango Mayor ($500+):** _No hay anunciantes activos_"
+
     bot.reply_to(message, texto, parse_mode="Markdown")
 
 @bot.message_handler(commands=['bpay'])
@@ -135,6 +172,6 @@ def enviar_guia_gpay(message):
     bot.reply_to(message, TEXTO_GPAY, parse_mode="Markdown")
 
 if __name__ == "__main__":
-    print("🚀 Bot estético y enfocado en comandos activo en Railway...")
+    print("🚀 Bot multi-filtro y enfocado en comandos activo en Railway...")
     bot.infinity_polling()
     

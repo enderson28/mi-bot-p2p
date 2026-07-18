@@ -5,6 +5,7 @@ import time
 # ==========================================
 # CONFIGURACIÓN Y TOKEN
 # ==========================================
+# Coloca aquí tu Token de Telegram real entre las comillas
 TOKEN_TELEGRAM = "8632019517:AAHEegmOwcC35emzY5q75o6NUbs704cMD6g"
 bot = telebot.TeleBot(TOKEN_TELEGRAM)
 
@@ -134,7 +135,8 @@ def es_administrador(chat_id, user_id):
         return False
     return False
 
-def construir_monitor_texto():
+def construir_monitor_texto_html():
+    """Version HTML limpia de los datos para evitar fallas por guiones bajos"""
     tasa_bcv_cruda = obtener_tasa_bcv_real()
     if not tasa_bcv_cruda:
         return "❌ Error temporal al conectar con la tasa base. Intenta en unos segundos."
@@ -154,10 +156,10 @@ def construir_monitor_texto():
     v_500 = obtener_tasa_binance_p2p("venta", filtro_500)
     
     texto = (
-        f"📊 **Monitor de Tasas Arbitraje P2P**\n"
-        f"🏛️ BCV Oficial: `{tasa_bcv_cruda:.2f} Bs`\n"
-        f"⚙️ BCV + 0.5%: `{tasa_bcv_ajustada:.2f} Bs`\n"
-        f"🛡️ _Filtros activos: Solo Anunciantes Verificados_\n"
+        f"📊 <b>Monitor de Tasas Arbitraje P2P</b>\n"
+        f"🏛️ BCV Oficial: {tasa_bcv_cruda:.2f} VES\n"
+        f"⚙️ BCV + 0.5%: {tasa_bcv_ajustada:.2f} VES\n"
+        f"🛡️ <i>Filtros activos: Solo Anunciantes Verificados</i>\n"
         f"----------------------------------------\n\n"
     )
 
@@ -165,34 +167,34 @@ def construir_monitor_texto():
         s_50 = v_50 - c_50
         p_50 = (s_50 / c_50) * 100
         texto += (
-            f"🔹 **Rango Pequeño ($50 - $100)**\n"
-            f"🟢 Compra: `{c_50:.2f} Bs` | 🔴 Venta: `{v_50:.2f} Bs`\n"
-            f"📉 Spread: `{s_50:.2f} Bs` (`{p_50:.2f}%`)\n\n"
+            f"🔹 <b>Rango Pequeño ($50 - $100)</b>\n"
+            f"🟢 Compra: {c_50:.2f} Bs | 🔴 Venta: {v_50:.2f} Bs\n"
+            f"📉 Spread: {s_50:.2f} Bs ({p_50:.2f}%)\n\n"
         )
     else:
-        texto += "🔹 **Rango Pequeño ($50 - $100):** _No hay anunciantes activos_\n\n"
+        texto += "🔹 <b>Rango Pequeño ($50 - $100):</b> <i>No hay anunciantes activos</i>\n\n"
 
     if c_150 and v_150:
         s_150 = v_150 - c_150
         p_150 = (s_150 / c_150) * 100
         texto += (
-            f"🔹 **Rango Mediano ($100 - $300)**\n"
-            f"🟢 Compra: `{c_150:.2f} Bs` | 🔴 Venta: `{v_150:.2f} Bs`\n"
-            f"📉 Spread: `{s_150:.2f} Bs` (`{p_150:.2f}%`)\n\n"
+            f"🔹 <b>Rango Mediano ($100 - $300)</b>\n"
+            f"🟢 Compra: {c_150:.2f} Bs | 🔴 Venta: {v_150:.2f} Bs\n"
+            f"📉 Spread: {s_150:.2f} Bs ({p_150:.2f}%)\n\n"
         )
     else:
-        texto += "🔹 **Rango Mediano ($100 - $300):** _No hay anunciantes activos_\n\n"
+        texto += "🔹 <b>Rango Mediano ($100 - $300):</b> <i>No hay anunciantes activos</i>\n\n"
 
     if c_500 and v_500:
         s_500 = v_500 - c_500
         p_500 = (s_500 / c_500) * 100
         texto += (
-            f"🔸 **Rango Mayor ($500+)**\n"
-            f"🟢 Compra: `{c_500:.2f} Bs` | 🔴 Venta: `{v_500:.2f} Bs`\n"
-            f"📉 Spread: `{s_500:.2f} Bs` (`{p_500:.2f}%`)\n"
+            f"🔸 <b>Rango Mayor ($500+)</b>\n"
+            f"🟢 Compra: {c_500:.2f} Bs | 🔴 Venta: {v_500:.2f} Bs\n"
+            f"📉 Spread: {s_500:.2f} Bs ({p_500:.2f}%)\n\n"
         )
     else:
-        texto += "🔸 **Rango Mayor ($500+):** _No hay anunciantes activos_"
+        texto += "🔸 <b>Rango Mayor ($500+):</b> <i>No hay anunciantes activos</i>"
 
     return texto
 
@@ -212,46 +214,64 @@ def handle_precio(message):
     
     # 1. --- CHAT PRIVADO ---
     if message.chat.type == "private":
+        # Usamos la estructura clásica en privado
         try:
-            texto_completo = construir_monitor_texto() + TEXTO_REGLA_ORO
-            bot.reply_to(message, texto_completo, parse_mode="Markdown")
-        except Exception as e:
-            bot.reply_to(message, "❌ Error al generar la consulta. Intente de nuevo.")
+            tasa_bcv_cruda = obtener_tasa_bcv_real()
+            tasa_bcv_ajustada = tasa_bcv_cruda * 1.005
+            filtro_50, filtro_150, filtro_500 = 50.0 * tasa_bcv_ajustada, 150.0 * tasa_bcv_ajustada, 500.0 * tasa_bcv_ajustada
+            c_50 = obtener_tasa_binance_p2p("compra", filtro_50)
+            v_50 = obtener_tasa_binance_p2p("venta", filtro_50)
+            c_150 = obtener_tasa_binance_p2p("compra", filtro_150)
+            v_150 = obtener_tasa_binance_p2p("venta", filtro_150)
+            c_500 = obtener_tasa_binance_p2p("compra", filtro_500)
+            v_500 = obtener_tasa_binance_p2p("venta", filtro_500)
+            
+            texto_p = (
+                f"📊 **Monitor de Tasas Arbitraje P2P**\n"
+                f"🏛️ BCV Oficial: `{tasa_bcv_cruda:.2f} VES`\n"
+                f"⚙️ BCV + 0.5%: `{tasa_bcv_ajustada:.2f} VES`\n"
+                f"🛡️ _Filtros activos: Solo Anunciantes Verificados_\n"
+                f"----------------------------------------\n\n"
+                f"🔹 **Rango Pequeño ($50 - $100)**\n🟢 Compra: `{c_50:.2f} VES` | 🔴 Venta: `{v_50:.2f} VES`\n📉 Spread: `{v_50-c_50:.2f} VES` (`{((v_50-c_50)/c_50)*100:.2f}%`)\n\n"
+                f"🔹 **Rango Mediano ($100 - $300)**\n🟢 Compra: `{c_150:.2f} VES` | 🔴 Venta: `{v_150:.2f} VES`\n📉 Spread: `{v_150-c_150:.2f} VES` (`{((v_150-c_150)/c_150)*100:.2f}%`)\n\n"
+                f"🔸 **Rango Mayor ($500+)**\n🟢 Compra: `{c_500:.2f} VES` | 🔴 Venta: `{v_500:.2f} VES`\n📉 Spread: `{v_500-c_500:.2f} VES` (`{((v_500-c_500)/c_500)*100:.2f}%`)\n"
+            )
+            bot.reply_to(message, texto_p + TEXTO_REGLA_ORO, parse_mode="Markdown")
+        except Exception:
+            bot.reply_to(message, "❌ Error al generar la consulta privada.")
         return
 
     # 2. --- DENTRO DEL GRUPO ---
     if es_administrador(chat_id, user_id):
-        # Administrador: Sin límites de tiempo
         try:
-            bot.reply_to(message, construir_monitor_texto(), parse_mode="Markdown")
+            bot.reply_to(message, construir_monitor_texto_html(), parse_mode="HTML")
         except Exception as e:
-            bot.reply_to(message, "❌ Error en consulta.")
+            bot.reply_to(message, "❌ Error en consulta de administrador.")
     else:
-        # Usuario Corriente: Validar Cooldown
         ahora = time.time()
         ultima_vez = usuarios_tiempo.get(user_id, 0)
         
         if ahora - ultima_vez < RATE_LIMIT:
             espera = int(RATE_LIMIT - (ahora - ultima_vez))
-            bot.reply_to(message, f"⏳ **Modo ahorro de chat:** Por favor espera {espera} segundos para volver a consultar en el grupo. O consulta en mi chat privado sin restricciones.")
+            bot.reply_to(message, f"⏳ <b>Modo ahorro de chat:</b> Por favor espera {espera} segundos para volver a consultar en el grupo. O consulta en mi chat privado sin restricciones.", parse_mode="HTML")
         else:
             try:
-                # Obtenemos los datos primero ANTES de registrar el tiempo
-                monitor_limpio = construir_monitor_texto()
+                # Buscamos los precios formateados en HTML limpio
+                monitor_html = construir_monitor_texto_html()
                 
-                # Estructuramos el mensaje final
-                texto_grupo_usuario = monitor_limpio + (
+                # Armamos la estructura usando etiquetas HTML seguras (<b> e <i>)
+                texto_grupo_usuario = monitor_html + (
                     f"\n----------------------------------------\n"
-                    f"💡 **¿Eres nuevo en el arbitraje?**\n"
-                    f"Para conocer la **Regla de Oro** y aprender a generar ganancias reales usando este monitor, consulta este comando en mi chat privado: @{BOT_USERNAME}"
+                    f"💡 <b>¿Eres nuevo en el arbitraje?</b>\n"
+                    f"Para conocer la <b>Regla de Oro</b> y aprender a generar ganancias reales usando este monitor, consulta este comando en mi chat privado: @{BOT_USERNAME}"
                 )
                 
-                # Enviamos el mensaje. Si tiene éxito, guardamos el tiempo para el bloqueo
-                bot.reply_to(message, texto_grupo_usuario, parse_mode="Markdown")
+                # Enviamos el mensaje procesado en HTML
+                bot.reply_to(message, texto_grupo_usuario, parse_mode="HTML")
                 usuarios_tiempo[user_id] = ahora
                 
             except Exception as e:
-                bot.reply_to(message, "⚠️ Ocurrió un inconveniente procesando las tasas del P2P. Intenta de nuevo en unos instantes.")
+                bot.reply_to(message, "⚠️ Ocurrió un inconveniente temporal procesando los datos. Reintenta el comando por favor.")
 
 @bot.message_handler(commands=['bpay', 'gpay'])
 def handle_guias(message):
@@ -264,6 +284,6 @@ def handle_guias(message):
         bot.reply_to(message, "🚫 **Comando solo disponible en chat privado para evitar la saturación del grupo.**")
 
 if __name__ == "__main__":
-    print("🚀 Bot optimizado y corregido...")
+    print("🚀 Sistema de procesamiento inmune activo...")
     bot.infinity_polling()
         

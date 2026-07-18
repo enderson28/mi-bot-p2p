@@ -100,9 +100,9 @@ def enviar_precio(message):
         porcentaje_ganancia = (spread / compra) * 100
         
         texto = (
-            f"📊 **Tasas P2P Filtradas (${MONTO_USD_FILTRO})**\n"
-            f"🏛️ BCV Oficial: {tasa_bcv_cruda:.2f} VES\n"
-            f"⚙️ BCV + 0.5%: {tasa_bcv_ajustada:.2f} VES\n"
+            f"📊 **Tasas P2P Trade (${MONTO_USD_FILTRO})**\n"
+            f"🏛️ BCV Oficial: {tasa_bcv_cruda:.2f} Bs\n"
+            f"⚙️ BCV + 0.5%: {tasa_bcv_ajustada:.2f} Bs\n"
             f"🔍 Filtro de Orden: {monto_ves_filtro:,.2f} VES\n\n"
             f"🟢 Compra: {compra} Bs\n"
             f"🔴 Venta: {venta} Bs\n\n"

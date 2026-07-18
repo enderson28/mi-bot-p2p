@@ -1,33 +1,35 @@
 import requests
 import telebot
 
+# Coloca aquí tu Token de Telegram real entre las comillas
 TOKEN_TELEGRAM = "8632019517:AAHMlr_OuSYBfjPVWyUuFXHWTNf8OeIehI4"
 bot = telebot.TeleBot(TOKEN_TELEGRAM)
 
-MONTO_USD_FILTRO = 500.0  # Tu base fija de $500
+MONTO_USD_FILTRO = 500.0  # Capital de referencia base fijo en dólares
 
 def obtener_tasa_bcv_real():
     """
-    Obtiene la tasa oficial del BCV en USD usando un lector en vivo.
-    Si falla, usa una API global de respaldo para nunca detener el bot.
+    Obtiene de forma automatizada la tasa oficial en dólares del BCV.
+    Si el lector principal falla, recurre a una API global de respaldo.
     """
-    # Intentamos con el lector en vivo del BCV mas estable
     url_bcv = "https://pydolarvenezuela-api.vercel.app/api/v1/dollar?page=bcv"
     try:
         res = requests.get(url_bcv, timeout=5)
         datos = res.json()
-        # Extraemos el valor del dolar oficial en el BCV
         return float(datos["monedas"]["usd"]["price"])
     except Exception:
-        # Respaldo global de emergencia si el lector del BCV se satura
         try:
             res_alt = requests.get("https://open.er-api.com/v6/latest/USD", timeout=5).json()
             return float(res_alt["rates"]["VES"])
         except Exception as e:
-            print(f"Error crítico obteniendo BCV: {e}")
+            print(f"Error crítico al conectar con la tasa cambiaria: {e}")
             return None
 
 def obtener_tasa_binance_p2p(tipo_operacion, monto_ves_filtro):
+    """
+    Consulta el libro de órdenes real de Binance P2P filtrando por monto
+    y exigiendo de forma estricta ÚNICAMENTE comerciantes verificados.
+    """
     url = "https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search"
     trade_type = "BUY" if tipo_operacion.lower() == "compra" else "SELL"
     
@@ -37,10 +39,10 @@ def obtener_tasa_binance_p2p(tipo_operacion, monto_ves_filtro):
         "merchantCheck": False,
         "page": 1,
         "payTypes": [],
-        "publisherType": None,
+        "publisherType": "merchant",  # Exige solo comerciantes verificados (Check amarillo)
         "rows": 1,
         "tradeType": trade_type,
-        "transAmount": str(int(monto_ves_filtro))  # Filtro dinámico en Bolívares
+        "transAmount": str(int(monto_ves_filtro))  # Filtro dinámico según la tasa del día
     }
     
     try:
@@ -49,25 +51,25 @@ def obtener_tasa_binance_p2p(tipo_operacion, monto_ves_filtro):
         if data and "data" in data and len(data["data"]) > 0:
             return float(data["data"][0]["adv"]["price"])
     except Exception as e:
-        print(f"Error en Binance P2P: {e}")
+        print(f"Error en consulta Binance P2P: {e}")
     return None
 
 @bot.message_handler(commands=['precio'])
 def enviar_precio(message):
-    # 1. Obtener la tasa oficial del BCV de forma automática
+    # 1. Obtener la tasa oficial del día de manera automática
     tasa_bcv_cruda = obtener_tasa_bcv_real()
     
     if not tasa_bcv_cruda:
-        bot.reply_to(message, "❌ Error temporal al conectar con la tasa del BCV. Intenta en unos segundos.")
+        bot.reply_to(message, "❌ Error temporal al conectar con la tasa base. Intenta en unos segundos.")
         return
 
-    # 2. Aplicar el ajuste del +0.5% a la tasa BCV
+    # 2. Aplicar el ajuste del +0.5% sobre la tasa del día
     tasa_bcv_ajustada = tasa_bcv_cruda * 1.005
     
-    # 3. Calcular el filtro final en Bolívares para los $500
+    # 3. Calcular los bolívares requeridos para mover los $500 base
     monto_ves_filtro = MONTO_USD_FILTRO * tasa_bcv_ajustada
 
-    # 4. Consultar Binance P2P con el filtro exacto del día
+    # 4. Traer precios del P2P correspondientes a comerciantes verificados
     compra = obtener_tasa_binance_p2p("compra", monto_ves_filtro)
     venta = obtener_tasa_binance_p2p("venta", monto_ves_filtro)
     
@@ -83,14 +85,14 @@ def enviar_precio(message):
             f"🟢 Compra (Pagar): {compra} VES\n"
             f"🔴 Venta (Recibir): {venta} VES\n\n"
             f"📉 **Spread de Arbitraje:** {spread:.2f} VES ({porcentaje_ganancia:.2f}%)\n"
-            f"*Precios reales en vivo sin intervención manual.*"
+            f"🛡️ *Filtro: Solo Anunciantes Verificados.*"
         )
     else:
-        texto = "❌ No se pudieron obtener los datos de Binance para este volumen."
+        texto = "❌ No se pudieron obtener los datos de Binance para este volumen verificado."
         
     bot.reply_to(message, texto, parse_mode="Markdown")
 
 if __name__ == "__main__":
-    print("🚀 Bot 100% automatizado activo en Railway...")
+    print("🚀 Bot 100% automatizado y verificado activo en Railway...")
     bot.infinity_polling()
-    
+        

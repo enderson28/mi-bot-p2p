@@ -5,9 +5,11 @@ import time
 # ==========================================
 # CONFIGURACIÓN Y TOKEN
 # ==========================================
-# Coloca aquí tu Token de Telegram real entre las comillas
 TOKEN_TELEGRAM = "8632019517:AAHEegmOwcC35emzY5q75o6NUbs704cMD6g"
 bot = telebot.TeleBot(TOKEN_TELEGRAM)
+
+# CONFIGURACIÓN DEL NOMBRE DE TU BOT (Reemplaza con el alias real de tu bot sin el @)
+BOT_USERNAME = "BancoIDV_bot" 
 
 # Configuración de límites (Cooldown)
 RATE_LIMIT = 120  # Segundos de espera para usuarios corrientes (2 minutos)
@@ -25,7 +27,7 @@ TEXTO_START = (
     "🔹 `/precio` — Muestra las tasas reales BCV, precios P2P (pequeño, medio y alto) y la regla de oro para no perder dinero.\n"
     "🔹 `/bpay` — Guía paso a paso para cargar USD bancarios a Binance con tarjeta nacional.\n"
     "🔹 `/gpay` — Ruta alternativa para fonear usando Google Pay de forma rápida.\n\n"
-    "💡 _Nota: If eres nuevo, lee con atención la 'Regla de Oro' al final del comando /precio. ¡Evita comprar costoso en el P2P!_"
+    "💡 _Nota: Si eres nuevo, lee con atención la 'Regla de Oro' al final del comando /precio. ¡Evita comprar costoso en el P2P!_"
 )
 
 TEXTO_BPAY = (
@@ -123,7 +125,6 @@ def obtener_tasa_binance_p2p(tipo_operacion, monto_ves_filtro):
     return None
 
 def es_administrador(chat_id, user_id):
-    """Verifica si el usuario tiene rango de administrador en el grupo"""
     try:
         miembros_admin = bot.get_chat_administrators(chat_id)
         for admin in miembros_admin:
@@ -134,14 +135,12 @@ def es_administrador(chat_id, user_id):
     return False
 
 def construir_monitor_texto():
-    """Realiza las consultas API en vivo y arma el bloque de precios limpio"""
     tasa_bcv_cruda = obtener_tasa_bcv_real()
     if not tasa_bcv_cruda:
         return "❌ Error temporal al conectar con la tasa base. Intenta en unos segundos."
 
     tasa_bcv_ajustada = tasa_bcv_cruda * 1.005
 
-    # Filtros por rangos de capital
     filtro_50 = 50.0 * tasa_bcv_ajustada
     c_50 = obtener_tasa_binance_p2p("compra", filtro_50)
     v_50 = obtener_tasa_binance_p2p("venta", filtro_50)
@@ -203,7 +202,6 @@ def construir_monitor_texto():
 
 @bot.message_handler(commands=['start'])
 def handle_start(message):
-    # El comando /start solo funciona en privado para evitar saturar el canal
     if message.chat.type == "private":
         bot.reply_to(message, TEXTO_START, parse_mode="Markdown")
 
@@ -212,18 +210,24 @@ def handle_precio(message):
     user_id = message.from_user.id
     chat_id = message.chat.id
     
-    # 1. --- SI EL USUARIO CONSULTA POR CHAT PRIVADO ---
+    # 1. --- CHAT PRIVADO ---
     if message.chat.type == "private":
-        texto_completo = construir_monitor_texto() + TEXTO_REGLA_ORO
-        bot.reply_to(message, texto_completo, parse_mode="Markdown")
+        try:
+            texto_completo = construir_monitor_texto() + TEXTO_REGLA_ORO
+            bot.reply_to(message, texto_completo, parse_mode="Markdown")
+        except Exception as e:
+            bot.reply_to(message, "❌ Error al generar la consulta. Intente de nuevo.")
         return
 
-    # 2. --- SI LA CONSULTA ES DENTRO DEL GRUPO/CANAL ---
+    # 2. --- DENTRO DEL GRUPO ---
     if es_administrador(chat_id, user_id):
-        # Administrador: Devuelve el monitor limpio sin restricción de tiempo
-        bot.reply_to(message, construir_monitor_texto(), parse_mode="Markdown")
+        # Administrador: Sin límites de tiempo
+        try:
+            bot.reply_to(message, construir_monitor_texto(), parse_mode="Markdown")
+        except Exception as e:
+            bot.reply_to(message, "❌ Error en consulta.")
     else:
-        # Usuario Corriente: Validar límite de tiempo (Cooldown)
+        # Usuario Corriente: Validar Cooldown
         ahora = time.time()
         ultima_vez = usuarios_tiempo.get(user_id, 0)
         
@@ -231,34 +235,35 @@ def handle_precio(message):
             espera = int(RATE_LIMIT - (ahora - ultima_vez))
             bot.reply_to(message, f"⏳ **Modo ahorro de chat:** Por favor espera {espera} segundos para volver a consultar en el grupo. O consulta en mi chat privado sin restricciones.")
         else:
-            # CORRECCIÓN: Guardamos el tiempo de ejecución actual
-            usuarios_tiempo[user_id] = ahora
-            
-            # Traemos el monitor limpio de las APIs
-            monitor_limpio = construir_monitor_texto()
-            
-            # Estructuramos el mensaje final agregando el recordatorio al privado
-            texto_grupo_usuario = monitor_limpio + (
-                f"\n----------------------------------------\n"
-                f"💡 **¿Eres nuevo en el arbitraje?**\n"
-                f"Para conocer la **Regla de Oro** y aprender a generar ganancias reales usando este monitor, consulta este comando en mi chat privado: @{bot.get_me().username}"
-            )
-            # Enviamos el mensaje completo al usuario común
-            bot.reply_to(message, texto_grupo_usuario, parse_mode="Markdown")
+            try:
+                # Obtenemos los datos primero ANTES de registrar el tiempo
+                monitor_limpio = construir_monitor_texto()
+                
+                # Estructuramos el mensaje final
+                texto_grupo_usuario = monitor_limpio + (
+                    f"\n----------------------------------------\n"
+                    f"💡 **¿Eres nuevo en el arbitraje?**\n"
+                    f"Para conocer la **Regla de Oro** y aprender a generar ganancias reales usando este monitor, consulta este comando en mi chat privado: @{BOT_USERNAME}"
+                )
+                
+                # Enviamos el mensaje. Si tiene éxito, guardamos el tiempo para el bloqueo
+                bot.reply_to(message, texto_grupo_usuario, parse_mode="Markdown")
+                usuarios_tiempo[user_id] = ahora
+                
+            except Exception as e:
+                bot.reply_to(message, "⚠️ Ocurrió un inconveniente procesando las tasas del P2P. Intenta de nuevo en unos instantes.")
 
 @bot.message_handler(commands=['bpay', 'gpay'])
 def handle_guias(message):
-    # Si están en el chat privado, envía el texto completo correspondiente
     if message.chat.type == "private":
         if 'bpay' in message.text:
             bot.reply_to(message, TEXTO_BPAY, parse_mode="Markdown")
         else:
             bot.reply_to(message, TEXTO_GPAY, parse_mode="Markdown")
     else:
-        # Si intentan usarlos en el grupo, se silencia enviando un aviso corto
         bot.reply_to(message, "🚫 **Comando solo disponible en chat privado para evitar la saturación del grupo.**")
 
 if __name__ == "__main__":
-    print("🚀 Bot profesional adaptado a canales congestionados activo...")
+    print("🚀 Bot optimizado y corregido...")
     bot.infinity_polling()
         

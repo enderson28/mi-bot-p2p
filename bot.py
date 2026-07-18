@@ -21,13 +21,13 @@ usuarios_tiempo = {}
 # ==========================================
 
 TEXTO_START = (
-    "👋 **¡Bienvenido al Monitor Oficial de Arbitraje P2P!**\n\n"
+    "👋 **¡Bienvenido al Monitor Oficial IDV ~ Arbitraje P2P!**\n\n"
     "Este bot es tu herramienta aliada para proteger tu capital y generar ganancias reales en Venezuela 🇻🇪. "
     "Aquí no tienes que adivinar; el sistema calcula todo por ti.\n\n"
     "🚀 **¿Cómo empezar? Usa estos comandos:**\n"
     "🔹 `/precio` — Muestra las tasas reales BCV, precios P2P (pequeño, medio y alto) y la regla de oro para no perder dinero.\n"
     "🔹 `/bpay` — Guía paso a paso para cargar USD bancarios a Binance con tarjeta nacional.\n"
-    "🔹 `/gpay` — Ruta alternativa para fonear usando Google Pay de forma rápida.\n\n"
+    "🔹 `/gpay` — Ruta alternativa para Depositar USD usando Google Pay de forma rápida.\n\n"
     "💡 _Nota: Si eres nuevo, lee con atención la 'Regla de Oro' al final del comando /precio. ¡Evita comprar costoso en el P2P!_"
 )
 
@@ -228,13 +228,13 @@ def handle_precio(message):
             
             texto_p = (
                 f"📊 **Monitor de Tasas Arbitraje P2P**\n"
-                f"🏛️ BCV Oficial: `{tasa_bcv_cruda:.2f} VES`\n"
-                f"⚙️ BCV + 0.5%: `{tasa_bcv_ajustada:.2f} VES`\n"
+                f"🏛️ BCV Oficial: `{tasa_bcv_cruda:.2f} Bs`\n"
+                f"⚙️ BCV + 0.5%: `{tasa_bcv_ajustada:.2f} Bs`\n"
                 f"🛡️ _Filtros activos: Solo Anunciantes Verificados_\n"
                 f"----------------------------------------\n\n"
-                f"🔹 **Rango Pequeño ($50 - $100)**\n🟢 Compra: `{c_50:.2f} VES` | 🔴 Venta: `{v_50:.2f} VES`\n📉 Spread: `{v_50-c_50:.2f} VES` (`{((v_50-c_50)/c_50)*100:.2f}%`)\n\n"
-                f"🔹 **Rango Mediano ($100 - $300)**\n🟢 Compra: `{c_150:.2f} VES` | 🔴 Venta: `{v_150:.2f} VES`\n📉 Spread: `{v_150-c_150:.2f} VES` (`{((v_150-c_150)/c_150)*100:.2f}%`)\n\n"
-                f"🔸 **Rango Mayor ($500+)**\n🟢 Compra: `{c_500:.2f} VES` | 🔴 Venta: `{v_500:.2f} VES`\n📉 Spread: `{v_500-c_500:.2f} VES` (`{((v_500-c_500)/c_500)*100:.2f}%`)\n"
+                f"🔹 **Rango Pequeño ($50 - $100)**\n🟢 Compra: `{c_50:.2f} Bs` | 🔴 Venta: `{v_50:.2f} Bs`\n📉 Spread: `{v_50-c_50:.2f} Bs` (`{((v_50-c_50)/c_50)*100:.2f}%`)\n\n"
+                f"🔹 **Rango Mediano ($100 - $300)**\n🟢 Compra: `{c_150:.2f} Bs` | 🔴 Venta: `{v_150:.2f} Bs`\n📉 Spread: `{v_150-c_150:.2f} Bs` (`{((v_150-c_150)/c_150)*100:.2f}%`)\n\n"
+                f"🔸 **Rango Mayor ($500+)**\n🟢 Compra: `{c_500:.2f} Bs` | 🔴 Venta: `{v_500:.2f} VES`\n📉 Spread: `{v_500-c_500:.2f} Bs` (`{((v_500-c_500)/c_500)*100:.2f}%`)\n"
             )
             bot.reply_to(message, texto_p + TEXTO_REGLA_ORO, parse_mode="Markdown")
         except Exception:

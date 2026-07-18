@@ -161,6 +161,24 @@ def enviar_precio(message):
     else:
         texto += "🔸 **Rango Mayor ($500+):** _No hay anunciantes activos_"
 
+    # ==========================================
+    #      ANÁLISIS Y ENUNCIADO EDUCATIVO
+    # ==========================================
+    texto += (
+        f"\n----------------------------------------\n"
+        f"💡 **REGLA DE ORO PARA GENERAR GANANCIAS**\n\n"
+        f"⚠️ **¿Quieres comerciar? No compres USDT en el P2P:**\n"
+        f"Usar la opción de `🟢 Compra P2P` reduce casi a cero tu margen de ganancia comercial. El verdadero beneficio se obtiene haciendo la ruta institucional.\n\n"
+        f"📌 **Excepción (Uso como Ahorro):**\n"
+        f"Si deseas comprar USDT por el arbitraje de `🟢 Compra`, también es perfectamente viable siempre y cuando tengas en cuenta que será una inversión estable sin margen de ganancias al momento (un tipo de ahorro en criptoactivo), porque no estás comprando al USDT oficial sino al paralelo de arbitraje.\n\n"
+        f"🔄 **La Ruta para Arbitraje Activo:**\n"
+        f"1️⃣ Adquiere USD oficiales en tu banco a tasa BCV.\n"
+        f"2️⃣ Pásalos a Binance mediante `/bpay` o `/gpay` (Depósito USD).\n"
+        f"3️⃣ Convierte a USDT y vende usando la tasa de `🔴 Venta` de este monitor.\n\n"
+        f"🛡️ **Estrategia de Capital Seguro:**\n"
+        f"Al vender en VES, consulta mañana este bot. Usa solo los bolívares necesarios para volver a comprar tu capital base en el banco (`BCV + 0.5%`). **¡Deja tus ganancias acumuladas en USDT dentro de Binance como tu colchón de ahorro seguro!**"
+    )
+
     bot.reply_to(message, texto, parse_mode="Markdown")
 
 @bot.message_handler(commands=['bpay'])
@@ -172,6 +190,6 @@ def enviar_guia_gpay(message):
     bot.reply_to(message, TEXTO_GPAY, parse_mode="Markdown")
 
 if __name__ == "__main__":
-    print("🚀 Bot multi-filtro y enfocado en comandos activo en Railway...")
+    print("🚀 Bot multi-filtro y educativo activo en Railway...")
     bot.infinity_polling()
-    
+                 

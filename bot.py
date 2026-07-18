@@ -19,7 +19,7 @@ TEXTO_BPAY = (
     "1️⃣ Adquiere tus dólares por intervención en tu banco nacional (BDV, Provincial, Banesco, etc.).\n"
     "2️⃣ Ve a la plataforma, selecciona la opción de **Depósito en USD (Fiat)** mediante tarjeta de débito o crédito.\n"
     "3️⃣ Introduce los datos de la tarjeta MasterCard de tu cuenta nacional en divisas. Se te debitará el monto en USD sumando la comisión fija de la pasarela.\n"
-    "4️⃣ Una vez reflejado tu saldo Fiat, conviértelo directamente a **USDT** dentro de la opcion trade (Convertir).\n\n"
+    "4️⃣ Una vez reflejado tu saldo Fiat, conviértelo directamente a **USDT** dentro de la plataforma.\n\n"
     "🔥 **Finalidad:** Al tener tus USDT, usa nuestro comando `/precio` para evaluar la tasa de venta actual en el P2P y liquidar en bolívares, asegurando tu margen de ganancia sobre la tasa base del BCV."
 )
 
@@ -30,8 +30,8 @@ TEXTO_GPAY = (
     "📌 **Pasos para la Operación:**\n"
     "1️⃣ Compra tus USD oficiales en la banca nacional a tasa de intervención del BCV.\n"
     "2️⃣ Vincula la tarjeta internacional/nacional en divisas de tu banco a tu billetera de Google Pay (GPay).\n"
-    "3️⃣ En la plataforma, selecciona la opción de Deposito USD utilizando **GPay** como procesador instantáneo.\n"
-    "4️⃣ Con los USD Fiat ya disponibles, realiza el intercambio - Trade (Convertir) a **USDT**.\n\n"
+    "3️⃣ En la plataforma, selecciona la opción de Deposito USD  utilizando **GPay** como procesador instantáneo.\n"
+    "4️⃣ Con los USD Fiat ya disponibles, realiza el intercambio desde trade (convertir) a **USDT**.\n\n"
     "🔥 **Finalidad:** Saltarse el P2P de compra para obtener el USDT mucho más económico. El beneficio real se consolida al vender esos USDT en el P2P de salida utilizando los precios verificados que te da el comando `/precio`."
 )
 
@@ -122,24 +122,9 @@ def enviar_guia_bpay(message):
 def enviar_guia_gpay(message):
     bot.reply_to(message, TEXTO_GPAY, parse_mode="Markdown")
 
-# ==========================================
-#    FILTRO ANTI-CONFUSIÓN (TEXTO LIBRE)
-# ==========================================
-
-@bot.message_handler(func=lambda message: True)
-def manejar_texto_desconocido(message):
-    texto_ayuda = (
-        "🤖 **Asistente Virtual Automatizado**\n\n"
-        "Hola. No tengo la capacidad de interpretar preguntas abiertas en el chat.\n\n"
-        "Para obtener información exacta de las estrategias y tasas del canal, utiliza exclusivamente los comandos del menú:\n"
-        "👉 `/precio` - Ver tasas en vivo del P2P (Filtro verificados $500).\n"
-        "👉 `/bpay` - Ruta y comisiones para Depositar USD mediante BPay.\n"
-        "👉 `/gpay` - Ruta y comisiones para Depositar USD mediante GPay.\n\n"
-        "⚠️ _Por favor, mantén el uso correcto de los comandos para evitar la saturación del bot._"
-    )
-    bot.reply_to(message, texto_ayuda, parse_mode="Markdown")
+# EL BLOQUE DE TEXTO LIBRE HA SIDO ELIMINADO PARA EVITAR CONGESTIÓN EN CANALES.
 
 if __name__ == "__main__":
-    print("🚀 Bot estratégico de arbitraje activo en Railway...")
+    print("🚀 Bot silencioso y enfocado en comandos activo en Railway...")
     bot.infinity_polling()
-        
+    

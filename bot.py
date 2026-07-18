@@ -19,12 +19,12 @@ TEXTO_BPAY = (
     "1️⃣ Adquiere tus dólares por intervención en tu banco nacional (BDV, Provincial, Banesco, etc.).\n"
     "2️⃣ Ve a la plataforma, selecciona la opción de **Depósito en USD (Fiat)** mediante tarjeta de crédito o débito.\n"
     "3️⃣ Introduce los datos de tu tarjeta.\n\n"
-    "🚨 **PUNTO CLAVE (Evita Bloqueos):** El banco nacional deduce una comisión interna que Binance NO calcula en su pantalla. Para evitar que el banco rechace la operación por fondos insuficientes y bloquee tu tarjeta, debes restar estos porcentajes al saldo total de tu cuenta antes de colocar el monto en Bpay:\n"
+    "🚨 **PUNTO CLAVE (Evita Bloqueos):** El banco nacional deduce una comisión interna que Binance NO calcula en su pantalla. Para evitar que el banco rechace la operación por fondos insuficientes y bloquee tu tarjeta, debes restar estos porcentajes al saldo total de tu cuenta antes de colocar el monto en BPay:\n"
     "• **BDV MasterCard (Maestro):** Restar `1.5%`\n"
     "• **BDV Tarjeta Internacional:** Restar `2.5%`\n"
     "• **Banco del Tesoro:** Restar `2.5%`\n"
     "• **Provincial (BBVA):** No cobra comisión, pero se recomienda dejar un margen fijo de `3$` a `5$` en la cuenta para evitar errores.\n\n"
-    "👉 Coloca en Bpay únicamente el resultado neto de esa resta._\n\n"
+    "👉 _Coloca en BPay únicamente el resultado neto de esa resta._\n\n"
     "4️⃣ Con tus USD Fiat ya disponibles, realiza el intercambio desde trade (convertir) a **USDT**.\n\n"
     "🔥 **Finalidad:** Al tener tus USDT, usa nuestro comando `/precio` para evaluar la tasa de venta actual en el P2P y liquidar en bolívares, asegurando tu margen de ganancia sobre la tasa base del BCV."
 )
@@ -37,12 +37,12 @@ TEXTO_GPAY = (
     "1️⃣ Compra tus USD oficiales en la banca nacional a tasa de intervención del BCV.\n"
     "2️⃣ Vincula la tarjeta internacional/nacional en divisas de tu banco a tu billetera de Google Pay (GPay).\n"
     "3️⃣ En la plataforma, selecciona la opción de **Depósito USD** utilizando **GPay** como procesador instantáneo.\n\n"
-    "🚨 **PUNTO CLAVE (Evita Bloqueos):** El banco nacional deduce una comisión interna que Binance NO calcula en su pantalla. Para evitar que el banco rechace la operación por fondos insuficientes y bloquee tu tarjeta, debes restar estos porcentajes al saldo total de tu cuenta antes de colocar el monto en Gpay:\n"
+    "🚨 **PUNTO CLAVE (Evita Bloqueos):** El banco nacional deduce una comisión interna que Binance NO calcula en su pantalla. Para evitar que el banco rechace la operación por fondos insuficientes y bloquee tu tarjeta, debes restar estos porcentajes al saldo total de tu cuenta antes de colocar el monto en GPay:\n"
     "• **BDV MasterCard (Maestro):** Restar `1.5%`\n"
     "• **BDV Tarjeta Internacional:** Restar `2.5%`\n"
     "• **Banco del Tesoro:** Restar `2.5%`\n"
     "• **Provincial (BBVA):** No cobra comisión, pero se recomienda dejar un margen fijo de `3$` a `5$` en la cuenta para evitar errores.\n\n"
-    "👉 Coloca en Gpay únicamente el resultado neto de esa resta._\n\n"
+    "👉 _Coloca en GPay únicamente el resultado neto de esa resta._\n\n"
     "4️⃣ Con los USD Fiat ya disponibles, realiza el intercambio desde trade (convertir) a **USDT**.\n\n"
     "🔥 **Finalidad:** Saltarse el P2P de compra para obtener el USDT mucho más económico. El beneficio real se consolida al vender esos USDT en el P2P de salida utilizando los precios verificados que te da el comando `/precio`."
 )
@@ -112,13 +112,13 @@ def enviar_precio(message):
         porcentaje_ganancia = (spread / compra) * 100
         
         texto = (
-            f"📊 **Tasas P2P Filtradas (${MONTO_USD_FILTRO})**\n"
-            f"🏛️ BCV Oficial: `{tasa_bcv_cruda:.2f} VES`\n"
-            f"⚙️ BCV + 0.5%: `{tasa_bcv_ajustada:.2f} VES`\n"
-            f"🔍 Filtro de Orden: `{monto_ves_filtro:,.2f} VES`\n\n"
-            f"🟢 **Compra (Pagar):** `{compra} VES`\n"
-            f"🔴 **Venta (Recibir):** `{venta} VES`\n\n"
-            f"📉 **Spread de Arbitraje:** `{spread:.2f} VES` (`{porcentaje_ganancia:.2f}%`)\n"
+            f"📊 **Tasas P2P trade (${MONTO_USD_FILTRO})**\n"
+            f"🏛️ BCV Oficial: `{tasa_bcv_cruda:.2f} Bs`\n"
+            f"⚙️ BCV + 0.5%: `{tasa_bcv_ajustada:.2f} Bs`\n"
+            f"🔍 Filtro de Orden: `{monto_ves_filtro:,.2f} Bs`\n\n"
+            f"🟢 **Compra:** `{compra} Bs`\n"
+            f"🔴 **Venta:** `{venta} Bs`\n\n"
+            f"📉 **Spread de Arbitraje:** `{spread:.2f} Bs` (`{porcentaje_ganancia:.2f}%`)\n"
             f"🛡️ _Filtro: Solo Anunciantes Verificados._"
         )
     else:

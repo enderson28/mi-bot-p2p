@@ -104,8 +104,8 @@ def enviar_precio(message):
             f"🏛️ BCV Oficial: {tasa_bcv_cruda:.2f} VES\n"
             f"⚙️ BCV + 0.5%: {tasa_bcv_ajustada:.2f} VES\n"
             f"🔍 Filtro de Orden: {monto_ves_filtro:,.2f} VES\n\n"
-            f"🟢 Compra (Pagar): {compra} VES\n"
-            f"🔴 Venta (Recibir): {venta} VES\n\n"
+            f"🟢 Compra: {compra} Bs\n"
+            f"🔴 Venta: {venta} Bs\n\n"
             f"📉 **Spread de Arbitraje:** {spread:.2f} VES ({porcentaje_ganancia:.2f}%)\n"
             f"🛡️ *Filtro: Solo Anunciantes Verificados.*"
         )

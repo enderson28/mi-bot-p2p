@@ -12,27 +12,37 @@ MONTO_USD_FILTRO = 500.0  # Capital de referencia base fijo en dólares
 # ==========================================
 
 TEXTO_BPAY = (
-    "💳 **Estrategia Bpay: Carga de USD Bancarios a Binance**\n\n"
+    "💳 **Estrategia BPay: Carga de USD Bancarios a Binance**\n\n"
     "Este método te permite meter tus USD de intervención del banco nacional a la plataforma para generar ganancias en USDT:\n\n"
-    "⚠️ **Costos Fijos:** Comisión de **3.6% a 4.1%** por depósito con tarjetas nacionales en moneda extranjera.\n\n"
+    "⚠️ **Costos Fijos:** Comisión de `3.6%` a `4.1%` por depósito con tarjetas nacionales en moneda extranjera.\n\n"
     "📌 **Pasos para la Operación:**\n"
     "1️⃣ Adquiere tus dólares por intervención en tu banco nacional (BDV, Provincial, Banesco, etc.).\n"
-    "2️⃣ Ve a la plataforma, selecciona la opción de **Depósito en USD (Fiat)** mediante tarjeta de débito o crédito.\n"
-    "3️⃣ Introduce los datos de la tarjeta MasterCard de tu cuenta nacional en divisas. Se te debitará el monto en USD sumando la comisión fija de la pasarela.\n"
-    " Punto importante ( evita bloqueos ) dedes restar 1.5% a tu tarjeta Fisca MasterCard ( Maestro ) , Tarjeta Internacional 2.5%, Teniendo en cuenta eso procede a colocar el monto obtenido en Bpay.\n"
-    "4️⃣ Una vez reflejado tu saldo Fiat, conviértelo directamente a **USDT** dentro de la plataforma mediante Trade (convertir) .\n\n"
+    "2️⃣ Ve a la plataforma, selecciona la opción de **Depósito en USD (Fiat)** mediante tarjeta de crédito o débito.\n"
+    "3️⃣ Introduce los datos de tu tarjeta.\n\n"
+    "🚨 **PUNTO CLAVE (Evita Bloqueos):** El banco nacional deduce una comisión interna que Binance NO calcula en su pantalla. Para evitar que el banco rechace la operación por fondos insuficientes y bloquee tu tarjeta, debes restar estos porcentajes al saldo total de tu cuenta antes de colocar el monto en Bpay:\n"
+    "• **BDV MasterCard (Maestro):** Restar `1.5%`\n"
+    "• **BDV Tarjeta Internacional:** Restar `2.5%`\n"
+    "• **Banco del Tesoro:** Restar `2.5%`\n"
+    "• **Provincial (BBVA):** No cobra comisión, pero se recomienda dejar un margen fijo de `3$` a `5$` en la cuenta para evitar errores.\n\n"
+    "👉 Coloca en Bpay únicamente el resultado neto de esa resta._\n\n"
+    "4️⃣ Con tus USD Fiat ya disponibles, realiza el intercambio desde trade (convertir) a **USDT**.\n\n"
     "🔥 **Finalidad:** Al tener tus USDT, usa nuestro comando `/precio` para evaluar la tasa de venta actual en el P2P y liquidar en bolívares, asegurando tu margen de ganancia sobre la tasa base del BCV."
 )
 
 TEXTO_GPAY = (
-    "📱 **Estrategia Gpay: Carga de USD Bancarios a Binance**\n\n"
+    "📱 **Estrategia GPay: Carga de USD Bancarios a Binance**\n\n"
     "Una ruta alternativa y rápida utilizando la pasarela de Google para procesar tus dólares de intervención:\n\n"
-    "⚠️ **Costos Fijos:** Comisión del **4.1%** por el procesamiento del método.\n\n"
+    "⚠️ **Costos Fijos:** Comisión fija del `4.1%` por el procesamiento del método.\n\n"
     "📌 **Pasos para la Operación:**\n"
     "1️⃣ Compra tus USD oficiales en la banca nacional a tasa de intervención del BCV.\n"
     "2️⃣ Vincula la tarjeta internacional/nacional en divisas de tu banco a tu billetera de Google Pay (GPay).\n"
-    "3️⃣ En la plataforma, selecciona la opción de Deposito USD  utilizando **GPay** como procesador instantáneo.\n"
-     " Punto importante ( evita bloqueos ) dedes restar 1.5% a tu tarjeta Fisca MasterCard ( Maestro ) , Tarjeta Internacional 2.5%, Teniendo en cuenta eso procede a colocar el monto obtenido en Gpay.\n"
+    "3️⃣ En la plataforma, selecciona la opción de **Depósito USD** utilizando **GPay** como procesador instantáneo.\n\n"
+    "🚨 **PUNTO CLAVE (Evita Bloqueos):** El banco nacional deduce una comisión interna que Binance NO calcula en su pantalla. Para evitar que el banco rechace la operación por fondos insuficientes y bloquee tu tarjeta, debes restar estos porcentajes al saldo total de tu cuenta antes de colocar el monto en Gpay:\n"
+    "• **BDV MasterCard (Maestro):** Restar `1.5%`\n"
+    "• **BDV Tarjeta Internacional:** Restar `2.5%`\n"
+    "• **Banco del Tesoro:** Restar `2.5%`\n"
+    "• **Provincial (BBVA):** No cobra comisión, pero se recomienda dejar un margen fijo de `3$` a `5$` en la cuenta para evitar errores.\n\n"
+    "👉 Coloca en Gpay únicamente el resultado neto de esa resta._\n\n"
     "4️⃣ Con los USD Fiat ya disponibles, realiza el intercambio desde trade (convertir) a **USDT**.\n\n"
     "🔥 **Finalidad:** Saltarse el P2P de compra para obtener el USDT mucho más económico. El beneficio real se consolida al vender esos USDT en el P2P de salida utilizando los precios verificados que te da el comando `/precio`."
 )
@@ -102,14 +112,14 @@ def enviar_precio(message):
         porcentaje_ganancia = (spread / compra) * 100
         
         texto = (
-            f"📊 **Tasas P2P Trade (${MONTO_USD_FILTRO})**\n"
-            f"🏛️ BCV Oficial: {tasa_bcv_cruda:.2f} Bs\n"
-            f"⚙️ BCV + 0.5%: {tasa_bcv_ajustada:.2f} Bs\n"
-            f"🔍 Filtro de Orden: {monto_ves_filtro:,.2f} VES\n\n"
-            f"🟢 Compra: {compra} Bs\n"
-            f"🔴 Venta: {venta} Bs\n\n"
-            f"📉 **Spread de Arbitraje:** {spread:.2f} VES ({porcentaje_ganancia:.2f}%)\n"
-            f"🛡️ *Filtro: Solo Anunciantes Verificados.*"
+            f"📊 **Tasas P2P Filtradas (${MONTO_USD_FILTRO})**\n"
+            f"🏛️ BCV Oficial: `{tasa_bcv_cruda:.2f} VES`\n"
+            f"⚙️ BCV + 0.5%: `{tasa_bcv_ajustada:.2f} VES`\n"
+            f"🔍 Filtro de Orden: `{monto_ves_filtro:,.2f} VES`\n\n"
+            f"🟢 **Compra (Pagar):** `{compra} VES`\n"
+            f"🔴 **Venta (Recibir):** `{venta} VES`\n\n"
+            f"📉 **Spread de Arbitraje:** `{spread:.2f} VES` (`{porcentaje_ganancia:.2f}%`)\n"
+            f"🛡️ _Filtro: Solo Anunciantes Verificados._"
         )
     else:
         texto = "❌ No se pudieron obtener los datos de Binance para este volumen verificado."
@@ -124,9 +134,7 @@ def enviar_guia_bpay(message):
 def enviar_guia_gpay(message):
     bot.reply_to(message, TEXTO_GPAY, parse_mode="Markdown")
 
-# EL BLOQUE DE TEXTO LIBRE HA SIDO ELIMINADO PARA EVITAR CONGESTIÓN EN CANALES.
-
 if __name__ == "__main__":
-    print("🚀 Bot silencioso y enfocado en comandos activo en Railway...")
+    print("🚀 Bot estético y enfocado en comandos activo en Railway...")
     bot.infinity_polling()
     

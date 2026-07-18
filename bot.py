@@ -12,25 +12,27 @@ MONTO_USD_FILTRO = 500.0  # Capital de referencia base fijo en dólares
 # ==========================================
 
 TEXTO_BPAY = (
-    "💳 **Estrategia BPay: Carga de USD Bancarios a Binance**\n\n"
+    "💳 **Estrategia Bpay: Carga de USD Bancarios a Binance**\n\n"
     "Este método te permite meter tus USD de intervención del banco nacional a la plataforma para generar ganancias en USDT:\n\n"
     "⚠️ **Costos Fijos:** Comisión de **3.6% a 4.1%** por depósito con tarjetas nacionales en moneda extranjera.\n\n"
     "📌 **Pasos para la Operación:**\n"
     "1️⃣ Adquiere tus dólares por intervención en tu banco nacional (BDV, Provincial, Banesco, etc.).\n"
     "2️⃣ Ve a la plataforma, selecciona la opción de **Depósito en USD (Fiat)** mediante tarjeta de débito o crédito.\n"
     "3️⃣ Introduce los datos de la tarjeta MasterCard de tu cuenta nacional en divisas. Se te debitará el monto en USD sumando la comisión fija de la pasarela.\n"
-    "4️⃣ Una vez reflejado tu saldo Fiat, conviértelo directamente a **USDT** dentro de la plataforma.\n\n"
+    " Punto importante ( evita bloqueos ) dedes restar 1.5% a tu tarjeta Fisca MasterCard ( Maestro ) , Tarjeta Internacional 2.5%, Teniendo en cuenta eso procede a colocar el monto obtenido en Bpay.\n"
+    "4️⃣ Una vez reflejado tu saldo Fiat, conviértelo directamente a **USDT** dentro de la plataforma mediante Trade (convertir) .\n\n"
     "🔥 **Finalidad:** Al tener tus USDT, usa nuestro comando `/precio` para evaluar la tasa de venta actual en el P2P y liquidar en bolívares, asegurando tu margen de ganancia sobre la tasa base del BCV."
 )
 
 TEXTO_GPAY = (
-    "📱 **Estrategia GPay: Carga de USD Bancarios a Binance**\n\n"
+    "📱 **Estrategia Gpay: Carga de USD Bancarios a Binance**\n\n"
     "Una ruta alternativa y rápida utilizando la pasarela de Google para procesar tus dólares de intervención:\n\n"
-    "⚠️ **Costos Fijos:** Comisión fija del **4.1%** por el procesamiento del método.\n\n"
+    "⚠️ **Costos Fijos:** Comisión del **4.1%** por el procesamiento del método.\n\n"
     "📌 **Pasos para la Operación:**\n"
     "1️⃣ Compra tus USD oficiales en la banca nacional a tasa de intervención del BCV.\n"
     "2️⃣ Vincula la tarjeta internacional/nacional en divisas de tu banco a tu billetera de Google Pay (GPay).\n"
     "3️⃣ En la plataforma, selecciona la opción de Deposito USD  utilizando **GPay** como procesador instantáneo.\n"
+     " Punto importante ( evita bloqueos ) dedes restar 1.5% a tu tarjeta Fisca MasterCard ( Maestro ) , Tarjeta Internacional 2.5%, Teniendo en cuenta eso procede a colocar el monto obtenido en Gpay.\n"
     "4️⃣ Con los USD Fiat ya disponibles, realiza el intercambio desde trade (convertir) a **USDT**.\n\n"
     "🔥 **Finalidad:** Saltarse el P2P de compra para obtener el USDT mucho más económico. El beneficio real se consolida al vender esos USDT en el P2P de salida utilizando los precios verificados que te da el comando `/precio`."
 )

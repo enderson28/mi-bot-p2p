@@ -45,7 +45,7 @@ TEXTO_START = (
     "🚀 **¿Cómo empezar? Usa el menú interactivo de botones aquí abajo o escribe los comandos:**\n"
     "🔹 `/precio` o botón **P2P~USDT** — Muestra las tasas reales BCV, precios P2P y la regla de oro.\n"
     "🔹 `/bpay` o botón **BPay** — Guía paso a paso para cargar USD bancarios a Binance.\n"
-    "🔹 `/gpay` o botón **GPay** — Ruta alternativa para fonear usando Google Pay.\n\n"
+    "🔹 `/gpay` o botón **GPay** — Ruta alternativa para Deposito USD usando Google Pay.\n\n"
     "💡 _Nota: Si eres nuevo, lee con atención la 'Regla de Oro' al final del monitor de precios. ¡Evita comprar costoso en el P2P!_"
 )
 

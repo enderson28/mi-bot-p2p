@@ -12,6 +12,11 @@ bot = telebot.TeleBot(TOKEN_TELEGRAM)
 
 BOT_USERNAME = "BancoIDV_bot" 
 
+# CONFIGURACIÓN DE EXCLUSIVIDAD MULTI-CANAL (REGLA FLEXIBLE)
+# Reemplaza con los alias reales (ej: "@mi_canal_prueba" y "@canal_congestionado")
+CANAL_PRUEBA = "@COMUNIDV"       # Canal de prueba donde eres Propietario
+CANAL_CONGESTIONADO = "@COMUNIDADAS04" # Canal principal donde eres Administrador
+
 # CONFIGURACIÓN DE TIEMPOS (COOLDOWN)
 RATE_LIMIT = 900  # 15 minutos en segundos para usuarios comunes en el grupo
 usuarios_tiempo = {} 
@@ -106,16 +111,38 @@ TEXTO_REGLA_ORO_HTML = (
 # ==========================================
 #          LÓGICA DE CÁLCULOS Y APIS
 # ==========================================
+def usuario_esta_unido(user_id):
+    """Verifica de forma flexible si el usuario pertenece a alguno de los canales autorizados"""
+    unido_prueba = False
+    unido_congestionado = False
+
+    # Canal de Prueba
+    try:
+        m1 = bot.get_chat_member(CANAL_PRUEBA, user_id)
+        if m1.status in ['creator', 'administrator', 'member']:
+            unido_prueba = True
+    except Exception:
+        pass
+
+    # Canal Congestionado
+    try:
+        m2 = bot.get_chat_member(CANAL_CONGESTIONADO, user_id)
+        if m2.status in ['creator', 'administrator', 'member']:
+            unido_congestionado = True
+    except Exception:
+        pass
+
+    # Acceso concedido si está en al menos uno de los dos
+    return unido_prueba or unido_congestionado
+
 def obtener_datos_bcv_validos():
     """Obtiene la tasa real del BCV y la Fecha Valor oficial del reporte de la API"""
     url_bcv = "https://pydolarvenezuela-api.vercel.app/api/v1/dollar?page=bcv"
     try:
         res = requests.get(url_bcv, timeout=5)
         datos = res.json()
-        
         tasa = float(datos["monedas"]["usd"]["price"])
         
-        # Extraemos la fecha valor oficial limpia de la API
         fecha_bcv = datos.get("datetime", {}).get("date", None)
         if not fecha_bcv:
             fecha_bcv = datetime.now().strftime("%d/%m/%Y")
@@ -215,6 +242,18 @@ def construir_intervencion_texto_html():
 @bot.message_handler(commands=['start'])
 def handle_start(message):
     if message.chat.type == "private":
+        # Verificación del Escudo Flexible
+        if not usuario_esta_unido(message.from_user.id):
+            texto_bloqueo = (
+                "⚠️ <b>Acceso Restringido</b>\n\n"
+                "Este bot es de uso exclusivo para la comunidad oficial.\n"
+                "Para poder utilizar el monitor y las guías de comisiones en privado, debes formar parte de nuestro canal.\n\n"
+                f"📢 <b>Únete a la comunidad aquí:</b> {CANAL_CONGESTIONADO}\n\n"
+                "<i>Una vez te hayas unido, vuelve a presionar /start para liberar tu menú interactivo.</i>"
+            )
+            bot.send_message(message.chat.id, texto_bloqueo, parse_mode="HTML")
+            return
+
         bot.send_message(message.chat.id, TEXTO_START, parse_mode="HTML", reply_markup=obtener_teclado_privado())
 
 @bot.message_handler(commands=['precio'])
@@ -248,6 +287,10 @@ def procesar_precio(message):
     
     # --- CHAT PRIVADO ---
     if message.chat.type == "private":
+        if not usuario_esta_unido(user_id):
+            bot.reply_to(message, "❌ No tienes acceso. Debes unirte al canal oficial para usar el bot.")
+            return
+            
         try:
             monitor_base = construir_monitor_texto_html()
             texto_completo = monitor_base + TEXTO_REGLA_ORO_HTML
@@ -295,6 +338,9 @@ def procesar_intervencion(message):
     
     # --- CHAT PRIVADO ---
     if message.chat.type == "private":
+        if not usuario_esta_unido(user_id):
+            bot.reply_to(message, "❌ No tienes acceso. Debes unirte al canal oficial para usar el bot.")
+            return
         bot.send_message(chat_id, construir_intervencion_texto_html(), parse_mode="HTML")
         return
         
@@ -306,6 +352,10 @@ def procesar_intervencion(message):
 
 def procesar_guias(message):
     if message.chat.type == "private":
+        if not usuario_esta_unido(message.from_user.id):
+            bot.reply_to(message, "❌ No tienes acceso. Debes unirte al canal oficial para usar el bot.")
+            return
+            
         if 'bpay' in message.text.lower() or '🔶 bpay 🔶' in message.text:
             bot.reply_to(message, TEXTO_BPAY, parse_mode="HTML")
         else:
@@ -318,6 +368,11 @@ def procesar_guias(message):
 # ==========================================
 @bot.callback_query_handler(func=lambda call: call.data == "refrescar_tasas")
 def callback_refrescar_tasas(call):
+    # Doble verificación por si se salen del canal después de abrir el panel
+    if not usuario_esta_unido(call.from_user.id):
+        bot.answer_callback_query(call.id, text="❌ Acceso denegado. No perteneces al canal.", show_alert=True)
+        return
+
     try:
         monitor_fresco = construir_monitor_texto_html()
         texto_editado = monitor_fresco + TEXTO_REGLA_ORO_HTML + f"\n\n🔄 <i>Última actualización de tasas en vivo: Hace un instante.</i>"
@@ -334,5 +389,6 @@ def callback_refrescar_tasas(call):
         bot.answer_callback_query(call.id, text="Las tasas en Binance siguen siendo las mismas. 💸")
 
 if __name__ == "__main__":
-    print("🚀 Bot con sincronización de Fecha Valor BCV listo y corriendo...")
+    print("🚀 Bot blindado con exclusividad flexible listo y corriendo...")
     bot.infinity_polling()
+    

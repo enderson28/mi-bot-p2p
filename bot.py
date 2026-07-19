@@ -1,6 +1,7 @@
 import requests
 import telebot
 import time
+from telebot.types import ReplyKeyboardMarkup, KeyboardButton
 
 # ==========================================
 # CONFIGURACIÓN Y TOKEN
@@ -17,6 +18,23 @@ RATE_LIMIT = 120  # Segundos de espera para usuarios corrientes (2 minutos)
 usuarios_tiempo = {} 
 
 # ==========================================
+#  CREACIÓN DEL TECLADO DE BOTONES (PRIVADO)
+# ==========================================
+def obtener_teclado_privado():
+    """Genera el teclado interactivo con emojis para el chat privado"""
+    markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+    
+    # Creamos los botones con los nombres y logos solicitados
+    btn_precio = KeyboardButton("🟢 P2P~USDT 🟢")
+    btn_bpay = KeyboardButton("🔶 BPay 🔶")
+    btn_gpay = KeyboardButton("🔵 GPay 🔵")
+    
+    # Los organizamos en el menú (Precio arriba solo, guías abajo juntas)
+    markup.add(btn_precio)
+    markup.add(btn_bpay, btn_gpay)
+    return markup
+
+# ==========================================
 #  TEXTOS ESTRATÉGICOS DE ARBITRAJE DEL CANAL
 # ==========================================
 
@@ -24,11 +42,11 @@ TEXTO_START = (
     "👋 **¡Bienvenido al Monitor Oficial IDV ~ Arbitraje P2P!**\n\n"
     "Este bot es tu herramienta aliada para proteger tu capital y generar ganancias reales en Venezuela 🇻🇪. "
     "Aquí no tienes que adivinar; el sistema calcula todo por ti.\n\n"
-    "🚀 **¿Cómo empezar? Usa estos comandos:**\n"
-    "🔹 `/precio` — Muestra las tasas reales BCV, precios P2P (pequeño, medio y alto) y la regla de oro para no perder dinero.\n"
-    "🔹 `/bpay` — Guía paso a paso para cargar USD bancarios a Binance con tarjeta nacional.\n"
-    "🔹 `/gpay` — Ruta alternativa para Depositar USD usando Google Pay de forma rápida.\n\n"
-    "💡 _Nota: Si eres nuevo, lee con atención la 'Regla de Oro' al final del comando /precio. ¡Evita comprar costoso en el P2P!_"
+    "🚀 **¿Cómo empezar? Usa el menú interactivo de botones aquí abajo o escribe los comandos:**\n"
+    "🔹 `/precio` o botón **P2P~USDT** — Muestra las tasas reales BCV, precios P2P y la regla de oro.\n"
+    "🔹 `/bpay` o botón **BPay** — Guía paso a paso para cargar USD bancarios a Binance.\n"
+    "🔹 `/gpay` o botón **GPay** — Ruta alternativa para fonear usando Google Pay.\n\n"
+    "💡 _Nota: Si eres nuevo, lee con atención la 'Regla de Oro' al final del monitor de precios. ¡Evita comprar costoso en el P2P!_"
 )
 
 TEXTO_BPAY = (
@@ -43,7 +61,7 @@ TEXTO_BPAY = (
     "• **BDV MasterCard (Maestro):** Restar `1.5%`\n"
     "• **BDV Tarjeta Internacional:** Restar `2.5%`\n"
     "• **Banco del Tesoro:** Restar `2.5%`\n"
-    "• **Provincial (BBVA):** No cobra comisión, pero se recomienda dejar un margen fijo de `3$` a `5$` en la cuenta para evitar errores.\n\n"
+    "• **Provincial (BBVA):** No cobra comisión, se recomienda dejar un margen fijo de `3$` a `5$` en la cuenta USD para evitar errores.\n\n"
     "👉 _Coloca en BPay únicamente el resultado neto de esa resta._\n\n"
     "4️⃣ Con tus USD Fiat ya disponibles, realiza el intercambio desde trade (convertir) a **USDT**.\n\n"
     "🔥 **Finalidad:** Al tener tus USDT, usa nuestro comando `/precio` para evaluar la tasa de venta actual en el P2P y liquidar en bolívares, asegurando tu margen de ganancia sobre la tasa base del BCV."
@@ -136,7 +154,6 @@ def es_administrador(chat_id, user_id):
     return False
 
 def construir_monitor_texto_html():
-    """Version HTML limpia de los datos para evitar fallas por guiones bajos"""
     tasa_bcv_cruda = obtener_tasa_bcv_real()
     if not tasa_bcv_cruda:
         return "❌ Error temporal al conectar con la tasa base. Intenta en unos segundos."
@@ -157,8 +174,8 @@ def construir_monitor_texto_html():
     
     texto = (
         f"📊 <b>Monitor de Tasas Arbitraje P2P</b>\n"
-        f"🏛️ BCV Oficial: {tasa_bcv_cruda:.2f} VES\n"
-        f"⚙️ BCV + 0.5%: {tasa_bcv_ajustada:.2f} VES\n"
+        f"🏛️ BCV Oficial: {tasa_bcv_cruda:.2f} Bs\n"
+        f"⚙️ BCV + 0.5%: {tasa_bcv_ajustada:.2f} Bs\n"
         f"🛡️ <i>Filtros activos: Solo Anunciantes Verificados</i>\n"
         f"----------------------------------------\n\n"
     )
@@ -191,7 +208,7 @@ def construir_monitor_texto_html():
         texto += (
             f"🔸 <b>Rango Mayor ($500+)</b>\n"
             f"🟢 Compra: {c_500:.2f} Bs | 🔴 Venta: {v_500:.2f} Bs\n"
-            f"📉 Spread: {s_500:.2f} Bs ({p_500:.2f}%)\n\n"
+            f"📉 Spread: {s_500:.2f} Bs ({p_500:.2f}%)\n"
         )
     else:
         texto += "🔸 <b>Rango Mayor ($500+):</b> <i>No hay anunciantes activos</i>"
@@ -199,22 +216,45 @@ def construir_monitor_texto_html():
     return texto
 
 # ==========================================
-#           MANEJADORES DE COMANDOS
+#           MANEJADORES DE COMANDOS / BOTONES
 # ==========================================
 
 @bot.message_handler(commands=['start'])
 def handle_start(message):
     if message.chat.type == "private":
-        bot.reply_to(message, TEXTO_START, parse_mode="Markdown")
+        # Al iniciar en privado, le pintamos el menú de botones interactivos
+        bot.send_message(message.chat.id, TEXTO_START, parse_mode="Markdown", reply_markup=obtener_teclado_privado())
 
 @bot.message_handler(commands=['precio'])
-def handle_precio(message):
+def handle_precio_comando(message):
+    procesar_precio(message)
+
+@bot.message_handler(commands=['bpay', 'gpay'])
+def handle_guias_comando(message):
+    procesar_guias(message)
+
+# ==========================================
+#  ESCUCHADOR DE TEXTO PARA LOS BOTONES NUEVOS
+# ==========================================
+@bot.message_handler(func=lambda message: message.text in ["🟢 P2P~USDT 🟢", "🔶 BPay 🔶", "🔵 GPay 🔵"])
+def handle_botones_menu(message):
+    """Detecta cuando el usuario presiona un botón físico en el privado"""
+    if message.chat.type == "private":
+        if message.text == "🟢 P2P~USDT 🟢":
+            procesar_precio(message)
+        elif message.text == "🔶 BPay 🔶" or message.text == "🔵 GPay 🔵":
+            procesar_guias(message)
+
+# ==========================================
+#   FUNCIONES NATIVAS DE PROCESAMIENTO
+# ==========================================
+
+def procesar_precio(message):
     user_id = message.from_user.id
     chat_id = message.chat.id
     
-    # 1. --- CHAT PRIVADO ---
+    # --- CHAT PRIVADO ---
     if message.chat.type == "private":
-        # Usamos la estructura clásica en privado
         try:
             tasa_bcv_cruda = obtener_tasa_bcv_real()
             tasa_bcv_ajustada = tasa_bcv_cruda * 1.005
@@ -241,7 +281,7 @@ def handle_precio(message):
             bot.reply_to(message, "❌ Error al generar la consulta privada.")
         return
 
-    # 2. --- DENTRO DEL GRUPO ---
+    # --- DENTRO DEL GRUPO ---
     if es_administrador(chat_id, user_id):
         try:
             bot.reply_to(message, construir_monitor_texto_html(), parse_mode="HTML")
@@ -256,27 +296,21 @@ def handle_precio(message):
             bot.reply_to(message, f"⏳ <b>Modo ahorro de chat:</b> Por favor espera {espera} segundos para volver a consultar en el grupo. O consulta en mi chat privado sin restricciones.", parse_mode="HTML")
         else:
             try:
-                # Buscamos los precios formateados en HTML limpio
                 monitor_html = construir_monitor_texto_html()
-                
-                # Armamos la estructura usando etiquetas HTML seguras (<b> e <i>)
                 texto_grupo_usuario = monitor_html + (
                     f"\n----------------------------------------\n"
                     f"💡 <b>¿Eres nuevo en el arbitraje?</b>\n"
                     f"Para conocer la <b>Regla de Oro</b> y aprender a generar ganancias reales usando este monitor, consulta este comando en mi chat privado: @{BOT_USERNAME}"
                 )
-                
-                # Enviamos el mensaje procesado en HTML
                 bot.reply_to(message, texto_grupo_usuario, parse_mode="HTML")
                 usuarios_tiempo[user_id] = ahora
-                
             except Exception as e:
                 bot.reply_to(message, "⚠️ Ocurrió un inconveniente temporal procesando los datos. Reintenta el comando por favor.")
 
-@bot.message_handler(commands=['bpay', 'gpay'])
-def handle_guias(message):
+def procesar_guias(message):
     if message.chat.type == "private":
-        if 'bpay' in message.text:
+        # Detecta tanto el comando escrito como el texto del botón presionado
+        if 'bpay' in message.text.lower() or '🔶 bpay 🔶' in message.text:
             bot.reply_to(message, TEXTO_BPAY, parse_mode="Markdown")
         else:
             bot.reply_to(message, TEXTO_GPAY, parse_mode="Markdown")
@@ -284,6 +318,6 @@ def handle_guias(message):
         bot.reply_to(message, "🚫 **Comando solo disponible en chat privado para evitar la saturación del grupo.**")
 
 if __name__ == "__main__":
-    print("🚀 Sistema de procesamiento inmune activo...")
+    print("🚀 Bot dinámico con interfaz gráfica interna activo...")
     bot.infinity_polling()
-        
+    

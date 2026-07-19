@@ -59,7 +59,7 @@ TEXTO_BPAY = (
     "📌 <b>Pasos para la Operación:</b>\n"
     "1️⃣ Adquiere tus dólares por intervención en tu banco nacional (BDV, Provincial, Banesco, etc.).\n"
     "2️⃣ Ve a la plataforma, selecciona la opción de Depósito en USD (Fiat) mediante tarjeta de crédito o débito.\n"
-    "3️⃣ Introduce los datos de tu tarjeta.\n\n"
+    "3️⃣ Introduce los datos de tu tarjeta.\n"
     "🚨 <b>PUNTO CLAVE (Evita Bloqueos):</b> El banco nacional deduce una comisión interna que Binance NO calcula en su pantalla. Para evitar que el banco rechace la operación por fondos insuficientes y bloquee tu tarjeta, debes restar estos porcentajes al saldo total de tu cuenta antes de colocar el monto en BPay:\n"
     "• BDV MasterCard (Maestro): Restar 1.5%\n"
     "• BDV Tarjeta Internacional: Restar 2.5%\n"
@@ -82,7 +82,7 @@ TEXTO_GPAY = (
     "• BDV MasterCard (Maestro): Restar 1.5%\n"
     "• BDV Tarjeta Internacional: Restar 2.5%\n"
     "• Banco del Tesoro: Restar 2.5%\n"
-    "• Provincial (BBVA): No cobra comisión, se recomienda dejar un margen fijo de 3$ a 5$ en la cuenta USD para evitar errores de Fondos.\n\n"
+    "• Provincial (BBVA): No cobra comisión, pero se recomienda dejar un margen fijo de 3$ a 5$ en la cuenta para evitar errores.\n\n"
     "👉 <i>Coloca en GPay únicamente el resultado neto de esa resta.</i>\n\n"
     "4️⃣ Con los USD Fiat ya disponibles, realiza el intercambio desde trade (convertir) a USDT.\n\n"
     "🔥 <b>Finalidad:</b> Saltarse el P2P de compra para obtener el USDT mucho más económico. El beneficio real se consolida al vender esos USDT en el P2P de salida utilizando los precios verificados que te da el comando <code>/precio</code>."
@@ -100,24 +100,35 @@ TEXTO_REGLA_ORO_HTML = (
     f"2️⃣ Pásalos a Binance mediante /bpay o /gpay (Depósito USD).\n"
     f"3️⃣ Convierte a USDT y vende usando la tasa de <code>🔴 Venta</code> de este monitor.\n\n"
     f"🛡️ <b>Estrategia de Capital Seguro:</b>\n"
-    f"Al vender en Bs, consulta mañana este bot. Usa solo los bolívares necesarios para volver a comprar tu capital base en el banco (<code>BCV + 0.5%</code>). <b>¡Deja tus ganancias acumuladas en USDT dentro de Binance como tu colchón de ahorro seguro!</b>"
+    f"Al vender en VES, consulta mañana este bot. Usa solo los bolívares necesarios para volver a comprar tu capital base en el banco (<code>BCV + 0.5%</code>). <b>¡Deja tus ganancias acumuladas en USDT dentro de Binance como tu colchón de ahorro seguro!</b>"
 )
 
 # ==========================================
 #          LÓGICA DE CÁLCULOS Y APIS
 # ==========================================
-def obtener_tasa_bcv_real():
+def obtener_datos_bcv_validos():
+    """Obtiene la tasa real del BCV y la Fecha Valor oficial del reporte de la API"""
     url_bcv = "https://pydolarvenezuela-api.vercel.app/api/v1/dollar?page=bcv"
     try:
         res = requests.get(url_bcv, timeout=5)
         datos = res.json()
-        return float(datos["monedas"]["usd"]["price"])
+        
+        tasa = float(datos["monedas"]["usd"]["price"])
+        
+        # Extraemos la fecha valor oficial limpia de la API
+        fecha_bcv = datos.get("datetime", {}).get("date", None)
+        if not fecha_bcv:
+            fecha_bcv = datetime.now().strftime("%d/%m/%Y")
+            
+        return tasa, fecha_bcv
     except Exception:
         try:
             res_alt = requests.get("https://open.er-api.com/v6/latest/USD", timeout=5).json()
-            return float(res_alt["rates"]["VES"])
+            tasa_alt = float(res_alt["rates"]["VES"])
+            fecha_alt = datetime.now().strftime("%d/%m/%Y")
+            return tasa_alt, fecha_alt
         except Exception:
-            return None
+            return None, None
 
 def obtener_tasa_binance_p2p(tipo_operacion, monto_ves_filtro):
     url = "https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search"
@@ -150,7 +161,7 @@ def es_administrador(chat_id, user_id):
 #    CONSTRUCTORES DE MENSAJES (HTML)
 # ==========================================
 def construir_monitor_texto_html():
-    tasa_bcv_cruda = obtener_tasa_bcv_real()
+    tasa_bcv_cruda, fecha_valor_bcv = obtener_datos_bcv_validos()
     if not tasa_bcv_cruda:
         return "❌ Error temporal al conectar con la tasa base."
 
@@ -159,6 +170,7 @@ def construir_monitor_texto_html():
     
     texto = (
         f"📊 <b>Monitor de Tasas Arbitraje P2P</b>\n"
+        f"📅 <b>Vigencia BCV:</b> {fecha_valor_bcv}\n"
         f"🏛️ BCV Oficial: {tasa_bcv_cruda:.2f} Bs\n"
         f"⚙️ BCV + 0.5%: {tasa_bcv_ajustada:.2f} Bs\n"
         f"🛡️ <i>Filtros activos: Solo Anunciantes Verificados</i>\n"
@@ -177,17 +189,16 @@ def construir_monitor_texto_html():
     return texto
 
 def construir_intervencion_texto_html():
-    tasa_bcv_cruda = obtener_tasa_bcv_real()
+    tasa_bcv_cruda, fecha_valor_bcv = obtener_datos_bcv_validos()
     if not tasa_bcv_cruda:
         return "❌ Error al obtener la tasa cambiaria de intervención."
         
     tasa_intervencion = tasa_bcv_cruda * 1.005
-    fecha_hoy = datetime.now().strftime("%d/%m/%Y")
     
     texto = (
         f"🚨 <b>¿Cuántos bolívares necesitas para comprar en Intervención?</b>\n\n"
-        f"📅 <b>Fecha:</b> {fecha_hoy}\n\n"
-        f"🏛️ Tasa BCV Hoy: {tasa_bcv_cruda:.2f} Bs\n"
+        f"📅 <b>Fecha Valor BCV:</b> {fecha_valor_bcv}\n\n"
+        f"🏛️ Tasa BCV Oficial: {tasa_bcv_cruda:.2f} Bs\n"
         f"💸 <b>Tasa Intervención: {tasa_intervencion:.2f} Bs</b> (0.5% Agregado)\n"
         f"----------------------------------------\n"
     )
@@ -240,7 +251,6 @@ def procesar_precio(message):
         try:
             monitor_base = construir_monitor_texto_html()
             texto_completo = monitor_base + TEXTO_REGLA_ORO_HTML
-            # Se envía el monitor de precios junto con su botón inline de actualizar
             bot.send_message(chat_id, texto_completo, parse_mode="HTML", reply_markup=obtener_boton_actualizar_inline())
         except Exception as e:
             print(f"Error en precio privado: {e}")
@@ -301,7 +311,7 @@ def procesar_guias(message):
         else:
             bot.reply_to(message, TEXTO_GPAY, parse_mode="HTML")
     else:
-        pass # Silencio absoluto en grupos para comandos /bpay o /gpay
+        pass # Silencio absoluto en grupos para comandos o botones de /bpay o /gpay
 
 # ==========================================
 #    MANEJADOR DEL BOTÓN INLINE (REFRESCAR)
@@ -324,6 +334,5 @@ def callback_refrescar_tasas(call):
         bot.answer_callback_query(call.id, text="Las tasas en Binance siguen siendo las mismas. 💸")
 
 if __name__ == "__main__":
-    print("🚀 Bot con botón de intervención privado e inline dinámico activo...")
+    print("🚀 Bot con sincronización de Fecha Valor BCV listo y corriendo...")
     bot.infinity_polling()
-            

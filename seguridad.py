@@ -12,6 +12,10 @@ FRASES_PROHIBIDAS = [
     "aprovecha al máximo las herramientas del bot",
     "consulta en privado sin límites",
     
+    # Mensaje automático de 6 horas (anuncios.py)
+    "consulta las tasas y guías en privado",
+    "para mantener el grupo libre de spam",
+    
     # Avisos de restricción y autoría
     "comando exclusivo para administradores",
     "comando exclusivo del creador del bot"

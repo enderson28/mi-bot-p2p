@@ -393,7 +393,7 @@ def procesar_guias(message):
     chat_id = message.chat.id
     es_bpay = 'bpay' in message.text.lower() or '🔶 bpay 🔶' in message.text
 
-    # --- 1. CHAT PRIVADO ---
+    # --- 1. CHAT PRIVADO (Único lugar donde responde con la guía) ---
     if message.chat.type == "private":
         if not usuario_esta_unido(user_id):
             bot.reply_to(message, "❌ No tienes acceso. Debes unirte al canal oficial para usar el bot.")
@@ -405,11 +405,14 @@ def procesar_guias(message):
             bot.reply_to(message, TEXTO_GPAY, parse_mode="HTML")
         return
         
-    # --- 2. EN GRUPOS ---
+    # --- 2. EN GRUPOS (SILENCIO ABSOLUTO Y BORRADO AUTOMÁTICO) ---
+    # Borramos el comando al instante, sea Admin o Usuario común.
+    # No envía guías ni avisos al grupo bajo ninguna circunstancia.
     try:
         bot.delete_message(chat_id, message.message_id)
     except Exception:
         pass
+        
 
     if es_administrador(chat_id, user_id):
         msg_enviado = bot.send_message(chat_id, TEXTO_BPAY if es_bpay else TEXTO_GPAY, parse_mode="HTML")

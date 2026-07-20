@@ -229,10 +229,15 @@ def construir_monitor_texto_html():
         
         # Protegemos la consulta a Binance P2P
         try:
-            c = obtener_tasa_binance_p2p("BUY", filtro)
-            v = obtener_tasa_binance_p2p("SELL", filtro)
-        except Exception as e:
-            c, v = None, None
+            # ✅ Cambia las líneas 232 y 233 por esto:
+      c = obtener_tasa_binance_p2p(filtro, "BUY")
+      v = obtener_tasa_binance_p2p(filtro, "SELL")
+
+       # ✅ Cambia las líneas 234 y 235 por esto:
+    except Exception as e:
+    print(f"⚠️ Error al consultar Binance P2P: {e}")
+    c, v = None, None
+
 
         if c and v:
             s = v - c

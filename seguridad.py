@@ -1,17 +1,26 @@
-# Palabras o elementos clave que identifican los reportes de los Administradores
+# Lista de frases clave para detectar copias de mensajes oficiales del bot
 FRASES_PROHIBIDAS = [
+    # Reportes y Monitores Oficiales
     "monitor de tasas",
     "vigencia bcv",
     "bcv oficial",
     "calculadora de intervención",
     "intervención bancaria",
-    "spread:"
+    "spread:",
+    
+    # Mensaje de invitación (/bot) y mensajes automáticos
+    "aprovecha al máximo las herramientas del bot",
+    "consulta en privado sin límites",
+    
+    # Avisos de restricción y autoría
+    "comando exclusivo para administradores",
+    "comando exclusivo del creador del bot"
 ]
 
 def validar_copia_pega(bot, message, es_admin):
     """
-    Si un usuario normal pega el texto del monitor o intervención en el chat,
-    el bot borra el mensaje de inmediato para evitar desinformación o spam.
+    Si un usuario normal pega cualquier texto oficial del bot o sus reportes,
+    el bot borra el mensaje de inmediato para evitar spam o confusión.
     """
     # Si es Administrador, lo dejamos hablar tranquilamente
     if es_admin:
@@ -19,7 +28,7 @@ def validar_copia_pega(bot, message, es_admin):
 
     texto = message.text.lower() if message.text else ""
     
-    # Verificamos si el mensaje contiene alguna de las frases clave del reporte oficial
+    # Verificamos si el mensaje contiene alguna de las frases prohibidas
     for frase in FRASES_PROHIBIDAS:
         if frase in texto:
             try:

@@ -413,15 +413,6 @@ def procesar_guias(message):
         pass
         
         
-    # --- 2. EN GRUPOS (SILENCIO ABSOLUTO Y BORRADO AUTOMÁTICO) ---
-    # Borramos el comando al instante, sea Admin o Usuario común.
-    # No envía guías ni avisos al grupo bajo ninguna circunstancia.
-    try:
-        bot.delete_message(chat_id, message.message_id)
-    except Exception:
-        pass
-        
-
     if es_administrador(chat_id, user_id):
         msg_enviado = bot.send_message(chat_id, TEXTO_BPAY if es_bpay else TEXTO_GPAY, parse_mode="HTML")
         borrar_mensaje_luego(chat_id, msg_enviado.message_id, TIEMPO_VIDA_TABLA)

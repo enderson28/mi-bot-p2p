@@ -413,9 +413,6 @@ def procesar_guias(message):
         pass
         
         
-    if es_administrador(chat_id, user_id):
-        msg_enviado = bot.send_message(chat_id, TEXTO_BPAY if es_bpay else TEXTO_GPAY, parse_mode="HTML")
-        borrar_mensaje_luego(chat_id, msg_enviado.message_id, TIEMPO_VIDA_TABLA)
 
 # ==========================================
 #    MANEJADOR DEL BOTÓN INLINE (REFRESCAR)

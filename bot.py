@@ -6,7 +6,9 @@ from datetime import datetime
 from telebot.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
 from anuncios import iniciar_modulo_anuncios
 from seguridad import validar_copia_pega, es_admin_vip, es_admin_especial
-
+import re
+import requests
+from bs4 import BeautifulSoup
 
 # ==========================================
 # CONFIGURACIÓN Y VARIABLES GLOBALES
@@ -148,15 +150,9 @@ def usuario_esta_unido(user_id):
         pass
 
     return unido_prueba or unido_congestionado
-
-import requests
-from bs4 import BeautifulSoup
+    
 
 def obtener_datos_bcv_validos():
-    """
-    Intenta scraping directo de bcv.org.ve para obtener la tasa del día/mañana al instante.
-    Si el portal falla, utiliza DolarApi como respaldo secundario.
-    """
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36"
     }
@@ -164,28 +160,27 @@ def obtener_datos_bcv_validos():
     # --- INTENTO 1: Scraping Directo al BCV ---
     try:
         url = "https://www.bcv.org.ve/"
-        # verify=False salta errores de certificados del sitio del BCV
         response = requests.get(url, headers=headers, timeout=6, verify=False)
         
         if response.status_code == 200:
             soup = BeautifulSoup(response.content, 'html.parser')
-            
-            # Buscamos la tasa del Dólar en la estructura oficial del BCV
             usd_div = soup.find('div', id='dolar')
             if usd_div:
-                tasa_str = usd_div.find('strong').text.strip().replace('.', '').replace(',', '.')
-                tasa = float(tasa_str)
-                
-                # Buscamos la Fecha Valor
-                fecha_span = soup.find('span', class_='date-display-single')
-                fecha_val = fecha_span.text.strip() if fecha_span else "En Vivo"
-                
-                print(f"✅ BCV Directo obtenido: {tasa} Bs ({fecha_val})")
-                return tasa, fecha_val
+                texto_raw = usd_div.find('strong').text.strip()
+                # Extrae solo números y comas/puntos (ej: "737,23210000" -> 737.23)
+                monto_limpio = re.search(r'[\d.,]+', texto_raw)
+                if monto_limpio:
+                    val_str = monto_limpio.group(0).replace('.', '').replace(',', '.')
+                    tasa = round(float(val_str), 2)
+                    
+                    fecha_span = soup.find('span', class_='date-display-single')
+                    fecha_val = fecha_span.text.strip() if fecha_span else "En Vivo"
+                    
+                    return tasa, fecha_val
     except Exception as e:
         print(f"⚠️ Falló scraping directo del BCV: {e}")
 
-    # --- INTENTO 2: Respaldo con API en tiempo real (DolarApi) ---
+    # --- INTENTO 2: Respaldo DolarApi ---
     try:
         url_respaldo = "https://ve.dolarapi.com/v1/dolares/oficial"
         r = requests.get(url_respaldo, timeout=5)
@@ -193,14 +188,12 @@ def obtener_datos_bcv_validos():
             datos = r.json()
             tasa = float(datos.get('promedio', 0))
             fecha_val = datos.get('fechaActualizacion', 'En Vivo')[:10]
-            print(f"✅ Respaldo DolarApi obtenido: {tasa} Bs")
             return tasa, fecha_val
     except Exception as e:
         print(f"⚠️ Falló la API de respaldo: {e}")
 
     return None, None
     
-
 def es_administrador(chat_id, user_id):
     try:
         miembros_admin = bot.get_chat_administrators(chat_id)

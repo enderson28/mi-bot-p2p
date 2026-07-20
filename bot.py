@@ -1,6 +1,7 @@
 import requests
 import telebot
 import time
+import threading
 from datetime import datetime
 from telebot.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
 
@@ -12,19 +13,33 @@ bot = telebot.TeleBot(TOKEN_TELEGRAM)
 
 BOT_USERNAME = "BancoIDV_bot" # Reemplaza con el alias de tu bot sin el @
 
-# CONFIGURACIÓN DE EXCLUSIVIDAD MULTI-CANAL (REGLA FLEXIBLE)
-CANAL_PRUEBA = "@COMUNIDV"       # Canal de prueba donde eres Propietario
-CANAL_CONGESTIONADO = "@COMUNIDADAS04" # Canal principal donde eres Administrador
+# CONFIGURACIÓN DE EXCLUSIVIDAD MULTI-CANAL
+CANAL_PRUEBA = "@COMUNIDV"       # Canal de prueba
+CANAL_CONGESTIONADO = "@COMUNIDADAS04" # Canal principal
 
-# CONFIGURACIÓN DE TIEMPO DE ENFRIAMIENTO EN GRUPOS
-RATE_LIMIT_AVISO = 600  # 10 minutos en segundos para el aviso de redirección
-grupos_tiempo_aviso = {} # Guarda la última vez que se envió el aviso por chat_id
+# CONFIGURACIÓN DE TIEMPOS
+RATE_LIMIT_AVISO = 600       # 10 minutos para enfriamiento de avisos a usuarios
+TIEMPO_VIDA_TABLA = 300      # 5 minutos para autodestrucción del monitor/intervención
+grupos_tiempo_aviso = {}     # Registra cooldown por chat_id
+
+# ==========================================
+#  SISTEMA DE AUTODESTRUCCIÓN DE MENSAJES
+# ==========================================
+def borrar_mensaje_luego(chat_id, message_id, segundos):
+    """Elimina un mensaje en segundo plano tras transcurrir los segundos indicados"""
+    def eliminar():
+        time.sleep(segundos)
+        try:
+            bot.delete_message(chat_id, message_id)
+        except Exception:
+            pass # Ignora si el mensaje ya fue borrado manualmente
+    
+    threading.Thread(target=eliminar).start()
 
 # ==========================================
 #  CREACIÓN DE INTERFACES (BOTONES)
 # ==========================================
 def obtener_teclado_privado():
-    """Genera el menú de botones inferiores para el chat privado"""
     markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
     btn_precio = KeyboardButton("🟢 P2P~USDT 🟢")
     btn_intervencion = KeyboardButton("📊 Intervención 📊")
@@ -36,7 +51,6 @@ def obtener_teclado_privado():
     return markup
 
 def obtener_boton_actualizar_inline():
-    """Genera el botón flotante debajo del mensaje para refrescar tasas"""
     markup = InlineKeyboardMarkup()
     btn_refresh = InlineKeyboardButton("🔄 Actualizar Tasas", callback_data="refrescar_tasas")
     markup.add(btn_refresh)
@@ -111,11 +125,9 @@ TEXTO_REGLA_ORO_HTML = (
 #  LÓGICA DE PROCESAMIENTO Y APIS
 # ==========================================
 def usuario_esta_unido(user_id):
-    """Verifica de forma flexible si el usuario pertenece a alguno de los canales autorizados"""
     unido_prueba = False
     unido_congestionado = False
 
-    # Canal de Prueba
     try:
         m1 = bot.get_chat_member(CANAL_PRUEBA, user_id)
         if m1.status in ['creator', 'administrator', 'member']:
@@ -123,7 +135,6 @@ def usuario_esta_unido(user_id):
     except Exception:
         pass
 
-    # Canal Congestionado
     try:
         m2 = bot.get_chat_member(CANAL_CONGESTIONADO, user_id)
         if m2.status in ['creator', 'administrator', 'member']:
@@ -134,17 +145,14 @@ def usuario_esta_unido(user_id):
     return unido_prueba or unido_congestionado
 
 def obtener_datos_bcv_validos():
-    """Obtiene la tasa real del BCV y la Fecha Valor oficial"""
     url_bcv = "https://pydolarvenezuela-api.vercel.app/api/v1/dollar?page=bcv"
     try:
         res = requests.get(url_bcv, timeout=5)
         datos = res.json()
         tasa = float(datos["monedas"]["usd"]["price"])
-        
         fecha_bcv = datos.get("datetime", {}).get("date", None)
         if not fecha_bcv:
             fecha_bcv = datetime.now().strftime("%d/%m/%Y")
-            
         return tasa, fecha_bcv
     except Exception:
         try:
@@ -173,7 +181,6 @@ def obtener_tasa_binance_p2p(tipo_operacion, monto_ves_filtro):
     return None
 
 def es_administrador(chat_id, user_id):
-    """Revisa si el usuario es administrador del chat actual"""
     try:
         miembros_admin = bot.get_chat_administrators(chat_id)
         for admin in miembros_admin:
@@ -277,7 +284,7 @@ def handle_botones_menu(message):
             procesar_guias(message)
 
 # ==========================================
-#     LÓGICA CON ENFRIAMIENTO (COOLDOWN)
+#  LÓGICA CON AUTODESTRUCCIÓN Y LIMPIEZA
 # ==========================================
 def procesar_precio(message):
     user_id = message.from_user.id
@@ -299,34 +306,39 @@ def procesar_precio(message):
         return
 
     # --- 2. EN GRUPOS ---
+    # A) Borramos inmediatamente el mensaje del comando ejecutado (sea Admin o Usuario)
+    try:
+        bot.delete_message(chat_id, message.message_id)
+    except Exception:
+        pass
+
     if es_administrador(chat_id, user_id):
-        # El Administrador SIEMPRE ve el monitor y no activa ni respeta cooldown
         try:
-            bot.reply_to(message, construir_monitor_texto_html(), parse_mode="HTML")
+            # B) Enviamos el monitor
+            msg_enviado = bot.send_message(chat_id, construir_monitor_texto_html(), parse_mode="HTML")
+            # C) Autodestruimos la lista de precios tras 5 minutos (300 segundos)
+            borrar_mensaje_luego(chat_id, msg_enviado.message_id, TIEMPO_VIDA_TABLA)
         except Exception:
-            bot.reply_to(message, "❌ Error en consulta de administrador.")
+            pass
     else:
-        # LÓGICA DE COOLDOWN DE 10 MINUTOS PARA EL AVISO A USUARIOS COMUNES
+        # SI ES USUARIO COMÚN:
         ahora = time.time()
         ultima_vez_aviso = grupos_tiempo_aviso.get(chat_id, 0)
         
-        # Si ya pasaron los 10 minutos desde el último aviso enviado en este grupo:
         if ahora - ultima_vez_aviso > RATE_LIMIT_AVISO:
             try:
-                bot.reply_to(
-                    message, 
+                aviso = bot.send_message(
+                    chat_id, 
                     f"❌ <b>Comando exclusivo para Administradores.</b>\n\n"
-                    f"Hola. Para mantener el orden y evitar saturar el chat, este comando está restringido en el grupo.\n"
+                    f"Hola @{message.from_user.username or message.from_user.first_name}. Para mantener el orden, este comando está restringido en el grupo.\n"
                     f"👉 Consulta todas las tasas libremente en mi chat privado: @{BOT_USERNAME}",
                     parse_mode="HTML"
                 )
-                # Registramos el momento exacto en que se envió el aviso
                 grupos_tiempo_aviso[chat_id] = ahora
+                # Autodestruimos el aviso tras 20 segundos
+                borrar_mensaje_luego(chat_id, aviso.message_id, 20)
             except Exception:
                 pass
-        else:
-            # Si aún NO han pasado los 10 minutos, el bot guarda silencio absoluto
-            pass
 
 def procesar_intervencion(message):
     user_id = message.from_user.id
@@ -341,11 +353,39 @@ def procesar_intervencion(message):
         return
         
     # --- 2. EN GRUPOS ---
-    if es_administrador(chat_id, user_id):
-        bot.reply_to(message, construir_intervencion_texto_html(), parse_mode="HTML")
-    else:
-        # Silencio absoluto en grupos para usuarios comunes en /intervencion
+    # A) Borramos inmediatamente el mensaje del comando ejecutado (sea Admin o Usuario)
+    try:
+        bot.delete_message(chat_id, message.message_id)
+    except Exception:
         pass
+
+    if es_administrador(chat_id, user_id):
+        try:
+            # B) Enviamos la tabla de intervención
+            msg_enviado = bot.send_message(chat_id, construir_intervencion_texto_html(), parse_mode="HTML")
+            # C) Autodestruimos la tabla tras 5 minutos (300 segundos)
+            borrar_mensaje_luego(chat_id, msg_enviado.message_id, TIEMPO_VIDA_TABLA)
+        except Exception:
+            pass
+    else:
+        # SI ES USUARIO COMÚN:
+        ahora = time.time()
+        ultima_vez_aviso = grupos_tiempo_aviso.get(chat_id, 0)
+        
+        if ahora - ultima_vez_aviso > RATE_LIMIT_AVISO:
+            try:
+                aviso = bot.send_message(
+                    chat_id, 
+                    f"❌ <b>Comando exclusivo para Administradores.</b>\n\n"
+                    f"Hola @{message.from_user.username or message.from_user.first_name}. Para mantener el orden, este comando está restringido en el grupo.\n"
+                    f"👉 Consulta la calculadora de intervención libremente en mi chat privado: @{BOT_USERNAME}",
+                    parse_mode="HTML"
+                )
+                grupos_tiempo_aviso[chat_id] = ahora
+                # Autodestruimos el aviso tras 20 segundos
+                borrar_mensaje_luego(chat_id, aviso.message_id, 20)
+            except Exception:
+                pass
 
 def procesar_guias(message):
     user_id = message.from_user.id
@@ -365,14 +405,14 @@ def procesar_guias(message):
         return
         
     # --- 2. EN GRUPOS ---
-    if es_administrador(chat_id, user_id):
-        if es_bpay:
-            bot.reply_to(message, TEXTO_BPAY, parse_mode="HTML")
-        else:
-            bot.reply_to(message, TEXTO_GPAY, parse_mode="HTML")
-    else:
-        # Silencio absoluto en grupos para usuarios comunes en guías
+    try:
+        bot.delete_message(chat_id, message.message_id)
+    except Exception:
         pass
+
+    if es_administrador(chat_id, user_id):
+        msg_enviado = bot.send_message(chat_id, TEXTO_BPAY if es_bpay else TEXTO_GPAY, parse_mode="HTML")
+        borrar_mensaje_luego(chat_id, msg_enviado.message_id, TIEMPO_VIDA_TABLA)
 
 # ==========================================
 #    MANEJADOR DEL BOTÓN INLINE (REFRESCAR)
@@ -402,5 +442,5 @@ def callback_refrescar_tasas(call):
 #            EJECUCIÓN DEL BOT
 # ==========================================
 if __name__ == "__main__":
-    print("🚀 Bot Maestro en línea con protección anti-spam de 10 minutos...")
+    print("🚀 Bot Maestro en línea con limpieza automática y temporizador de 5 min...")
     bot.infinity_polling()

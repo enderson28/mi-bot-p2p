@@ -17,20 +17,23 @@ TEXTO_ANUNCIO = (
 
 def bucle_anuncios(bot):
     """Bucle infinito que envía el anuncio en segundo plano."""
-    # Convertimos horas a segundos
+    # Convertimos horas a segundos (6 horas = 21600 segundos)
     segundos_espera = INTERVALO_HORAS * 3600
-    
-    # Espera inicial de 5 minutos al encender el bot para no enviar el anuncio inmediatamente
-    time.sleep(300) 
-    
+
     while True:
         try:
+            # 1. ESPERA PRIMERO LAS 6 HORAS COMPLETAS
+            time.sleep(segundos_espera)
+            
+            # 2. ENVÍA EL ANUNCIO DESPUÉS DE ESPERAR
             bot.send_message(ID_GRUPO, TEXTO_ANUNCIO, parse_mode="HTML")
-            print(f"📢 Anuncio automático enviado con éxito al grupo {ID_GRUPO}.")
+            print(f"📢 Anuncio automático enviado con éxito al grupo {ID_GRUPO}")
+            
         except Exception as e:
             print(f"⚠️ Error al enviar el anuncio automático: {e}")
+            # Si falla (por ejemplo, sin internet), reintenta en 1 minuto
+            time.sleep(60)
             
-        time.sleep(segundos_espera)
 
 def iniciar_modulo_anuncios(bot):
     """Inicia el hilo secundario para no bloquear el bot principal."""

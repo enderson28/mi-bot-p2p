@@ -5,21 +5,20 @@ from datetime import datetime
 from telebot.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
 
 # ==========================================
-# CONFIGURACIÓN Y TOKEN
+# CONFIGURACIÓN Y VARIABLES GLOBALES
 # ==========================================
 TOKEN_TELEGRAM = "8632019517:AAHEegmOwcC35emzY5q75o6NUbs704cMD6g"
 bot = telebot.TeleBot(TOKEN_TELEGRAM)
 
-BOT_USERNAME = "BancoIDV_bot" 
+BOT_USERNAME = "BancoIDV_bot" # Reemplaza con el alias de tu bot sin el @
 
 # CONFIGURACIÓN DE EXCLUSIVIDAD MULTI-CANAL (REGLA FLEXIBLE)
-# Reemplaza con los alias reales (ej: "@mi_canal_prueba" y "@canal_congestionado")
 CANAL_PRUEBA = "@COMUNIDV"       # Canal de prueba donde eres Propietario
 CANAL_CONGESTIONADO = "@COMUNIDADAS04" # Canal principal donde eres Administrador
 
-# CONFIGURACIÓN DE TIEMPOS (COOLDOWN)
-RATE_LIMIT = 900  # 15 minutos en segundos para usuarios comunes en el grupo
-usuarios_tiempo = {} 
+# CONFIGURACIÓN DE TIEMPO DE ENFRIAMIENTO EN GRUPOS
+RATE_LIMIT_AVISO = 600  # 10 minutos en segundos para el aviso de redirección
+grupos_tiempo_aviso = {} # Guarda la última vez que se envió el aviso por chat_id
 
 # ==========================================
 #  CREACIÓN DE INTERFACES (BOTONES)
@@ -44,7 +43,7 @@ def obtener_boton_actualizar_inline():
     return markup
 
 # ==========================================
-#  TEXTOS ORIGINALES EXTRAÍDOS DE CAPTURAS
+#  TEXTOS ORIGINALES COMPLETOS
 # ==========================================
 TEXTO_START = (
     "👋 <b>¡Bienvenido al Monitor Oficial IDV ~ Arbitraje P2P!</b>\n\n"
@@ -109,7 +108,7 @@ TEXTO_REGLA_ORO_HTML = (
 )
 
 # ==========================================
-#          LÓGICA DE CÁLCULOS Y APIS
+#  LÓGICA DE PROCESAMIENTO Y APIS
 # ==========================================
 def usuario_esta_unido(user_id):
     """Verifica de forma flexible si el usuario pertenece a alguno de los canales autorizados"""
@@ -132,11 +131,10 @@ def usuario_esta_unido(user_id):
     except Exception:
         pass
 
-    # Acceso concedido si está en al menos uno de los dos
     return unido_prueba or unido_congestionado
 
 def obtener_datos_bcv_validos():
-    """Obtiene la tasa real del BCV y la Fecha Valor oficial del reporte de la API"""
+    """Obtiene la tasa real del BCV y la Fecha Valor oficial"""
     url_bcv = "https://pydolarvenezuela-api.vercel.app/api/v1/dollar?page=bcv"
     try:
         res = requests.get(url_bcv, timeout=5)
@@ -175,6 +173,7 @@ def obtener_tasa_binance_p2p(tipo_operacion, monto_ves_filtro):
     return None
 
 def es_administrador(chat_id, user_id):
+    """Revisa si el usuario es administrador del chat actual"""
     try:
         miembros_admin = bot.get_chat_administrators(chat_id)
         for admin in miembros_admin:
@@ -190,7 +189,7 @@ def es_administrador(chat_id, user_id):
 def construir_monitor_texto_html():
     tasa_bcv_cruda, fecha_valor_bcv = obtener_datos_bcv_validos()
     if not tasa_bcv_cruda:
-        return "❌ Error temporal al conectar con la tasa base."
+        return "❌ Error temporal al conectar con la tasa base del BCV."
 
     tasa_bcv_ajustada = tasa_bcv_cruda * 1.005
     rangos = [("Pequeño ($50 - $100)", 50.0), ("Mediano ($100 - $300)", 150.0), ("Mayor ($500+)", 500.0)]
@@ -212,7 +211,7 @@ def construir_monitor_texto_html():
             p = (s / c) * 100
             texto += f"🔹 <b>Rango {nombre}</b>\n🟢 Compra: {c:.2f} Bs | 🔴 Venta: {v:.2f} Bs\n📉 Spread: {s:.2f} Bs ({p:.2f}%)\n\n"
         else:
-            texto += f"🔹 <b>Rango {nombre}:</b> <i>Sin anunciantes</i>\n\n"
+            texto += f"🔹 <b>Rango {nombre}:</b> <i>Sin anunciantes en Binance</i>\n\n"
     return texto
 
 def construir_intervencion_texto_html():
@@ -242,13 +241,12 @@ def construir_intervencion_texto_html():
 @bot.message_handler(commands=['start'])
 def handle_start(message):
     if message.chat.type == "private":
-        # Verificación del Escudo Flexible
         if not usuario_esta_unido(message.from_user.id):
             texto_bloqueo = (
                 "⚠️ <b>Acceso Restringido</b>\n\n"
-                "Este bot es de uso exclusivo para la comunidad oficial.\n"
+                "Este bot es de uso exclusivo para nuestra comunidad aliada.\n"
                 "Para poder utilizar el monitor y las guías de comisiones en privado, debes formar parte de nuestro canal.\n\n"
-                f"📢 <b>Únete a la comunidad aquí:</b> {CANAL_CONGESTIONADO}\n\n"
+                f"📢 <b>Únete a la comunidad oficial aquí:</b> {CANAL_CONGESTIONADO}\n\n"
                 "<i>Una vez te hayas unido, vuelve a presionar /start para liberar tu menú interactivo.</i>"
             )
             bot.send_message(message.chat.id, texto_bloqueo, parse_mode="HTML")
@@ -279,13 +277,13 @@ def handle_botones_menu(message):
             procesar_guias(message)
 
 # ==========================================
-#     LÓGICA INTERNA DE EJECUCIÓN
+#     LÓGICA CON ENFRIAMIENTO (COOLDOWN)
 # ==========================================
 def procesar_precio(message):
     user_id = message.from_user.id
     chat_id = message.chat.id
     
-    # --- CHAT PRIVADO ---
+    # --- 1. CHAT PRIVADO ---
     if message.chat.type == "private":
         if not usuario_esta_unido(user_id):
             bot.reply_to(message, "❌ No tienes acceso. Debes unirte al canal oficial para usar el bot.")
@@ -300,43 +298,41 @@ def procesar_precio(message):
             bot.reply_to(message, "❌ Error al generar la consulta privada.")
         return
 
-    # --- EN GRUPOS ---
+    # --- 2. EN GRUPOS ---
     if es_administrador(chat_id, user_id):
+        # El Administrador SIEMPRE ve el monitor y no activa ni respeta cooldown
         try:
             bot.reply_to(message, construir_monitor_texto_html(), parse_mode="HTML")
         except Exception:
             bot.reply_to(message, "❌ Error en consulta de administrador.")
     else:
+        # LÓGICA DE COOLDOWN DE 10 MINUTOS PARA EL AVISO A USUARIOS COMUNES
         ahora = time.time()
-        ultima_vez = usuarios_tiempo.get(user_id, 0)
+        ultima_vez_aviso = grupos_tiempo_aviso.get(chat_id, 0)
         
-        if ahora - ultima_vez < RATE_LIMIT:
-            espera_minutos = int((RATE_LIMIT - (ahora - ultima_vez)) // 60)
-            espera_segundos = int((RATE_LIMIT - (ahora - ultima_vez)) % 60)
-            bot.reply_to(
-                message, 
-                f"⏳ <b>Modo ahorro de chat:</b> Este comando tiene un reposo de 15 minutos para evitar la saturación.\n"
-                f"Por favor espera <b>{espera_minutos}m {espera_segundos}s</b> o consulta directamente en mi chat privado sin restricciones de tiempo.", 
-                parse_mode="HTML"
-            )
-        else:
+        # Si ya pasaron los 10 minutos desde el último aviso enviado en este grupo:
+        if ahora - ultima_vez_aviso > RATE_LIMIT_AVISO:
             try:
-                monitor_html = construir_monitor_texto_html()
-                texto_grupo_usuario = monitor_html + (
-                    f"\n----------------------------------------\n"
-                    f"💡 <b>¿Eres nuevo en el arbitraje?</b>\n"
-                    f"Para conocer la <b>Regla de Oro</b> y aprender a generar ganancias reales, consulta este comando en mi chat privado: @{BOT_USERNAME}"
+                bot.reply_to(
+                    message, 
+                    f"❌ <b>Comando exclusivo para Administradores.</b>\n\n"
+                    f"Hola. Para mantener el orden y evitar saturar el chat, este comando está restringido en el grupo.\n"
+                    f"👉 Consulta todas las tasas libremente en mi chat privado: @{BOT_USERNAME}",
+                    parse_mode="HTML"
                 )
-                bot.reply_to(message, texto_grupo_usuario, parse_mode="HTML")
-                usuarios_tiempo[user_id] = ahora
+                # Registramos el momento exacto en que se envió el aviso
+                grupos_tiempo_aviso[chat_id] = ahora
             except Exception:
-                bot.reply_to(message, "⚠️ Inconveniente temporal al procesar los datos.")
+                pass
+        else:
+            # Si aún NO han pasado los 10 minutos, el bot guarda silencio absoluto
+            pass
 
 def procesar_intervencion(message):
     user_id = message.from_user.id
     chat_id = message.chat.id
     
-    # --- CHAT PRIVADO ---
+    # --- 1. CHAT PRIVADO ---
     if message.chat.type == "private":
         if not usuario_esta_unido(user_id):
             bot.reply_to(message, "❌ No tienes acceso. Debes unirte al canal oficial para usar el bot.")
@@ -344,31 +340,45 @@ def procesar_intervencion(message):
         bot.send_message(chat_id, construir_intervencion_texto_html(), parse_mode="HTML")
         return
         
-    # --- EN GRUPOS ---
+    # --- 2. EN GRUPOS ---
     if es_administrador(chat_id, user_id):
         bot.reply_to(message, construir_intervencion_texto_html(), parse_mode="HTML")
     else:
-        pass # Silencio absoluto para usuarios normales en grupos
+        # Silencio absoluto en grupos para usuarios comunes en /intervencion
+        pass
 
 def procesar_guias(message):
+    user_id = message.from_user.id
+    chat_id = message.chat.id
+    es_bpay = 'bpay' in message.text.lower() or '🔶 bpay 🔶' in message.text
+
+    # --- 1. CHAT PRIVADO ---
     if message.chat.type == "private":
-        if not usuario_esta_unido(message.from_user.id):
+        if not usuario_esta_unido(user_id):
             bot.reply_to(message, "❌ No tienes acceso. Debes unirte al canal oficial para usar el bot.")
             return
             
-        if 'bpay' in message.text.lower() or '🔶 bpay 🔶' in message.text:
+        if es_bpay:
+            bot.reply_to(message, TEXTO_BPAY, parse_mode="HTML")
+        else:
+            bot.reply_to(message, TEXTO_GPAY, parse_mode="HTML")
+        return
+        
+    # --- 2. EN GRUPOS ---
+    if es_administrador(chat_id, user_id):
+        if es_bpay:
             bot.reply_to(message, TEXTO_BPAY, parse_mode="HTML")
         else:
             bot.reply_to(message, TEXTO_GPAY, parse_mode="HTML")
     else:
-        pass # Silencio absoluto en grupos para comandos o botones de /bpay o /gpay
+        # Silencio absoluto en grupos para usuarios comunes en guías
+        pass
 
 # ==========================================
 #    MANEJADOR DEL BOTÓN INLINE (REFRESCAR)
 # ==========================================
 @bot.callback_query_handler(func=lambda call: call.data == "refrescar_tasas")
 def callback_refrescar_tasas(call):
-    # Doble verificación por si se salen del canal después de abrir el panel
     if not usuario_esta_unido(call.from_user.id):
         bot.answer_callback_query(call.id, text="❌ Acceso denegado. No perteneces al canal.", show_alert=True)
         return
@@ -388,7 +398,9 @@ def callback_refrescar_tasas(call):
     except Exception:
         bot.answer_callback_query(call.id, text="Las tasas en Binance siguen siendo las mismas. 💸")
 
+# ==========================================
+#            EJECUCIÓN DEL BOT
+# ==========================================
 if __name__ == "__main__":
-    print("🚀 Bot blindado con exclusividad flexible listo y corriendo...")
+    print("🚀 Bot Maestro en línea con protección anti-spam de 10 minutos...")
     bot.infinity_polling()
-    

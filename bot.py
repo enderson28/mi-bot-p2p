@@ -193,6 +193,35 @@ def obtener_datos_bcv_validos():
         print(f"⚠️ Falló la API de respaldo: {e}")
 
     return None, None
+def obtener_tasa_binance_p2p(tipo_operacion, monto_bs):
+    url = "https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search"
+    
+    headers = {
+        "Accept": "*/*",
+        "Content-Type": "application/json",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36"
+    }
+    
+    payload = {
+        "asset": "USDT",
+        "fiat": "VES",
+        "merchantCheck": True,
+        "page": 1,
+        "rows": 5,
+        "tradeType": tipo_operacion.upper(),
+        "transAmount": str(int(monto_bs))
+    }
+    
+    try:
+        r = requests.post(url, json=payload, headers=headers, timeout=10)
+        if r.status_code == 200:
+            datos = r.json().get('data', [])
+            if datos:
+                return float(datos[0]['adv']['price'])
+    except Exception as e:
+        print(f"⚠️ Error conectando con Binance P2P: {e}")
+        
+    return None
     
 def es_administrador(chat_id, user_id):
     try:

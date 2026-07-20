@@ -5,7 +5,8 @@ import threading
 from datetime import datetime
 from telebot.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
 from anuncios import iniciar_modulo_anuncios
-from seguridad import validar_copia_pega
+from seguridad import validar_copia_pega, es_admin_vip, es_admin_especial
+
 
 # ==========================================
 # CONFIGURACIÓN Y VARIABLES GLOBALES
@@ -225,20 +226,29 @@ def construir_monitor_texto_html():
             texto += f"🔹 <b>Rango {nombre}:</b> <i>Sin anunciantes en Binance</i>\n\n"
     return texto
 
-def construir_intervencion_texto_html():
+def construir_intervencion_texto_html(usuario=None):
     tasa_bcv_cruda, fecha_valor_bcv = obtener_datos_bcv_validos()
     if not tasa_bcv_cruda:
         return "❌ Error al obtener la tasa cambiaria de intervención."
-        
-    tasa_intervencion = tasa_bcv_cruda * 1.005
-    
+
+    # Si es el admin especial, usa 1% (1.01). Si no, usa 0.5% (1.005)
+    if usuario and es_admin_especial(usuario):
+        porcentaje_txt = "1% Agregado"
+        factor_multiplicador = 1.01
+    else:
+        porcentaje_txt = "0.5% Agregado"
+        factor_multiplicador = 1.005
+
+    tasa_intervencion = tasa_bcv_cruda * factor_multiplicador
+
     texto = (
-        f"🚨 <b>¿Cuántos bolívares necesitas para comprar en Intervención?</b>\n\n"
-        f"📅 <b>Fecha Valor BCV:</b> {fecha_valor_bcv}\n\n"
+        f"🚨 <b>¿Cuántos bolívares necesitas para comprar en Intervención?</b>\n"
+        f"📅 <b>Fecha Valor BCV:</b> {fecha_valor_bcv}\n"
         f"🏛️ Tasa BCV Oficial: {tasa_bcv_cruda:.2f} Bs\n"
-        f"💸 <b>Tasa Intervención: {tasa_intervencion:.2f} Bs</b> (0.5% Agregado)\n"
-        f"----------------------------------------\n"
+        f"💸 <b>Tasa Intervención: {tasa_intervencion:.2f} Bs</b> ({porcentaje_txt})\n"
+        f"-----------------------------------\n"
     )
+    
     
     for usd in range(100, 1100, 100):
         total_ves = usd * tasa_intervencion
@@ -252,18 +262,34 @@ def construir_intervencion_texto_html():
 @bot.message_handler(commands=['start'])
 def handle_start(message):
     if message.chat.type == "private":
+        # 1. SI ES ADMINISTRADOR VIP
+        if es_admin_vip(message.from_user):
+            # Teclado ultralimpio para Administradores
+            markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+            markup.add(KeyboardButton("🟢 P2P-USDT 🟢"), KeyboardButton("📊 Intervención 📊"))
+            
+            texto_vip = (
+                f"👋 <b>¡Hola, {message.from_user.first_name}!</b>\n\n"
+                "Gracias por tu valiosa labor diaria manteniendo el orden en la comunidad.\n"
+                "🛡️ <i>Tienes activo el entorno VIP de trabajo rápido (sin distracciones ni guías de inicio).</i>"
+            )
+            bot.send_message(message.chat.id, texto_vip, parse_mode="HTML", reply_markup=markup)
+            return
+
+        # 2. SI ES USUARIO COMÚN (Mantiene verificación de canal y guías completas)
         if not usuario_esta_unido(message.from_user.id):
             texto_bloqueo = (
                 "⚠️ <b>Acceso Restringido</b>\n\n"
-                "Este bot es de uso exclusivo para nuestra comunidad aliada.\n"
-                "Para poder utilizar el monitor y las guías de comisiones en privado, debes formar parte de nuestro canal.\n\n"
-                f"📢 <b>Únete a la comunidad oficial aquí:</b> {CANAL_CONGESTIONADO}\n\n"
-                "<i>Una vez te hayas unido, vuelve a presionar /start para liberar tu menú interactivo.</i>"
+                "Este bot es de uso exclusivo para nuestra comunidad.\n"
+                "📢 <b>Únete a la comunidad oficial aquí:</b> @COMUNIDAS04\n\n"
+                "<i>Una vez te hayas unido, vuelve a presionar /start.</i>"
             )
             bot.send_message(message.chat.id, texto_bloqueo, parse_mode="HTML")
             return
 
+        # Mensaje recargado con teclado completo para novatos
         bot.send_message(message.chat.id, TEXTO_START, parse_mode="HTML", reply_markup=obtener_teclado_privado())
+        
 
 @bot.message_handler(commands=['precio'])
 def handle_precio_comando(message):
@@ -334,11 +360,21 @@ def procesar_precio(message):
         if not usuario_esta_unido(user_id):
             bot.reply_to(message, "❌ No tienes acceso. Debes unirte al canal oficial para usar el bot.")
             return
-            
-        try:
+
+                try:
+            # 1. Armamos el monitor base
             monitor_base = construir_monitor_texto_html()
-            texto_completo = monitor_base + TEXTO_REGLA_ORO_HTML
+
+            # 2. Si es Admin VIP, mostramos SOLO el monitor (ultralimpio)
+            # Si es usuario común, le pegamos la Regla de Oro abajo
+            if es_admin_vip(message.from_user):
+                texto_completo = monitor_base
+            else:
+                texto_completo = monitor_base + TEXTO_REGLA_ORO_HTML
+
+            # 3. Enviamos el mensaje correspondiente
             bot.send_message(chat_id, texto_completo, parse_mode="HTML", reply_markup=obtener_boton_actualizar_inline())
+            
         except Exception as e:
             print(f"Error en precio privado: {e}")
             bot.reply_to(message, "❌ Error al generar la consulta privada.")
@@ -388,7 +424,7 @@ def procesar_intervencion(message):
         if not usuario_esta_unido(user_id):
             bot.reply_to(message, "❌ No tienes acceso. Debes unirte al canal oficial para usar el bot.")
             return
-        bot.send_message(chat_id, construir_intervencion_texto_html(), parse_mode="HTML")
+        bot.send_message(chat_id, construir_intervencion_texto_html(message.from_user), parse_mode="HTML")
         return
         
     # --- 2. EN GRUPOS ---

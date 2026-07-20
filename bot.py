@@ -354,14 +354,14 @@ def handle_botones_menu(message):
 def procesar_precio(message):
     user_id = message.from_user.id
     chat_id = message.chat.id
-    
+
     # --- 1. CHAT PRIVADO ---
     if message.chat.type == "private":
         if not usuario_esta_unido(user_id):
             bot.reply_to(message, "❌ No tienes acceso. Debes unirte al canal oficial para usar el bot.")
             return
 
-                try:
+        try:
             # 1. Armamos el monitor base
             monitor_base = construir_monitor_texto_html()
 
@@ -374,11 +374,12 @@ def procesar_precio(message):
 
             # 3. Enviamos el mensaje correspondiente
             bot.send_message(chat_id, texto_completo, parse_mode="HTML", reply_markup=obtener_boton_actualizar_inline())
-            
+
         except Exception as e:
             print(f"Error en precio privado: {e}")
             bot.reply_to(message, "❌ Error al generar la consulta privada.")
         return
+        
 
     # --- 2. EN GRUPOS ---
     # A) Borramos inmediatamente el mensaje del comando ejecutado (sea Admin o Usuario)

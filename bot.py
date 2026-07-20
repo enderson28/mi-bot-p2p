@@ -337,8 +337,8 @@ def procesar_precio(message):
                     parse_mode="HTML"
                 )
                 grupos_tiempo_aviso[chat_id] = ahora
-                # Autodestruimos el aviso tras 20 segundos
-                borrar_mensaje_luego(chat_id, aviso.message_id, 20)
+                # Autodestruimos el aviso tras 10 segundos
+                borrar_mensaje_luego(chat_id, aviso.message_id, 10)
             except Exception:
                 pass
 
@@ -384,8 +384,8 @@ def procesar_intervencion(message):
                     parse_mode="HTML"
                 )
                 grupos_tiempo_aviso[chat_id] = ahora
-                # Autodestruimos el aviso tras 20 segundos
-                borrar_mensaje_luego(chat_id, aviso.message_id, 20)
+                # Autodestruimos el aviso tras 10 segundos
+                borrar_mensaje_luego(chat_id, aviso.message_id, 10)
             except Exception:
                 pass
 

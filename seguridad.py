@@ -1,9 +1,11 @@
-# Palabras o frases clave que identifican los reportes de los Administradores
+# Palabras o elementos clave que identifican los reportes de los Administradores
 FRASES_PROHIBIDAS = [
-    "monitor p2p",
+    "monitor de tasas",
+    "vigencia bcv",
+    "bcv oficial",
     "calculadora de intervención",
-    "tasas en tiempo real",
-    "intervención bancaria"
+    "intervención bancaria",
+    "spread:"
 ]
 
 def validar_copia_pega(bot, message, es_admin):
@@ -29,3 +31,4 @@ def validar_copia_pega(bot, message, es_admin):
                 return False
                 
     return False
+    

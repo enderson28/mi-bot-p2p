@@ -149,41 +149,57 @@ def usuario_esta_unido(user_id):
 
     return unido_prueba or unido_congestionado
 
-def obtener_datos_bcv_validos():
-    url_bcv = "https://pydolarvenezuela-api.vercel.app/api/v1/dollar?page=bcv"
-    try:
-        res = requests.get(url_bcv, timeout=5)
-        datos = res.json()
-        tasa = float(datos["monedas"]["usd"]["price"])
-        fecha_bcv = datos.get("datetime", {}).get("date", None)
-        if not fecha_bcv:
-            fecha_bcv = datetime.now().strftime("%d/%m/%Y")
-        return tasa, fecha_bcv
-    except Exception:
-        try:
-            res_alt = requests.get("https://open.er-api.com/v6/latest/USD", timeout=5).json()
-            tasa_alt = float(res_alt["rates"]["VES"])
-            fecha_alt = datetime.now().strftime("%d/%m/%Y")
-            return tasa_alt, fecha_alt
-        except Exception:
-            return None, None
+import requests
+from bs4 import BeautifulSoup
 
-def obtener_tasa_binance_p2p(tipo_operacion, monto_ves_filtro):
-    url = "https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search"
-    payload = {
-        "asset": "USDT", "fiat": "VES", "merchantCheck": False, "page": 1,
-        "payTypes": [], "publisherType": "merchant", "rows": 1,
-        "tradeType": "BUY" if tipo_operacion.lower() == "compra" else "SELL",
-        "transAmount": str(int(monto_ves_filtro))
+def obtener_datos_bcv_validos():
+    """
+    Intenta scraping directo de bcv.org.ve para obtener la tasa del día/mañana al instante.
+    Si el portal falla, utiliza DolarApi como respaldo secundario.
+    """
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36"
     }
+    
+    # --- INTENTO 1: Scraping Directo al BCV ---
     try:
-        res = requests.post(url, json=payload, timeout=8)
-        data = res.json()
-        if data and "data" in data and len(data["data"]) > 0:
-            return float(data["data"][0]["adv"]["price"])
-    except Exception:
-        pass
-    return None
+        url = "https://www.bcv.org.ve/"
+        # verify=False salta errores de certificados del sitio del BCV
+        response = requests.get(url, headers=headers, timeout=6, verify=False)
+        
+        if response.status_code == 200:
+            soup = BeautifulSoup(response.content, 'html.parser')
+            
+            # Buscamos la tasa del Dólar en la estructura oficial del BCV
+            usd_div = soup.find('div', id='dolar')
+            if usd_div:
+                tasa_str = usd_div.find('strong').text.strip().replace('.', '').replace(',', '.')
+                tasa = float(tasa_str)
+                
+                # Buscamos la Fecha Valor
+                fecha_span = soup.find('span', class_='date-display-single')
+                fecha_val = fecha_span.text.strip() if fecha_span else "En Vivo"
+                
+                print(f"✅ BCV Directo obtenido: {tasa} Bs ({fecha_val})")
+                return tasa, fecha_val
+    except Exception as e:
+        print(f"⚠️ Falló scraping directo del BCV: {e}")
+
+    # --- INTENTO 2: Respaldo con API en tiempo real (DolarApi) ---
+    try:
+        url_respaldo = "https://ve.dolarapi.com/v1/dolares/oficial"
+        r = requests.get(url_respaldo, timeout=5)
+        if r.status_code == 200:
+            datos = r.json()
+            tasa = float(datos.get('promedio', 0))
+            fecha_val = datos.get('fechaActualizacion', 'En Vivo')[:10]
+            print(f"✅ Respaldo DolarApi obtenido: {tasa} Bs")
+            return tasa, fecha_val
+    except Exception as e:
+        print(f"⚠️ Falló la API de respaldo: {e}")
+
+    return None, None
+    
 
 def es_administrador(chat_id, user_id):
     try:

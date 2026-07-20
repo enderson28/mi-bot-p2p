@@ -213,27 +213,36 @@ def construir_monitor_texto_html():
         return "❌ Error temporal al conectar con la tasa base del BCV."
 
     tasa_bcv_ajustada = tasa_bcv_cruda * 1.005
-    rangos = [("Pequeño ($50 - $100)", 50.0), ("Mediano ($100 - $300)", 150.0), ("Mayor ($500+)", 500.0)]
-    
+    rangos = [("Pequeño ($50 - $100)", 50.0), ("Mediano ($100 - $300)", 150.0)]
+
     texto = (
         f"📊 <b>Monitor de Tasas Arbitraje P2P</b>\n"
         f"📅 <b>Vigencia BCV:</b> {fecha_valor_bcv}\n"
         f"🏛️ BCV Oficial: {tasa_bcv_cruda:.2f} Bs\n"
         f"⚙️ BCV + 0.5%: {tasa_bcv_ajustada:.2f} Bs\n"
         f"🛡️ <i>Filtros activos: Solo Anunciantes Verificados</i>\n"
-        f"----------------------------------------\n\n"
+        f"----------------------------------------\n"
     )
+
     for nombre, factor in rangos:
         filtro = factor * tasa_bcv_ajustada
-        c = obtener_tasa_binance_p2p("compra", filtro)
-        v = obtener_tasa_binance_p2p("venta", filtro)
+        
+        # Protegemos la consulta a Binance P2P
+        try:
+            c = obtener_tasa_binance_p2p("compra", filtro)
+            v = obtener_tasa_binance_p2p("venta", filtro)
+        except Exception as e:
+            c, v = None, None
+
         if c and v:
             s = v - c
             p = (s / c) * 100
-            texto += f"🔹 <b>Rango {nombre}</b>\n🟢 Compra: {c:.2f} Bs | 🔴 Venta: {v:.2f} Bs\n📉 Spread: {s:.2f} Bs ({p:.2f}%)\n\n"
+            texto += f"• <b>Rango {nombre}:</b>\n🟢 Compra: {c:.2f} Bs | 🔴 Venta: {v:.2f} Bs\n"
         else:
-            texto += f"🔹 <b>Rango {nombre}:</b> <i>Sin anunciantes en Binance</i>\n\n"
+            texto += f"• <b>Rango {nombre}:</b> <i>Cargando anunciantes Binance...</i>\n"
+
     return texto
+    
 
 def construir_intervencion_texto_html(usuario=None):
     tasa_bcv_cruda, fecha_valor_bcv = obtener_datos_bcv_validos()

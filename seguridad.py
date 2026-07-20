@@ -50,19 +50,24 @@ def validar_copia_pega(bot, message, es_admin):
 # ==========================================
 
 # Reemplaza con los @usuarios o IDs numéricos de tus administradores
-ADMINS_VIP = ["@Enderson28", "@AntonyS4", "@papitamaster", "@Bazoner", "@usernameoevv", "@Nylebian", "@Kim19423", "@Crisyfc", "@BunnyZ1234] 
+ADMINS_VIP = ["@Enderson28", "@AntonyS4", "@papitamaster", "@Bazoner", "@usernameoevv", "@Nylebian", "@Kim19423", "@Crisyfc", "@BunnyZ1234"] 
 
 # Admin especial que requiere la tasa BCV con el 1% en Intervención
 ADMIN_ESPECIAL_1_PORCIENTO = "@CarlosE5783"
 
 def es_admin_vip(user):
     """Verifica si un usuario es Admin VIP por su ID o Username"""
+    if not user:
+        return False
     user_id = user.id
     username = f"@{user.username}" if user.username else ""
-    return user_id in ADMINS_VIP or username in ADMINS_VIP
+    return (user_id in ADMINS_VIP) or (username in ADMINS_VIP)
 
 def es_admin_especial(user):
     """Verifica si es el admin que requiere el 1%"""
+    if not user:
+        return False
     user_id = user.id
     username = f"@{user.username}" if user.username else ""
-    return user_id == ADMIN_ESPECIAL_1_PORCIENTO or username == ADMIN_ESPECIAL_1_PORCIENTO
+    return (user_id == ADMIN_ESPECIAL_1_PORCIENTO) or (username == ADMIN_ESPECIAL_1_PORCIENTO)
+    

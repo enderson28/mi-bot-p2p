@@ -5,6 +5,7 @@ import threading
 from datetime import datetime
 from telebot.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
 from anuncios import iniciar_modulo_anuncios
+from seguridad import validar_copia_pega
 
 # ==========================================
 # CONFIGURACIÓN Y VARIABLES GLOBALES
@@ -439,8 +440,20 @@ def callback_refrescar_tasas(call):
         bot.answer_callback_query(call.id, text="Las tasas en Binance siguen siendo las mismas. 💸")
 
 # ==========================================
+#     FILTRO DE SEGURIDAD GENERAL (ABAJO)
+# ==========================================
+
+@bot.message_handler(func=lambda m: m.chat.type != "private", content_types=['text'])
+def filtro_seguridad_chat(message):
+    es_admin = es_administrador(message.chat.id, message.from_user.id)
+    
+    # Si un usuario común pegó un reporte oficial, lo borra y se detiene
+    if validar_copia_pega(bot, message, es_admin):
+        return
+# ==========================================
 #            EJECUCIÓN DEL BOT
 # ==========================================
+
 if __name__ == "__main__":
     iniciar_modulo_anuncios(bot)
     print("🚀 Bot Maestro en línea con limpieza automática y temporizador de 5 min...")

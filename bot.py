@@ -18,6 +18,8 @@ BOT_USERNAME = "BancoIDV_bot" # Reemplaza con el alias de tu bot sin el @
 # CONFIGURACIÓN DE EXCLUSIVIDAD MULTI-CANAL
 CANAL_PRUEBA = "@COMUNIDV"       # Canal de prueba
 CANAL_CONGESTIONADO = "@COMUNIDADAS04" # Canal principal
+# USUARIOS AUTORIZADOS PARA EL COMANDO /bot
+USUARIOS_AUTORIZADOS = ["@enderson28", "@AntonyS4", "@papitamaster"]
 
 # CONFIGURACIÓN DE TIEMPOS
 RATE_LIMIT_AVISO = 600       # 10 minutos para enfriamiento de avisos a usuarios
@@ -274,7 +276,42 @@ def handle_intervencion_comando(message):
 @bot.message_handler(commands=['bpay', 'gpay'])
 def handle_guias_comando(message):
     procesar_guias(message)
+@bot.message_handler(commands=['bot'])
+def handle_invitacion_comando(message):
+    # 1. Borramos el comando /bot ejecutado inmediatamente
+    try:
+        bot.delete_message(message.chat.id, message.message_id)
+    except Exception:
+        pass
 
+    # Identificador del usuario que escribió
+    user_identifier = f"@{message.from_user.username}" if message.from_user.username else message.from_user.id
+
+    # 2. Verificamos si es un usuario autorizado
+    if user_identifier in USUARIOS_AUTORIZADOS or message.from_user.id in USUARIOS_AUTORIZADOS:
+        
+        texto_invitacion = (
+            "🤖 <b>¡Aprovecha al máximo las herramientas del Bot!</b>\n\n"
+            "Consulta en privado sin límites y sin esperar tiempos de enfriamiento:\n"
+            "📊 Monitor P2P / BCV en tiempo real\n"
+            "🧮 Calculadora de Intervención\n"
+            "📜 Guías paso a paso\n\n"
+            "👉 <b>Toca aquí para iniciar:</b> @BancoIDV_bot"
+        )
+        
+        msg_inv = bot.send_message(message.chat.id, texto_invitacion, parse_mode="HTML")
+        # El aviso de invitación se borra a los 3 minutos (180 seg) para no hacer basura
+        borrar_mensaje_luego(message.chat.id, msg_inv.message_id, 180)
+
+    else:
+        # 3. Si no es autorizado (usuario normal u otro admin), desintegra el aviso en 5 segundos
+        aviso = bot.send_message(
+            message.chat.id, 
+            f"⚠️ <b>Comando exclusivo del creador del bot</b> (@Enderson).", 
+            parse_mode="HTML"
+        )
+        borrar_mensaje_luego(message.chat.id, aviso.message_id, 5)
+        
 @bot.message_handler(func=lambda message: message.text in ["🟢 P2P~USDT 🟢", "📊 Intervención 📊", "🔶 BPay 🔶", "🔵 GPay 🔵"])
 def handle_botones_menu(message):
     if message.chat.type == "private":

@@ -4,6 +4,7 @@ import time
 import threading
 from datetime import datetime
 from telebot.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
+from anuncios import iniciar_modulo_anuncios
 
 # ==========================================
 # CONFIGURACIÓN Y VARIABLES GLOBALES
@@ -442,5 +443,6 @@ def callback_refrescar_tasas(call):
 #            EJECUCIÓN DEL BOT
 # ==========================================
 if __name__ == "__main__":
+    iniciar_modulo_anuncios(bot)
     print("🚀 Bot Maestro en línea con limpieza automática y temporizador de 5 min...")
     bot.infinity_polling()

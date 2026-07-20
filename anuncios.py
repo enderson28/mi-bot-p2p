@@ -8,11 +8,11 @@ INTERVALO_HORAS = 6       # Cambia a 12 si prefieres cada 12 horas
 TEXTO_ANUNCIO = (
     "🤖 <b>¡Consulta las Tasas y Guías en Privado!</b>\n\n"
     "Para mantener el grupo libre de spam, las herramientas oficiales de "
-    "<b>[Nombre de tu Grupo]</b> están disponibles en chat privado.\n\n"
+    "<b>[Comunidad - AntonyS4]</b> están disponibles en chat privado.\n\n"
     "📊 <b>Monitor P2P / BCV en tiempo real</b>\n"
     "💸 <b>Calculadora de Intervención</b>\n"
     "💳 <b>Guías paso a paso (BPay / GPay)</b>\n\n"
-    "👉 <b>Toca aquí para iniciar:</b> @TuBotAlias"
+    "👉 <b>Toca aquí para iniciar:</b> @BancoIDV_bot"
 )
 
 def bucle_anuncios(bot):

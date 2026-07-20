@@ -229,8 +229,8 @@ def construir_monitor_texto_html():
         
         # Protegemos la consulta a Binance P2P
         try:
-            c = obtener_tasa_binance_p2p("compra", filtro)
-            v = obtener_tasa_binance_p2p("venta", filtro)
+            c = obtener_tasa_binance_p2p("BUY", filtro)
+            v = obtener_tasa_binance_p2p("SELL", filtro)
         except Exception as e:
             c, v = None, None
 

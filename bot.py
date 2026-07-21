@@ -442,20 +442,20 @@ def procesar_precio(message):
     except Exception:
         pass
 
-            if es_administrador(bot, chat_id, user_id, message.from_user):
-            try:
-                # B) Creamos el teclado dinámico según el grupo
+    if es_administrador(bot, chat_id, user_id, message.from_user):
+       try:
+            # B) Creamos el teclado dinámico según el grupo
                 markup_precio = InlineKeyboardMarkup()
                 
-                # Verificamos si estamos en el grupo exclusivo de administradores
+            # Verificamos si estamos en el grupo exclusivo de administradores
                 if chat_id == CANAL_ADMINS or (message.chat.username and f"@{message.chat.username.lower()}" == CANAL_ADMINS.lower()):
                     markup_precio.row(
                         InlineKeyboardButton("🔄 Actualizar Tasas", callback_data="refrescar_tasas"),
                         InlineKeyboardButton("🗑️ Borrar", callback_data="borrar_tabla_admin")
                     )
-                else:
-                    markup_precio.row(
-                        InlineKeyboardButton("🔄 Actualizar Tasas", callback_data="refrescar_tasas")
+             else:
+                  markup_precio.row(
+                      InlineKeyboardButton("🔄 Actualizar Tasas", callback_data="refrescar_tasas")
                     )
 
                 # Enviamos el mensaje con los botones correspondientes
@@ -472,7 +472,7 @@ def procesar_precio(message):
             except Exception:
                 pass
                                              
-    else:
+      else:
         # SI ES USUARIO COMÚN:
         ahora = time.time()
         ultima_vez_aviso = grupos_tiempo_aviso.get(chat_id, 0)

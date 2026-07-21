@@ -563,8 +563,15 @@ def callback_refrescar_tasas(call):
 
     try:
         monitor_fresco = construir_monitor_texto_html()
-        texto_editado = monitor_fresco + TEXTO_REGLA_ORO_HTML + f"\n\n🔄 <i>Última actualización de tasas en vivo: Hace un instante.</i>"
         
+        # 1. Verificamos si el usuario es VIP
+        if es_admin_vip(call.from_user):
+            # Para el VIP: Solo el monitor + la hora de actualización
+            texto_editado = monitor_fresco + f"\n\n<i>Última actualización de tasas en vivo: Hace un instante.</i>"
+        else:
+            # Para usuario común: Incluye la Regla de Oro
+            texto_editado = monitor_fresco + TEXTO_REGLA_ORO_HTML + f"\n\n<i>Última actualización de tasas en vivo: Hace un instante.</i>"
+
         bot.edit_message_text(
             chat_id=call.message.chat.id,
             message_id=call.message.message_id,
@@ -574,8 +581,8 @@ def callback_refrescar_tasas(call):
         )
         bot.answer_callback_query(call.id, text="¡Monitor de Arbitraje actualizado! ⚡")
     except Exception:
-        bot.answer_callback_query(call.id, text="Las tasas en Binance siguen siendo las mismas. 💸")
-
+        bot.answer_callback_query(call.id, text="Las tasas en Binance siguen siendo las mismas. 📊")
+        
 # ==========================================
 #     FILTRO DE SEGURIDAD GENERAL (ABAJO)
 # ==========================================

@@ -22,6 +22,7 @@ BOT_USERNAME = "BancoIDV_bot" # Reemplaza con el alias de tu bot sin el @
 # CONFIGURACIÓN DE EXCLUSIVIDAD MULTI-CANAL
 CANAL_PRUEBA = "@COMUNIDV"       # Canal de prueba
 CANAL_CONGESTIONADO = "@COMUNIDADAS04" # Canal principal
+CANAL_ADMINS = "@IDVADMINS"  # Reemplaza con el @ de tu grupo de admins
 # USUARIOS AUTORIZADOS PARA EL COMANDO /bot
 USUARIOS_AUTORIZADOS = ["@enderson28", "@AntonyS4", "@papitamaster"]
 
@@ -441,14 +442,36 @@ def procesar_precio(message):
     except Exception:
         pass
 
-    if es_administrador(bot, chat_id, user_id, message.from_user):
-        try:
-            # B) Enviamos el monitor
-            msg_enviado = bot.send_message(chat_id, construir_monitor_texto_html(), parse_mode="HTML")
-            # C) Autodestruimos la lista de precios tras 5 minutos (300 segundos)
-            borrar_mensaje_luego(chat_id, msg_enviado.message_id, TIEMPO_VIDA_TABLA)
-        except Exception:
-            pass
+            if es_administrador(bot, chat_id, user_id, message.from_user):
+            try:
+                # B) Creamos el teclado dinámico según el grupo
+                markup_precio = InlineKeyboardMarkup()
+                
+                # Verificamos si estamos en el grupo exclusivo de administradores
+                if chat_id == CANAL_ADMINS or (message.chat.username and f"@{message.chat.username.lower()}" == CANAL_ADMINS.lower()):
+                    markup_precio.row(
+                        InlineKeyboardButton("🔄 Actualizar Tasas", callback_data="refrescar_tasas"),
+                        InlineKeyboardButton("🗑️ Borrar", callback_data="borrar_tabla_admin")
+                    )
+                else:
+                    markup_precio.row(
+                        InlineKeyboardButton("🔄 Actualizar Tasas", callback_data="refrescar_tasas")
+                    )
+
+                # Enviamos el mensaje con los botones correspondientes
+                msg_enviado = bot.send_message(
+                    chat_id, 
+                    construir_monitor_texto_html(), 
+                    parse_mode="HTML", 
+                    reply_markup=markup_precio
+                )
+
+                # C) Autodestruimos la lista de precios tras 5 minutos
+                borrar_mensaje_luego(chat_id, msg_enviado.message_id, TIEMPO_VIDA_TABLA)
+
+            except Exception:
+                pass
+                                             
     else:
         # SI ES USUARIO COMÚN:
         ahora = time.time()
@@ -499,11 +522,27 @@ def procesar_intervencion(message):
 
     if es_administrador(bot, chat_id, user_id, message.from_user):
         try:
+                        # Creamos el teclado dinámico según el grupo
+            markup_intervencion = InlineKeyboardMarkup()
+            
+            if chat_id == CANAL_ADMINS or (message.chat.username and f"@{message.chat.username.lower()}" == CANAL_ADMINS.lower()):
+                markup_intervencion.row(
+                    InlineKeyboardButton("🔄 Actualizar Cálculo", callback_data="refrescar_intervencion"),
+                    InlineKeyboardButton("🗑️ Borrar", callback_data="borrar_tabla_admin")
+                )
+            else:
+                markup_intervencion.row(
+                    InlineKeyboardButton("🔄 Actualizar Cálculo", callback_data="refrescar_intervencion")
+                )
+
+            # Enviamos el mensaje con los botones correspondientes
             msg_enviado = bot.send_message(
                 chat_id, 
                 construir_intervencion_texto_html(message.from_user), 
-                parse_mode="HTML"
+                parse_mode="HTML", 
+                reply_markup=markup_intervencion
             )
+            
             borrar_mensaje_luego(chat_id, msg_enviado.message_id, TIEMPO_VIDA_TABLA)
         except Exception:
             pass
@@ -608,14 +647,35 @@ def callback_refrescar_intervencion(call):
         bot.answer_callback_query(call.id, text="¡Tabla de Intervención actualizada! 📊")
     except Exception:
         bot.answer_callback_query(call.id, text="Las tasas se mantienen actualizadas. 🏛️")
-            
+    # ============================================
+# BOTÓN FLOTANTE PARA BORRAR (PRECIO E INTERVENCIÓN)
+# ============================================
+@bot.callback_query_handler(func=lambda call: call.data == "borrar_tabla_admin")
+def callback_borrar_tabla_admin(call):
+    # 1. Verifica si quien presiona es Administrador o VIP
+    if not es_administrador(bot, call.message.chat.id, call.from_user.id, call.from_user):
+        bot.answer_callback_query(
+            call.id, 
+            text="❌ Solo los administradores pueden eliminar esta tabla.", 
+            show_alert=True
+        )
+        return
+
+    # 2. Borra la tabla al instante (sea de precio o intervención)
+    try:
+        bot.delete_message(call.message.chat.id, call.message.message_id)
+    except Exception:
+        bot.answer_callback_query(
+            call.id, 
+            text="⚠️ No se pudo eliminar el mensaje o ya fue borrado."
+        )      
 # ==========================================
 #     FILTRO DE SEGURIDAD GENERAL (ABAJO)
 # ==========================================
 
 @bot.message_handler(func=lambda m: m.chat.type != "private", content_types=['text'])
 def filtro_seguridad_chat(message):
-    es_admin = es_administrador(message.chat.id, message.from_user.id)
+    es_admin = es_administrador(bot, message.chat.id, message.from_user.id, message.from_user)
     
     # Si un usuario común pegó un reporte oficial, lo borra y se detiene
     if validar_copia_pega(bot, message, es_admin):

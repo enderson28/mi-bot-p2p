@@ -342,14 +342,14 @@ def handle_start(message):
         
 
 # Manejador para el botón P2P y el comando /precio
-@bot.message_handler(commands=['precio'])
-@bot.message_handler(func=lambda m: m.text and ("P2P" in m.text or "USDT" in m.text))
+@bot.message_handler(commands=['precio', 'p2p'])
+@bot.message_handler(func=lambda m: m.text and m.text.strip() == "🟢 P2P-USDT 🟢")
 def handle_precio_comando(message):
     procesar_precio(message)
 
 # Manejador para el botón de Intervención y el comando /intervencion
 @bot.message_handler(commands=['intervencion'])
-@bot.message_handler(func=lambda m: m.text and "Intervención" in m.text)
+@bot.message_handler(func=lambda m: m.text and "Intervención" in m.text and m.text.strip().startswith("📊"))
 def handle_intervencion_comando(message):
     procesar_intervencion(message)
     
@@ -565,7 +565,8 @@ def procesar_intervencion(message):
 def procesar_guias(message):
     user_id = message.from_user.id
     chat_id = message.chat.id
-    es_bpay = 'bpay' in message.text.lower() or '🔶 bpay 🔶' in message.text
+    texto = message.text.lower().strip()
+    es_bpay = texto in ['bpay', '/bpay', '!bpay'] or texto.startswith('/bpay')
 
     # --- 1. CHAT PRIVADO ---
     if message.chat.type == "private":

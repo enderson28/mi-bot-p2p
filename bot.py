@@ -512,38 +512,39 @@ def procesar_intervencion(message):
         )
         return
 
-    # --- 2. EN GRUPOS ---
-    try:
-        bot.delete_message(chat_id, message.message_id)
-    except Exception:
+      # --- 2. EN GRUPOS ---
+      try:
+          bot.delete_message(chat_id, message.message_id)
+      except Exception:
         pass
 
-    if es_administrador(bot, chat_id, user_id, message.from_user):
-        try:
-                        # Creamos el teclado dinámico según el grupo
-                    # Por defecto NO hay botones para evitar spam en grupos públicos
-            markup_intervencion = None
-
-            # Si estamos en el grupo de admins, creamos los botones
-            if chat_id == CANAL_ADMINS or (message.chat.username and f"@{message.chat.username.lower()}" == CANAL_ADMINS.lower()):
-                markup_intervencion = InlineKeyboardMarkup()
-                markup_intervencion.row(
-                    InlineKeyboardButton("🔄 Actualizar Cálculo", callback_data="refrescar_intervencion"),
-                    InlineKeyboardButton("🗑️ Borrar", callback_data="borrar_tabla_admin")
+      if es_administrador(bot, chat_id, user_id, message.from_user):
+          try:
+              # 2. SOLO si estamos en el grupo de admins, creamos los 2 botones VIP
+              if chat_id == CANAL_ADMINS or (message.chat.username and f"@{message.chat.username.lower()}" == CANAL_ADMINS.lower()):
+                  markup_intervencion = InlineKeyboardMarkup()
+                  markup_intervencion.row(
+                      InlineKeyboardButton("🔄 Actualizar Cálculo", callback_data="refrescar_intervencion"),
+                      InlineKeyboardButton("🗑️ Borrar", callback_data="borrar_tabla_admin")
+                )
+              else:
+                   markup_intervencion = None
+    
+              # 3. ENVIAMOS EL MENSAJE (Se envía en TODOS los grupos donde seas Admin/Propietario)
+              msg_enviado = bot.send_message(
+                chat_id,
+                construir_intervencion_texto_html(),
+                parse_mode="HTML",
+                reply_markup=markup_intervencion  # Será None en los grupos normales, y con botones en Admin
             )
-            
-            # Enviamos el mensaje con los botones correspondientes
-            msg_enviado = bot.send_message(
-                chat_id, 
-                construir_intervencion_texto_html(), 
-                parse_mode="HTML", 
-                reply_markup=markup_intervencion
-            ) 
-            
-            borrar_mensaje_luego(chat_id, msg_enviado.message_id, TIEMPO_VIDA_TABLA)
-        except Exception:
-            pass
-    else:
+
+              # 4. Autodestrucción del mensaje
+              borrar_mensaje_luego(chat_id, msg_enviado.message_id, TIEMPO_VIDA_TABLA)
+
+          except Exception:
+              pass
+      else:
+          # Si un usuario común intenta usarlo en el grupo, aplica el Rate Limit de aviso
         ahora = time.time()
         ultima_vez_aviso = grupos_tiempo_aviso.get(chat_id, 0)
 
@@ -552,7 +553,7 @@ def procesar_intervencion(message):
                 aviso = bot.send_message(
                     chat_id,
                     f"❌ <b>Comando exclusivo para Administradores.</b>\n\n"
-                    f"Hola @{message.from_user.username or message.from_user.first_name}. Para mantener el orden, este bot es de uso exclusivo.\n"
+                    f"Hola @{message.from_user.username or message.from_user.first_name}. Para mantener el orden, este bot es de uso exclusivo de los administradores.\n"
                     f"👉 Consulta todas las tasas libremente en mi chat privado: @{BOT_USERNAME}",
                     parse_mode="HTML"
                 )
@@ -561,7 +562,6 @@ def procesar_intervencion(message):
             except Exception:
                 pass
                 
-
 def procesar_guias(message):
     user_id = message.from_user.id
     chat_id = message.chat.id

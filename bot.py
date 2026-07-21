@@ -533,14 +533,14 @@ def procesar_intervencion(message):
             )
             
             # Enviamos el mensaje con los botones correspondientes
-                msg_enviado = bot.send_message(
+            msg_enviado = bot.send_message(
                 chat_id, 
                 construir_intervencion_texto_html(), 
                 parse_mode="HTML", 
                 reply_markup=markup_intervencion
-            )
+            ) 
             
-                borrar_mensaje_luego(chat_id, msg_enviado.message_id, TIEMPO_VIDA_TABLA)
+            borrar_mensaje_luego(chat_id, msg_enviado.message_id, TIEMPO_VIDA_TABLA)
         except Exception:
             pass
     else:

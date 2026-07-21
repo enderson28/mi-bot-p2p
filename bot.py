@@ -513,25 +513,25 @@ def procesar_intervencion(message):
         return
 
       # --- 2. EN GRUPOS ---
-     try:
-         bot.delete_message(chat_id, message.message_id)
+    try:
+        bot.delete_message(chat_id, message.message_id)
     except Exception:
         pass
 
-      if es_administrador(bot, chat_id, user_id, message.from_user):
-          try:
-              # 2. SOLO si estamos en el grupo de admins, creamos los 2 botones VIP
-              if chat_id == CANAL_ADMINS or (message.chat.username and f"@{message.chat.username.lower()}" == CANAL_ADMINS.lower()):
-                  markup_intervencion = InlineKeyboardMarkup()
-                  markup_intervencion.row(
-                      InlineKeyboardButton("🔄 Actualizar Cálculo", callback_data="refrescar_intervencion"),
-                      InlineKeyboardButton("🗑️ Borrar", callback_data="borrar_tabla_admin")
+    if es_administrador(bot, chat_id, user_id, message.from_user):
+        try:
+            # 2. SOLO si estamos en el grupo de admins, creamos los 2 botones VIP
+            if chat_id == CANAL_ADMINS or (message.chat.username and f"@{message.chat.username.lower()}" == CANAL_ADMINS.lower()):
+                markup_intervencion = InlineKeyboardMarkup()
+                markup_intervencion.row(
+                    InlineKeyboardButton("🔄 Actualizar Cálculo", callback_data="refrescar_intervencion"),
+                    InlineKeyboardButton("🗑️ Borrar", callback_data="borrar_tabla_admin")
                 )
-              else:
-                   markup_intervencion = None
+            else:
+                markup_intervencion = None
     
-              # 3. ENVIAMOS EL MENSAJE (Se envía en TODOS los grupos donde seas Admin/Propietario)
-              msg_enviado = bot.send_message(
+            # 3. ENVIAMOS EL MENSAJE (Se envía en TODOS los grupos donde seas Admin/Propietario)
+            msg_enviado = bot.send_message(
                 chat_id,
                 construir_intervencion_texto_html(),
                 parse_mode="HTML",
@@ -539,10 +539,10 @@ def procesar_intervencion(message):
             )
 
               # 4. Autodestrucción del mensaje
-              borrar_mensaje_luego(chat_id, msg_enviado.message_id, TIEMPO_VIDA_TABLA)
+            borrar_mensaje_luego(chat_id, msg_enviado.message_id, TIEMPO_VIDA_TABLA)
 
-          except Exception:
-              pass
+        except Exception:
+            pass
       else:
           # Si un usuario común intenta usarlo en el grupo, aplica el Rate Limit de aviso
         ahora = time.time()

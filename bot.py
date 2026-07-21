@@ -535,7 +535,7 @@ def procesar_intervencion(message):
             # Enviamos el mensaje con los botones correspondientes
                 msg_enviado = bot.send_message(
                 chat_id, 
-                construir_intervencion_texto_html(message.from_user), 
+                construir_intervencion_texto_html(), 
                 parse_mode="HTML", 
                 reply_markup=markup_intervencion
             )

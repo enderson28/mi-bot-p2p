@@ -55,8 +55,17 @@ ADMINS_VIP = [
     "@antonys4", 
     "@papitamaster", 
     "@bazoner", 
-    "@usernameoevv", 
-    "@nylebian"
+    "@cristianobicicleteando, 
+    "@nylebian",
+    "@crisyfc",
+    "@bunnyZ1234",
+    "@cabezita24",
+    "@daciani",
+    "@kurohigexd",
+    "@enriquecmoly",
+    "@raudesikle",
+    "@skyliarsz"
+    
 ]
 
 # Admin especial que requiere la tasa BCV con el 1% en Intervención

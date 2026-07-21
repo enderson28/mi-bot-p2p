@@ -526,10 +526,10 @@ def procesar_intervencion(message):
 
             # Si estamos en el grupo de admins, creamos los botones
             if chat_id == CANAL_ADMINS or (message.chat.username and f"@{message.chat.username.lower()}" == CANAL_ADMINS.lower()):
-            markup_intervencion = InlineKeyboardMarkup()
-            markup_intervencion.row(
-                InlineKeyboardButton("🔄 Actualizar Cálculo", callback_data="refrescar_intervencion"),
-                InlineKeyboardButton("🗑️ Borrar", callback_data="borrar_tabla_admin")
+                markup_intervencion = InlineKeyboardMarkup()
+                markup_intervencion.row(
+                    InlineKeyboardButton("🔄 Actualizar Cálculo", callback_data="refrescar_intervencion"),
+                    InlineKeyboardButton("🗑️ Borrar", callback_data="borrar_tabla_admin")
             )
             
             # Enviamos el mensaje con los botones correspondientes

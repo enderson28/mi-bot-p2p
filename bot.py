@@ -543,7 +543,7 @@ def procesar_intervencion(message):
 
         except Exception:
             pass
-      else:
+    else:
           # Si un usuario común intenta usarlo en el grupo, aplica el Rate Limit de aviso
         ahora = time.time()
         ultima_vez_aviso = grupos_tiempo_aviso.get(chat_id, 0)

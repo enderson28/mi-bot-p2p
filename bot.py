@@ -595,45 +595,60 @@ def procesar_guias(message):
 @bot.callback_query_handler(func=lambda call: call.data == "refrescar_tasas")
 def callback_refrescar_tasas(call):
     if not usuario_esta_unido(call.from_user.id):
-        bot.answer_callback_query(call.id, text="❌ Acceso denegado. No perteneces al canal.", show_alert=True)
+        bot.answer_callback_query(call.id, text="❌ Acceso denegado. No perteneces al canal.")
         return
 
     try:
         monitor_fresco = construir_monitor_texto_html()
-        
-        # 1. Verificamos si el usuario es VIP
+
         if es_admin_vip(call.from_user):
-            # Para el VIP: Solo el monitor + la hora de actualización
             texto_editado = monitor_fresco + f"\n\n<i>Última actualización de tasas en vivo: Hace un instante.</i>"
         else:
-            # Para usuario común: Incluye la Regla de Oro
             texto_editado = monitor_fresco + TEXTO_REGLA_ORO_HTML + f"\n\n<i>Última actualización de tasas en vivo: Hace un instante.</i>"
+
+        # Construimos el teclado evaluando si está en el grupo de admins
+        markup_tasas = InlineKeyboardMarkup()
+        if call.message.chat.id == CANAL_ADMINS or es_admin_vip(call.from_user):
+            markup_tasas.row(
+                InlineKeyboardButton("🔄 Actualizar Tasas", callback_data="refrescar_tasas"),
+                InlineKeyboardButton("🗑️ Borrar", callback_data="borrar_mensaje")
+            )
+        else:
+            markup_tasas.add(InlineKeyboardButton("🔄 Actualizar Tasas", callback_data="refrescar_tasas"))
 
         bot.edit_message_text(
             chat_id=call.message.chat.id,
             message_id=call.message.message_id,
             text=texto_editado,
             parse_mode="HTML",
-            reply_markup=obtener_boton_actualizar_inline()
+            reply_markup=markup_tasas
         )
         bot.answer_callback_query(call.id, text="¡Monitor de Arbitraje actualizado! ⚡")
     except Exception:
-        bot.answer_callback_query(call.id, text="Las tasas en Binance siguen siendo las mismas. 📊")
-        
-# ============================================
+        bot.answer_callback_query(call.id, text="Las tasas en Binance siguen siendo las mismas.")
+
+# ==========================================
 # BOTÓN FLOTANTE PARA REFRESCAR INTERVENCIÓN
-# ============================================
+# ==========================================
+
 @bot.callback_query_handler(func=lambda call: call.data == "refrescar_intervencion")
 def callback_refrescar_intervencion(call):
     if not usuario_esta_unido(call.from_user.id):
-        bot.answer_callback_query(call.id, text="❌ Acceso denegado. No perteneces al canal.", show_alert=True)
+        bot.answer_callback_query(call.id, text="❌ Acceso denegado. No perteneces al canal.")
         return
 
     try:
         texto_fresco = construir_intervencion_texto_html(call.from_user)
 
+        # Construimos el teclado evaluando si está en el grupo de admins
         markup_intervencion = InlineKeyboardMarkup()
-        markup_intervencion.add(InlineKeyboardButton("🔄 Actualizar Cálculo", callback_data="refrescar_intervencion"))
+        if call.message.chat.id == CANAL_ADMINS or es_admin_vip(call.from_user):
+            markup_intervencion.row(
+                InlineKeyboardButton("🔄 Actualizar Cálculo", callback_data="refrescar_intervencion"),
+                InlineKeyboardButton("🗑️ Borrar", callback_data="borrar_mensaje")
+            )
+        else:
+            markup_intervencion.add(InlineKeyboardButton("🔄 Actualizar Cálculo", callback_data="refrescar_intervencion"))
 
         bot.edit_message_text(
             chat_id=call.message.chat.id,
@@ -644,11 +659,12 @@ def callback_refrescar_intervencion(call):
         )
         bot.answer_callback_query(call.id, text="¡Tabla de Intervención actualizada! 📊")
     except Exception:
-        bot.answer_callback_query(call.id, text="Las tasas se mantienen actualizadas. 🏛️")
+        bot.answer_callback_query(call.id, text="Las tasas se mantienen actualizadas. 🏦")
+                    
     # ============================================
 # BOTÓN FLOTANTE PARA BORRAR (PRECIO E INTERVENCIÓN)
 # ============================================
-@bot.callback_query_handler(func=lambda call: call.data == "borrar_tabla_admin")
+@bot.callback_query_handler(func=lambda call: call.data == "borrar_mensaje")
 def callback_borrar_tabla_admin(call):
     # 1. Verifica si quien presiona es Administrador o VIP
     if not es_administrador(bot, call.message.chat.id, call.from_user.id, call.from_user):

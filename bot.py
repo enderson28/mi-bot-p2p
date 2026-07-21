@@ -684,4 +684,4 @@ def filtro_seguridad_chat(message):
 if __name__ == "__main__":
     iniciar_modulo_anuncios(bot)
     print("🚀 Bot Maestro en línea con limpieza automática y temporizador de 5 min...")
-    bot.infinity_polling()
+    bot.infinity_polling() 

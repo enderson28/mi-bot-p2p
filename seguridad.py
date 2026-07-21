@@ -26,33 +26,25 @@ def validar_copia_pega(bot, message, es_admin):
     Si un usuario normal pega cualquier texto oficial del bot o sus reportes,
     el bot borra el mensaje de inmediato para evitar spam o confusión.
     """
-    # Si es Administrador, lo dejamos hablar tranquilamente
-def es_administrador(bot, chat_id, user_id, user=None):
-    # 1. Si está en la lista VIP/Especial manual
-    if user and es_admin_vip(user):
-        return True
+    # 1. Si es Administrador, lo dejamos hablar tranquilamente
+    if es_admin:
+        return False
 
-    # 2. Si es Administrador o Creador en el grupo/chat actual
-    try:
-        member = bot.get_chat_member(chat_id, user_id)
-        if member.status in ['administrator', 'creator']:
-            return True
-    except Exception:
-        pass
+    # 2. Convertimos el texto del mensaje a minúsculas para comparar
+    texto = message.text.lower() if message and message.text else ""
 
-    # 3. NOVEDAD: Verifica si el usuario es Administrador del CANAL PRINCIPAL
-    try:
-        # Reemplaza "@COMUNIDADAS04" con la variable de tu canal congestionado si la tienes importada
-        canal_principal = "@COMUNIDADAS04" 
-        
-        member_canal = bot.get_chat_member(canal_principal, user_id)
-        if member_canal.status in ['administrator', 'creator']:
-            return True
-    except Exception:
-        pass
+    # 3. Verificamos si contiene alguna frase prohibida
+    for frase in FRASES_PROHIBIDAS:
+        if frase in texto:
+            try:
+                # Borramos el mensaje pegado
+                bot.delete_message(message.chat.id, message.message_id)
+            except Exception:
+                pass
+            return True  # Devuelve True indicando que era una copia detectada
 
-    # Si no cumple ninguna de las 3, es un usuario común
     return False
+    
     
     
 # ============================================

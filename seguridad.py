@@ -55,7 +55,7 @@ ADMINS_VIP = [
     "@antonys4", 
     "@papitamaster", 
     "@bazoner", 
-    "@cristianobicicleteando, 
+    "@cristianobicicleteando", 
     "@nylebian",
     "@crisyfc",
     "@bunnyZ1234",

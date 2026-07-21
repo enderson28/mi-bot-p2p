@@ -482,17 +482,26 @@ def procesar_precio(message):
 def procesar_intervencion(message):
     user_id = message.from_user.id
     chat_id = message.chat.id
-    
+
     # --- 1. CHAT PRIVADO ---
     if message.chat.type == "private":
         if not usuario_esta_unido(user_id):
             bot.reply_to(message, "❌ No tienes acceso. Debes unirte al canal oficial para usar el bot.")
             return
-        bot.send_message(chat_id, construir_intervencion_texto_html(message.from_user), parse_mode="HTML")
+
+        # Creamos el botón flotante para actualizar
+        markup_intervencion = InlineKeyboardMarkup()
+        markup_intervencion.add(InlineKeyboardButton("🔄 Actualizar Cálculo", callback_data="refrescar_intervencion"))
+
+        bot.send_message(
+            chat_id, 
+            construir_intervencion_texto_html(message.from_user), 
+            parse_mode="HTML",
+            reply_markup=markup_intervencion
+        )
         return
-        
+
     # --- 2. EN GRUPOS ---
-    # A) Borramos inmediatamente el mensaje del comando ejecutado (sea Admin o Usuario)
     try:
         bot.delete_message(chat_id, message.message_id)
     except Exception:
@@ -500,31 +509,32 @@ def procesar_intervencion(message):
 
     if es_administrador(chat_id, user_id):
         try:
-            # B) Enviamos la tabla de intervención
-            msg_enviado = bot.send_message(chat_id, construir_intervencion_texto_html(), parse_mode="HTML")
-            # C) Autodestruimos la tabla tras 5 minutos (300 segundos)
+            msg_enviado = bot.send_message(
+                chat_id, 
+                construir_intervencion_texto_html(message.from_user), 
+                parse_mode="HTML"
+            )
             borrar_mensaje_luego(chat_id, msg_enviado.message_id, TIEMPO_VIDA_TABLA)
         except Exception:
             pass
     else:
-        # SI ES USUARIO COMÚN:
         ahora = time.time()
         ultima_vez_aviso = grupos_tiempo_aviso.get(chat_id, 0)
-        
+
         if ahora - ultima_vez_aviso > RATE_LIMIT_AVISO:
             try:
                 aviso = bot.send_message(
-                    chat_id, 
+                    chat_id,
                     f"❌ <b>Comando exclusivo para Administradores.</b>\n\n"
-                    f"Hola @{message.from_user.username or message.from_user.first_name}. Para mantener el orden, este comando está restringido en el grupo.\n"
-                    f"👉 Consulta la calculadora de intervención libremente en mi chat privado: @{BOT_USERNAME}",
+                    f"Hola @{message.from_user.username or message.from_user.first_name}. Para mantener el orden, este bot es de uso exclusivo.\n"
+                    f"👉 Consulta todas las tasas libremente en mi chat privado: @{BOT_USERNAME}",
                     parse_mode="HTML"
                 )
                 grupos_tiempo_aviso[chat_id] = ahora
-                # Autodestruimos el aviso tras 10 segundos
                 borrar_mensaje_luego(chat_id, aviso.message_id, 10)
             except Exception:
                 pass
+                
 
 def procesar_guias(message):
     user_id = message.from_user.id
@@ -583,6 +593,32 @@ def callback_refrescar_tasas(call):
     except Exception:
         bot.answer_callback_query(call.id, text="Las tasas en Binance siguen siendo las mismas. 📊")
         
+# ============================================
+# BOTÓN FLOTANTE PARA REFRESCAR INTERVENCIÓN
+# ============================================
+@bot.callback_query_handler(func=lambda call: call.data == "refrescar_intervencion")
+def callback_refrescar_intervencion(call):
+    if not usuario_esta_unido(call.from_user.id):
+        bot.answer_callback_query(call.id, text="❌ Acceso denegado. No perteneces al canal.", show_alert=True)
+        return
+
+    try:
+        texto_fresco = construir_intervencion_texto_html(call.from_user)
+
+        markup_intervencion = InlineKeyboardMarkup()
+        markup_intervencion.add(InlineKeyboardButton("🔄 Actualizar Cálculo", callback_data="refrescar_intervencion"))
+
+        bot.edit_message_text(
+            chat_id=call.message.chat.id,
+            message_id=call.message.message_id,
+            text=texto_fresco,
+            parse_mode="HTML",
+            reply_markup=markup_intervencion
+        )
+        bot.answer_callback_query(call.id, text="¡Tabla de Intervención actualizada! 📊")
+    except Exception:
+        bot.answer_callback_query(call.id, text="Las tasas se mantienen actualizadas. 🏛️")
+            
 # ==========================================
 #     FILTRO DE SEGURIDAD GENERAL (ABAJO)
 # ==========================================

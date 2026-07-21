@@ -45,6 +45,31 @@ def validar_copia_pega(bot, message, es_admin):
 
     return False
     
+def es_administrador(bot, chat_id, user_id, user=None):
+    # 1. Si está en la lista VIP/Especial manual
+    if user and es_admin_vip(user):
+        return True
+
+    # 2. Si es Administrador o Creador en el grupo/chat actual
+    try:
+        member = bot.get_chat_member(chat_id, user_id)
+        if member.status in ['administrator', 'creator']:
+            return True
+    except Exception:
+        pass
+
+    # 3. Verifica si es Administrador del CANAL PRINCIPAL
+    try:
+        canal_principal = "@COMUNIDADAS04"
+        member_canal = bot.get_chat_member(canal_principal, user_id)
+        if member_canal.status in ['administrator', 'creator']:
+            return True
+    except Exception:
+        pass
+
+    # Si no cumple ninguna de las 3, es un usuario común
+    return False
+    
     
     
 # ============================================

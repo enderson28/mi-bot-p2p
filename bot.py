@@ -350,14 +350,18 @@ def handle_start(message):
         bot.send_message(message.chat.id, TEXTO_START, parse_mode="HTML", reply_markup=obtener_teclado_privado())
         
 
+# Manejador para el botón P2P y el comando /precio
 @bot.message_handler(commands=['precio'])
+@bot.message_handler(func=lambda m: m.text and ("P2P" in m.text or "USDT" in m.text))
 def handle_precio_comando(message):
     procesar_precio(message)
 
+# Manejador para el botón de Intervención y el comando /intervencion
 @bot.message_handler(commands=['intervencion'])
+@bot.message_handler(func=lambda m: m.text and "Intervención" in m.text)
 def handle_intervencion_comando(message):
     procesar_intervencion(message)
-
+    
 @bot.message_handler(commands=['bpay', 'gpay'])
 def handle_guias_comando(message):
     procesar_guias(message)

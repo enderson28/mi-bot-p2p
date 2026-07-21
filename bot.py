@@ -441,38 +441,38 @@ def procesar_precio(message):
         bot.delete_message(chat_id, message.message_id)
     except Exception:
         pass
-
     if es_administrador(bot, chat_id, user_id, message.from_user):
-       try:
+        try:
             # B) Creamos el teclado dinámico según el grupo
-                markup_precio = InlineKeyboardMarkup()
-                
-            # Verificamos si estamos en el grupo exclusivo de administradores
-                if chat_id == CANAL_ADMINS or (message.chat.username and f"@{message.chat.username.lower()}" == CANAL_ADMINS.lower()):
-                    markup_precio.row(
-                        InlineKeyboardButton("🔄 Actualizar Tasas", callback_data="refrescar_tasas"),
-                        InlineKeyboardButton("🗑️ Borrar", callback_data="borrar_tabla_admin")
-                    )
-             else:
-                  markup_precio.row(
-                      InlineKeyboardButton("🔄 Actualizar Tasas", callback_data="refrescar_tasas")
-                    )
+            markup_precio = InlineKeyboardMarkup()
 
-                # Enviamos el mensaje con los botones correspondientes
-                msg_enviado = bot.send_message(
-                    chat_id, 
-                    construir_monitor_texto_html(), 
-                    parse_mode="HTML", 
-                    reply_markup=markup_precio
+            # Verificamos si estamos en el grupo exclusivo de administradores
+            if chat_id == CANAL_ADMINS or (message.chat.username and f"@{message.chat.username.lower()}" == CANAL_ADMINS.lower()):
+                markup_precio.row(
+                    InlineKeyboardButton("🔄 Actualizar Tasas", callback_data="refrescar_tasas"),
+                    InlineKeyboardButton("🗑️ Borrar", callback_data="borrar_tabla_admin")
+                )
+            else:
+                markup_precio.row(
+                    InlineKeyboardButton("🔄 Actualizar Tasas", callback_data="refrescar_tasas")
                 )
 
-                # C) Autodestruimos la lista de precios tras 5 minutos
-                borrar_mensaje_luego(chat_id, msg_enviado.message_id, TIEMPO_VIDA_TABLA)
+            # Enviamos el mensaje con los botones correspondientes
+            msg_enviado = bot.send_message(
+                chat_id,
+                construir_monitor_texto_html(),
+                parse_mode="HTML",
+                reply_markup=markup_precio
+            )
 
-            except Exception:
-                pass
-                                             
-      else:
+            # C) Autodestruimos la lista de precios tras 5 minutos
+            borrar_mensaje_luego(chat_id, msg_enviado.message_id, TIEMPO_VIDA_TABLA)
+
+        except Exception:
+            pass
+
+    else:
+
         # SI ES USUARIO COMÚN:
         ahora = time.time()
         ultima_vez_aviso = grupos_tiempo_aviso.get(chat_id, 0)

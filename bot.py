@@ -6,7 +6,7 @@ import threading
 from datetime import datetime
 from telebot.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
 from anuncios import iniciar_modulo_anuncios
-from seguridad import validar_copia_pega, es_admin_vip, es_admin_especial
+from seguridad import validar_copia_pega, es_admin_vip, es_admin_especial, es_administrador
 import re
 import requests
 from bs4 import BeautifulSoup
@@ -223,16 +223,6 @@ def obtener_tasa_binance_p2p(tipo_operacion, monto_bs):
         print(f"⚠️ Error conectando con Binance P2P: {e}")
         
     return None
-    
-def es_administrador(chat_id, user_id):
-    try:
-        miembros_admin = bot.get_chat_administrators(chat_id)
-        for admin in miembros_admin:
-            if admin.user.id == user_id:
-                return True
-    except Exception:
-        return False
-    return False
 
 # ==========================================
 #    CONSTRUCTORES DE MENSAJES (HTML)

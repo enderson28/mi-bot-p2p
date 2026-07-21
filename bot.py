@@ -443,21 +443,18 @@ def procesar_precio(message):
         pass
     if es_administrador(bot, chat_id, user_id, message.from_user):
         try:
-            # B) Creamos el teclado dinámico según el grupo
-            markup_precio = InlineKeyboardMarkup()
+            # B) Por defecto NO hay botones para evitar spam en grupos públicos
+            markup_precio = None
 
-            # Verificamos si estamos en el grupo exclusivo de administradores
+            # Si estamos en el grupo de admins, creamos los botones
             if chat_id == CANAL_ADMINS or (message.chat.username and f"@{message.chat.username.lower()}" == CANAL_ADMINS.lower()):
+                markup_precio = InlineKeyboardMarkup()
                 markup_precio.row(
                     InlineKeyboardButton("🔄 Actualizar Tasas", callback_data="refrescar_tasas"),
                     InlineKeyboardButton("🗑️ Borrar", callback_data="borrar_tabla_admin")
                 )
-            else:
-                markup_precio.row(
-                    InlineKeyboardButton("🔄 Actualizar Tasas", callback_data="refrescar_tasas")
-                )
 
-            # Enviamos el mensaje con los botones correspondientes
+            # Enviamos el mensaje (saldrá con botones en VIP, y limpio en grupos públicos)
             msg_enviado = bot.send_message(
                 chat_id,
                 construir_monitor_texto_html(),
@@ -470,6 +467,7 @@ def procesar_precio(message):
 
         except Exception:
             pass
+
 
     else:
 
@@ -523,18 +521,17 @@ def procesar_intervencion(message):
     if es_administrador(bot, chat_id, user_id, message.from_user):
         try:
                         # Creamos el teclado dinámico según el grupo
-            markup_intervencion = InlineKeyboardMarkup()
-            
-            if chat_id == CANAL_ADMINS or (message.chat.username and f"@{message.chat.username.lower()}" == CANAL_ADMINS.lower()):
-                markup_intervencion.row(
-                    InlineKeyboardButton("🔄 Actualizar Cálculo", callback_data="refrescar_intervencion"),
-                    InlineKeyboardButton("🗑️ Borrar", callback_data="borrar_tabla_admin")
-                )
-            else:
-                markup_intervencion.row(
-                    InlineKeyboardButton("🔄 Actualizar Cálculo", callback_data="refrescar_intervencion")
-                )
+                    # Por defecto NO hay botones para evitar spam en grupos públicos
+        markup_intervencion = None
 
+        # Si estamos en el grupo de admins, creamos los botones
+        if chat_id == CANAL_ADMINS or (message.chat.username and f"@{message.chat.username.lower()}" == CANAL_ADMINS.lower()):
+            markup_intervencion = InlineKeyboardMarkup()
+            markup_intervencion.row(
+                InlineKeyboardButton("🔄 Actualizar Cálculo", callback_data="refrescar_intervencion"),
+                InlineKeyboardButton("🗑️ Borrar", callback_data="borrar_tabla_admin")
+            )
+            
             # Enviamos el mensaje con los botones correspondientes
             msg_enviado = bot.send_message(
                 chat_id, 

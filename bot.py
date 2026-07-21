@@ -451,7 +451,7 @@ def procesar_precio(message):
     except Exception:
         pass
 
-    if es_administrador(chat_id, user_id):
+    if es_administrador(bot, chat_id, user_id, message.from_user):
         try:
             # B) Enviamos el monitor
             msg_enviado = bot.send_message(chat_id, construir_monitor_texto_html(), parse_mode="HTML")
@@ -507,7 +507,7 @@ def procesar_intervencion(message):
     except Exception:
         pass
 
-    if es_administrador(chat_id, user_id):
+    if es_administrador(bot, chat_id, user_id, message.from_user):
         try:
             msg_enviado = bot.send_message(
                 chat_id, 

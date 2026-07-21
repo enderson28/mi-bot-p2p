@@ -45,33 +45,46 @@ def validar_copia_pega(bot, message, es_admin):
                 
     return False
     
-# ==========================================
+# ============================================
 # CONFIGURACIÓN DE ROLES Y EXCEPCIONES VIP
-# ==========================================
+# ============================================
 
-# Reemplaza con los @usuarios o IDs numéricos de tus administradores
-# Lista de administradores VIP (puedes usar usernames con @ o IDs numéricos)
-ADMINS_VIP = ["@Enderson28", "@AntonyS4", "@papitamaster", "@Bazoner", "@usernameoevv", "@Nylebian", "@Kim19423"]
+# Lista de administradores VIP (convertidos a minúsculas)
+ADMINS_VIP = [
+    "@enderson28", 
+    "@antonys4", 
+    "@papitamaster", 
+    "@bazoner", 
+    "@usernameoevv", 
+    "@nylebian"
+]
 
 # Admin especial que requiere la tasa BCV con el 1% en Intervención
-ADMIN_ESPECIAL_1_PORCIENTO = "@CarlosE5783"
+ADMIN_ESPECIAL_1_PORCIENTO = "@carloses783"
 
 
 def es_admin_vip(user):
     """Verifica si un usuario es Admin VIP por su ID o Username"""
     if not user:
         return False
+    
     user_id = user.id
-    username = f"@{user.username}" if user.username else ""
-    return (user_id in ADMINS_VIP) or (username in ADMINS_VIP)
+    username = f"@{user.username.lower()}" if user.username else ""
+    
+    # Compara tanto el ID numérico como el username en minúsculas
+    return (user_id in ADMINS_VIP) or (username.lower() in [u.lower() for u in ADMINS_VIP])
 
 
 def es_admin_especial(user):
     """Verifica si es el admin que requiere el 1%"""
     if not user:
         return False
-    user_id = user.id
-    username = f"@{user.username}" if user.username else ""
-    return (str(user_id) == ADMIN_ESPECIAL_1_PORCIENTO) or (username == ADMIN_ESPECIAL_1_PORCIENTO)
+    
+    user_id = str(user.id)
+    username = f"@{user.username.lower()}" if user.username else ""
+    admin_especial = ADMIN_ESPECIAL_1_PORCIENTO.lower()
+    
+    return (user_id == admin_especial) or (username == admin_especial)
+
     
     

@@ -1,3 +1,4 @@
+import os
 import requests
 import telebot
 import time
@@ -13,7 +14,7 @@ from bs4 import BeautifulSoup
 # ==========================================
 # CONFIGURACIÓN Y VARIABLES GLOBALES
 # ==========================================
-TOKEN_TELEGRAM = "8632019517:AAHEegmOwcC35emzY5q75o6NUbs704cMD6g"
+TOKEN_TELEGRAM = os.getenv("TOKEN_TELEGRAM")
 bot = telebot.TeleBot(TOKEN_TELEGRAM)
 
 BOT_USERNAME = "BancoIDV_bot" # Reemplaza con el alias de tu bot sin el @

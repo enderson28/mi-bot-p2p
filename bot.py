@@ -513,9 +513,9 @@ def procesar_intervencion(message):
         return
 
       # --- 2. EN GRUPOS ---
-      try:
-          bot.delete_message(chat_id, message.message_id)
-      except Exception:
+     try:
+         bot.delete_message(chat_id, message.message_id)
+    except Exception:
         pass
 
       if es_administrador(bot, chat_id, user_id, message.from_user):

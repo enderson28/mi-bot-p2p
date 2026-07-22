@@ -157,33 +157,10 @@ def usuario_esta_unido(user_id):
 
 def obtener_datos_bcv_validos():
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36"
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     }
-    
-    # --- INTENTO 1: Scraping Directo al BCV ---
-    try:
-        url = "https://www.bcv.org.ve/"
-        response = requests.get(url, headers=headers, timeout=(1.5, 1.5), verify=False)
-        
-        if response.status_code == 200:
-            soup = BeautifulSoup(response.content, 'html.parser')
-            usd_div = soup.find('div', id='dolar')
-            if usd_div:
-                texto_raw = usd_div.find('strong').text.strip()
-                # Extrae solo números y comas/puntos (ej: "737,23210000" -> 737.23)
-                monto_limpio = re.search(r'[\d.,]+', texto_raw)
-                if monto_limpio:
-                    val_str = monto_limpio.group(0).replace('.', '').replace(',', '.')
-                    tasa = round(float(val_str), 2)
-                    
-                    fecha_span = soup.find('span', class_='date-display-single')
-                    fecha_val = fecha_span.text.strip() if fecha_span else "En Vivo"
-                    
-                    return tasa, fecha_val
-    except Exception as e:
-        print(f"⚠️ Falló scraping directo del BCV: {e}")
 
-    # --- INTENTO 2: Respaldo DolarApi ---
+    # --- INTENTO 1: DolarApi (Ultrarrápido y Estable) ---
     try:
         url_respaldo = "https://ve.dolarapi.com/v1/dolares/oficial"
         r = requests.get(url_respaldo, timeout=2)
@@ -193,9 +170,29 @@ def obtener_datos_bcv_validos():
             fecha_val = datos.get('fechaActualizacion', 'En Vivo')[:10]
             return tasa, fecha_val
     except Exception as e:
-        print(f"⚠️ Falló la API de respaldo: {e}")
+        print(f"⚠️ Falló la API de DolarApi: {e}")
+
+    # --- INTENTO 2: Scraping Directo al BCV (Respaldo secundario) ---
+    try:
+        url = "https://www.bcv.org.ve/"
+        response = requests.get(url, headers=headers, timeout=(1.5, 1.5), verify=False)
+        if response.status_code == 200:
+            soup = BeautifulSoup(response.content, 'html.parser')
+            usd_div = soup.find('div', id='dolar')
+            if usd_div:
+                texto_raw = usd_div.find('strong').text.strip()
+                monto_limpio = re.search(r'[\d.,]+', texto_raw)
+                if monto_limpio:
+                    val_str = monto_limpio.group(0).replace('.', '').replace(',', '.')
+                    tasa = round(float(val_str), 2)
+                    fecha_span = soup.find('span', class_='date-display-single')
+                    fecha_val = fecha_span.text.strip() if fecha_span else "En Vivo"
+                    return tasa, fecha_val
+    except Exception as e:
+        print(f"⚠️ Falló scraping directo del BCV: {e}")
 
     return None, None
+    
 def obtener_tasa_binance_p2p(tipo_operacion, monto_bs):
     url = "https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search"
     

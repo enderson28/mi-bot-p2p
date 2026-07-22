@@ -157,29 +157,23 @@ def usuario_esta_unido(user_id):
     # Actualizacion de velocidad
 def obtener_datos_bcv_validos():
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
     }
 
-    # --- INTENTO 1: Scraping Directo al BCV (Tasa en tiempo real al segundo) ---
+    # --- INTENTO 1: CriptoYa (Lee el BCV al segundo sin bloqueo de IP internacional) ---
     try:
-        url = "https://www.bcv.org.ve/"
-        response = requests.get(url, headers=headers, timeout=(2, 2), verify=False)
-        if response.status_code == 200:
-            soup = BeautifulSoup(response.content, 'html.parser')
-            usd_div = soup.find('div', id='dolar')
-            if usd_div:
-                texto_raw = usd_div.find('strong').text.strip()
-                monto_limpio = re.search(r'[\d.,]+', texto_raw)
-                if monto_limpio:
-                    val_str = monto_limpio.group(0).replace('.', '').replace(',', '.')
-                    tasa = round(float(val_str), 2)
-                    fecha_span = soup.find('span', class_='date-display-single')
-                    fecha_val = fecha_span.text.strip() if fecha_span else "En Vivo"
-                    return tasa, fecha_val
+        url = "https://criptoya.com/api/bcv"
+        r = requests.get(url, headers=headers, timeout=2)
+        if r.status_code == 200:
+            datos = r.json()
+            tasa = float(datos.get('usd', 0))
+            # Genera fecha o la toma si viene disponible
+            fecha_val = datos.get('time', 'En Vivo')
+            return tasa, "En Vivo / Hoy"
     except Exception as e:
-        print(f"⚠️ Falló scraping directo del BCV, intentando respaldo: {e}")
+        print(f"⚠️ Falló CriptoYa: {e}")
 
-    # --- INTENTO 2: DolarApi (Respaldo solo si la web del BCV se cae) ---
+    # --- INTENTO 2: DolarApi (Respaldo) ---
     try:
         url_respaldo = "https://ve.dolarapi.com/v1/dolares/oficial"
         r = requests.get(url_respaldo, timeout=2)
@@ -189,10 +183,9 @@ def obtener_datos_bcv_validos():
             fecha_val = datos.get('fechaActualizacion', 'En Vivo')[:10]
             return tasa, fecha_val
     except Exception as e:
-        print(f"⚠️ Falló la API de DolarApi: {e}")
+        print(f"⚠️ Falló DolarApi: {e}")
 
     return None, None
-    
     
 def obtener_tasa_binance_p2p(tipo_operacion, monto_bs):
     url = "https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search"
@@ -209,6 +202,7 @@ def obtener_tasa_binance_p2p(tipo_operacion, monto_bs):
         "merchantCheck": True,
         "page": 1,
         "rows": 5,
+        "publisherType": "merchant",
         "tradeType": tipo_operacion.upper(),
         "transAmount": str(int(monto_bs))
     }

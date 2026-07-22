@@ -250,12 +250,17 @@ def construir_monitor_texto_html():
     )
 
     for nombre, factor in rangos:
-        filtro = factor * tasa_bcv_ajustada
+        # 1. Filtro VENTA: Volumen en Bs para la masa equivalente al banco (Intervención)
+        filtro_venta = factor * tasa_bcv_ajustada
+        
+        # 2. Filtro COMPRA: Volumen en Bs para los USDT paralelos completos ($500 x tasa estimada)
+        # Usa una estimación base (~870 Bs) o un multiplicador dinámico para simular el volumen real en Bs
+        filtro_compra = factor * 870.0  
 
-        # 2. Llamada en el orden correcto original ("BUY"/"SELL", filtro)
+        # 3. Llamada separada con filtros independientes
         try:
-            c = obtener_tasa_binance_p2p("BUY", filtro)
-            v = obtener_tasa_binance_p2p("SELL", filtro)
+            c = obtener_tasa_binance_p2p("BUY", filtro_compra)
+            v = obtener_tasa_binance_p2p("SELL", filtro_venta)  
         except Exception as e:
             print(f"⚠️ Error Binance P2P ({nombre}): {e}")
             c, v = None, None

@@ -163,7 +163,7 @@ def obtener_datos_bcv_validos():
     # --- INTENTO 1: Scraping Directo al BCV ---
     try:
         url = "https://www.bcv.org.ve/"
-        response = requests.get(url, headers=headers, timeout=1.5, verify=False)
+        response = requests.get(url, headers=headers, timeout=(1.5, 1.5) verify=False)
         
         if response.status_code == 200:
             soup = BeautifulSoup(response.content, 'html.parser')

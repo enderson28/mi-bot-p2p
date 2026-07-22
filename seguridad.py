@@ -1,3 +1,4 @@
+import time
 # Lista de frases clave para detectar copias de mensajes oficiales del bot
 FRASES_PROHIBIDAS = [
     # Reportes y Monitores Oficiales
@@ -122,5 +123,40 @@ def es_admin_especial(user):
     
     return (user_id == admin_especial) or (username == admin_especial)
 
+
+# Lista de comandos autorizados para el bot de administración (Group Help)
+COMANDOS_GROUP_HELP = [
+    "/reload", "/ban", "/mute", "/warn", 
+    "/unban", "/unmute", "/info", "/config"
+]
+
+def limpiar_comandos_chat(bot, message):
+    """
+    Elimina los mensajes que empiecen con '/' para mantener el chat limpio.
+    Permite un breve retraso para que Group Help procese la orden si es válida.
+    """
+    if not message or not message.text:
+        return False
+
+    texto = message.text.strip().lower()
+
+    # Si el mensaje empieza con una barra diagonal '/'
+    if texto.startswith("/"):
+        # Extraemos solo el comando principal (ejemplo: '/ban' de '/ban 10 days')
+        comando = texto.split()[0]
+
+        # Si es un comando oficial de Group Help, esperamos medio segundo
+        if comando in COMANDOS_GROUP_HELP:
+            time.sleep(0.5)
+
+        # Borramos el mensaje de texto del comando
+        try:
+            bot.delete_message(message.chat.id, message.message_id)
+            return True
+        except Exception:
+            pass
+
+    return False
+    
     
     

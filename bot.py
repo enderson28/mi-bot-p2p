@@ -160,23 +160,37 @@ def obtener_datos_bcv_validos():
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
     }
 
-    # --- INTENTO 1: CriptoYa (Lee el BCV al segundo sin bloqueo de IP internacional) ---
+    # --- INTENTO 1: PyDolarVe API (Lee directamente el BCV con fecha valor real) ---
+    try:
+        url = "https://pydolarve.org/api/v1/dollar?page=bcv"
+        r = requests.get(url, headers=headers, timeout=3)
+        if r.status_code == 200:
+            datos = r.json()
+            # Toma la tasa del BCV
+            tasa = float(datos['monedas']['usd']['price'])
+            # Toma la fecha valor exacta que publica el BCV
+            fecha_val = datos['monedas']['usd']['custom_date']
+            return tasa, fecha_val
+    except Exception as e:
+        print(f"⚠️ Falló PyDolarVe: {e}")
+
+    # --- INTENTO 2: CriptoYa (Respaldo 1) ---
     try:
         url = "https://criptoya.com/api/bcv"
-        r = requests.get(url, headers=headers, timeout=2)
+        r = requests.get(url, headers=headers, timeout=3)
         if r.status_code == 200:
             datos = r.json()
             tasa = float(datos.get('usd', 0))
-            # Genera fecha o la toma si viene disponible
-            fecha_val = datos.get('time', 'En Vivo')
-            return tasa, "En Vivo / Hoy"
+            from datetime import datetime
+            fecha_val = datetime.now().strftime("%Y-%m-%d")
+            return tasa, fecha_val
     except Exception as e:
         print(f"⚠️ Falló CriptoYa: {e}")
 
-    # --- INTENTO 2: DolarApi (Respaldo) ---
+    # --- INTENTO 3: DolarApi (Respaldo 2) ---
     try:
         url_respaldo = "https://ve.dolarapi.com/v1/dolares/oficial"
-        r = requests.get(url_respaldo, timeout=2)
+        r = requests.get(url_respaldo, timeout=3)
         if r.status_code == 200:
             datos = r.json()
             tasa = float(datos.get('promedio', 0))

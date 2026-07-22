@@ -157,14 +157,41 @@ def usuario_esta_unido(user_id):
     # Actualizacion de velocidad
 def obtener_datos_bcv_validos():
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     }
 
-    # --- INTENTO 1: API de BCV Directa Ultra Rápida (JSON ligero sin scraping pesado) ---
+    # --- INTENTO 1: Scraping Ultra Optimizado Directo al BCV (Tasa + Fecha Real) ---
     try:
-        # Petición JSON directa que no carga la web entera del BCV, tarda menos de 1.5 seg
-        url_rapida = "https://ve.dolarapi.com/v1/dolares/oficial?cache=false"
-        r = requests.get(url_rapida, headers=headers, timeout=1.5)
+        import urllib3
+        from bs4 import BeautifulSoup
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+        
+        # Petición veloz directo a la portada del BCV
+        response = requests.get("https://www.bcv.org.ve/", headers=headers, verify=False, timeout=2.5)
+        
+        if response.status_code == 200:
+            soup = BeautifulSoup(response.content, 'html.parser')
+            
+            # Extraer tasa del $ USD
+            dolar_container = soup.find('div', id='dolar')
+            if dolar_container:
+                
+                val_raw = dolar_container.find('strong').text.strip()
+                val_clean = val_raw.replace('.', '').replace(',', '.').strip()
+                tasa = float(val_clean)
+
+                # Extraer Fecha Valor exacta
+                fecha_elem = soup.find('span', class_='date-display-single')
+                fecha_val = fecha_elem.text.strip() if fecha_elem else "2026-07-23"
+                
+                if tasa > 0:
+                    return tasa, fecha_val
+    except Exception as e:
+        print(f"⚠️ BCV directo tardó o falló: {e}")
+
+    # --- INTENTO 2: DolarApi (Respaldo si BCV se frena) ---
+    try:
+        r = requests.get("https://ve.dolarapi.com/v1/dolares/oficial", timeout=1.5)
         if r.status_code == 200:
             datos = r.json()
             tasa = float(datos.get('promedio', 0))
@@ -174,25 +201,13 @@ def obtener_datos_bcv_validos():
     except Exception:
         pass
 
-    # --- INTENTO 2: Exchange / Monitor API V2 (Limpio y al segundo) ---
-    try:
-        url_alt = "https://pydolarve.org/api/v1/dollar?page=bcv"
-        # Usamos timeout super estricto de 1.5s para no causar lag
-        r = requests.get(url_alt, headers=headers, timeout=1.5)
-        if r.status_code == 200:
-            datos = r.json()
-            tasa = float(datos['monedas']['usd']['price'])
-            fecha_val = datos['monedas']['usd']['custom_date']
-            return tasa, fecha_val
-    except Exception:
-        pass
-
-    # --- INTENTO 3: CriptoYa (Respaldo final) ---
+    # --- INTENTO 3: CriptoYa (Respaldo Final) ---
     try:
         r = requests.get("https://criptoya.com/api/bcv", headers=headers, timeout=1.5)
         if r.status_code == 200:
             tasa = float(r.json().get('usd', 0))
-            return tasa, "2026-07-23"
+            if tasa > 0:
+                return tasa, "2026-07-23"
     except Exception:
         pass
 

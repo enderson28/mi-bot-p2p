@@ -7,6 +7,7 @@ from datetime import datetime
 from telebot.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
 from anuncios import iniciar_modulo_anuncios
 from seguridad import validar_copia_pega, es_admin_vip, es_admin_especial, es_administrador
+from seguridad import limpiar_comandos_chat
 import re
 import requests
 from bs4 import BeautifulSoup
@@ -689,6 +690,10 @@ def callback_borrar_tabla_admin(call):
 
 @bot.message_handler(func=lambda m: m.chat.type != "private", content_types=['text'])
 def filtro_seguridad_chat(message):
+    # 1. Borra comandos no deseados (/ban, /sexo, etc.)
+    if limpiar_comandos_chat(bot, message):
+        return
+        
     es_admin = es_administrador(bot, message.chat.id, message.from_user.id, message.from_user)
     
     # Si un usuario común pegó un reporte oficial, lo borra y se detiene

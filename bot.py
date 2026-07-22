@@ -186,7 +186,7 @@ def obtener_datos_bcv_validos():
     # --- INTENTO 2: Respaldo DolarApi ---
     try:
         url_respaldo = "https://ve.dolarapi.com/v1/dolares/oficial"
-        r = requests.get(url_respaldo, timeout=5)
+        r = requests.get(url_respaldo, timeout=2)
         if r.status_code == 200:
             datos = r.json()
             tasa = float(datos.get('promedio', 0))
@@ -216,7 +216,7 @@ def obtener_tasa_binance_p2p(tipo_operacion, monto_bs):
     }
     
     try:
-        r = requests.post(url, json=payload, headers=headers, timeout=10)
+        r = requests.post(url, json=payload, headers=headers, timeout=2)
         if r.status_code == 200:
             datos = r.json().get('data', [])
             if datos:

@@ -254,8 +254,8 @@ def construir_monitor_texto_html():
 
         # 2. Llamada en el orden correcto original ("BUY"/"SELL", filtro)
         try:
-            c = obtener_tasa_binance_p2p("SELL", filtro)
-            v = obtener_tasa_binance_p2p("BUY", filtro)
+            c = obtener_tasa_binance_p2p("BUY", filtro)
+            v = obtener_tasa_binance_p2p("SELL", filtro)
         except Exception as e:
             print(f"⚠️ Error Binance P2P ({nombre}): {e}")
             c, v = None, None

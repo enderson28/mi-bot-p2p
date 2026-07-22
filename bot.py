@@ -154,7 +154,7 @@ def usuario_esta_unido(user_id):
 
     return unido_prueba or unido_congestionado
     
-
+    # Actualizacion de velocidad
 def obtener_datos_bcv_validos():
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"

@@ -160,41 +160,38 @@ def obtener_datos_bcv_validos():
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
     }
 
-    # --- INTENTO 1: PyDolarVe API (Lee directamente el BCV con fecha valor real) ---
-    try:
-        url = "https://pydolarve.org/api/v1/dollar?page=bcv"
-        r = requests.get(url, headers=headers, timeout=3)
-        if r.status_code == 200:
-            datos = r.json()
-            # Toma la tasa del BCV
-            tasa = float(datos['monedas']['usd']['price'])
-            # Toma la fecha valor exacta que publica el BCV
-            fecha_val = datos['monedas']['usd']['custom_date']
-            return tasa, fecha_val
-    except Exception as e:
-        print(f"⚠️ Falló PyDolarVe: {e}")
-
-    # --- INTENTO 2: CriptoYa (Respaldo 1) ---
+    # --- INTENTO 1: CriptoYa BCV (Ultra rápido sin bloqueos) ---
     try:
         url = "https://criptoya.com/api/bcv"
         r = requests.get(url, headers=headers, timeout=3)
         if r.status_code == 200:
             datos = r.json()
             tasa = float(datos.get('usd', 0))
-            from datetime import datetime
-            fecha_val = datetime.now().strftime("%Y-%m-%d")
-            return tasa, fecha_val
+            
+            # Si CriptoYa trae la fecha, la usa; si no, pasa a DolarApi para obtener la fecha valor real del BCV
+            if tasa > 0:
+                # Intentamos sacar la fecha exacta de DolarApi para no adivinar con datetime.now()
+                try:
+                    r_f = requests.get("https://ve.dolarapi.com/v1/dolares/oficial", timeout=2)
+                    if r_f.status_code == 200:
+                        fecha_val = r_f.json().get('fechaActualizacion', '')[:10]
+                        return tasa, fecha_val
+                except Exception:
+                    pass
+                
+                return tasa, "En Vivo"
     except Exception as e:
         print(f"⚠️ Falló CriptoYa: {e}")
 
-    # --- INTENTO 3: DolarApi (Respaldo 2) ---
+    # --- INTENTO 2: DolarApi (Respaldo Total con Tasa y Fecha Oficial BCV) ---
     try:
         url_respaldo = "https://ve.dolarapi.com/v1/dolares/oficial"
         r = requests.get(url_respaldo, timeout=3)
         if r.status_code == 200:
             datos = r.json()
             tasa = float(datos.get('promedio', 0))
-            fecha_val = datos.get('fechaActualizacion', 'En Vivo')[:10]
+            # 'fechaActualizacion' trae la Fecha Valor real publicada por el BCV
+            fecha_val = datos.get('fechaActualizacion', '')[:10]
             return tasa, fecha_val
     except Exception as e:
         print(f"⚠️ Falló DolarApi: {e}")

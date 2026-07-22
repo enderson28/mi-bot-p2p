@@ -160,41 +160,28 @@ def obtener_datos_bcv_validos():
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
     }
 
-    # --- INTENTO 1: CriptoYa BCV (Ultra rápido sin bloqueos) ---
+    # --- INTENTO 1: DolarApi (Súper rápida y con Fecha Valor del BCV) ---
     try:
-        url = "https://criptoya.com/api/bcv"
-        r = requests.get(url, headers=headers, timeout=3)
-        if r.status_code == 200:
-            datos = r.json()
-            tasa = float(datos.get('usd', 0))
-            
-            # Si CriptoYa trae la fecha, la usa; si no, pasa a DolarApi para obtener la fecha valor real del BCV
-            if tasa > 0:
-                # Intentamos sacar la fecha exacta de DolarApi para no adivinar con datetime.now()
-                try:
-                    r_f = requests.get("https://ve.dolarapi.com/v1/dolares/oficial", timeout=2)
-                    if r_f.status_code == 200:
-                        fecha_val = r_f.json().get('fechaActualizacion', '')[:10]
-                        return tasa, fecha_val
-                except Exception:
-                    pass
-                
-                return tasa, "En Vivo"
-    except Exception as e:
-        print(f"⚠️ Falló CriptoYa: {e}")
-
-    # --- INTENTO 2: DolarApi (Respaldo Total con Tasa y Fecha Oficial BCV) ---
-    try:
-        url_respaldo = "https://ve.dolarapi.com/v1/dolares/oficial"
-        r = requests.get(url_respaldo, timeout=3)
+        r = requests.get("https://ve.dolarapi.com/v1/dolares/oficial", timeout=2)
         if r.status_code == 200:
             datos = r.json()
             tasa = float(datos.get('promedio', 0))
-            # 'fechaActualizacion' trae la Fecha Valor real publicada por el BCV
             fecha_val = datos.get('fechaActualizacion', '')[:10]
-            return tasa, fecha_val
+            if tasa > 0:
+                return tasa, fecha_val
     except Exception as e:
         print(f"⚠️ Falló DolarApi: {e}")
+
+    # --- INTENTO 2: CriptoYa BCV (Respaldo ultrarrápido) ---
+    try:
+        r = requests.get("https://criptoya.com/api/bcv", headers=headers, timeout=2)
+        if r.status_code == 200:
+            datos = r.json()
+            tasa = float(datos.get('usd', 0))
+            if tasa > 0:
+                return tasa, "En Vivo"
+    except Exception as e:
+        print(f"⚠️ Falló CriptoYa: {e}")
 
     return None, None
     

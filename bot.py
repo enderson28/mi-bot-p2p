@@ -160,22 +160,10 @@ def obtener_datos_bcv_validos():
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     }
 
-    # --- INTENTO 1: DolarApi (Ultrarrápido y Estable) ---
-    try:
-        url_respaldo = "https://ve.dolarapi.com/v1/dolares/oficial"
-        r = requests.get(url_respaldo, timeout=2)
-        if r.status_code == 200:
-            datos = r.json()
-            tasa = float(datos.get('promedio', 0))
-            fecha_val = datos.get('fechaActualizacion', 'En Vivo')[:10]
-            return tasa, fecha_val
-    except Exception as e:
-        print(f"⚠️ Falló la API de DolarApi: {e}")
-
-    # --- INTENTO 2: Scraping Directo al BCV (Respaldo secundario) ---
+    # --- INTENTO 1: Scraping Directo al BCV (Tasa en tiempo real al segundo) ---
     try:
         url = "https://www.bcv.org.ve/"
-        response = requests.get(url, headers=headers, timeout=(1.5, 1.5), verify=False)
+        response = requests.get(url, headers=headers, timeout=(2, 2), verify=False)
         if response.status_code == 200:
             soup = BeautifulSoup(response.content, 'html.parser')
             usd_div = soup.find('div', id='dolar')
@@ -189,9 +177,22 @@ def obtener_datos_bcv_validos():
                     fecha_val = fecha_span.text.strip() if fecha_span else "En Vivo"
                     return tasa, fecha_val
     except Exception as e:
-        print(f"⚠️ Falló scraping directo del BCV: {e}")
+        print(f"⚠️ Falló scraping directo del BCV, intentando respaldo: {e}")
+
+    # --- INTENTO 2: DolarApi (Respaldo solo si la web del BCV se cae) ---
+    try:
+        url_respaldo = "https://ve.dolarapi.com/v1/dolares/oficial"
+        r = requests.get(url_respaldo, timeout=2)
+        if r.status_code == 200:
+            datos = r.json()
+            tasa = float(datos.get('promedio', 0))
+            fecha_val = datos.get('fechaActualizacion', 'En Vivo')[:10]
+            return tasa, fecha_val
+    except Exception as e:
+        print(f"⚠️ Falló la API de DolarApi: {e}")
 
     return None, None
+    
     
 def obtener_tasa_binance_p2p(tipo_operacion, monto_bs):
     url = "https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search"

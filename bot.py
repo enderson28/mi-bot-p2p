@@ -157,29 +157,51 @@ def usuario_esta_unido(user_id):
     # Actualizacion de velocidad
 def obtener_datos_bcv_validos():
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     }
 
-    # --- INTENTO 1: DolarApi (Súper rápida y con Fecha Valor del BCV) ---
+    # --- INTENTO 1: Scraping Directo al Sitio Oficial del BCV ---
     try:
-        r = requests.get("https://ve.dolarapi.com/v1/dolares/oficial", timeout=2)
+        import urllib3
+        from bs4 import BeautifulSoup
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+        
+        url_bcv = "https://www.bcv.org.ve/"
+        response = requests.get(url_bcv, headers=headers, verify=False, timeout=3)
+        
+        if response.status_code == 200:
+            soup = BeautifulSoup(response.content, 'html.parser')
+            # Busca el contenedor del dólar en el HTML del BCV
+            dolar_container = soup.find('div', id='dolar')
+            if dolar_container:
+                val_str = dolar_container.find('strong').text.strip().replace(',', '.')
+                tasa = float(val_str)
+                
+                # Busca la fecha valor oficial publicada
+                fecha_elem = soup.find('span', class_='date-display-single')
+                fecha_val = fecha_elem.text.strip() if fecha_elem else "En Vivo"
+                
+                return tasa, fecha_val
+    except Exception as e:
+        print(f"⚠️ Falló scraping directo del BCV: {e}")
+
+    # --- INTENTO 2: DolarApi (Respaldo) ---
+    try:
+        r = requests.get("https://ve.dolarapi.com/v1/dolares/oficial", timeout=3)
         if r.status_code == 200:
             datos = r.json()
             tasa = float(datos.get('promedio', 0))
-            fecha_val = datos.get('fechaActualizacion', '')[:10]
-            if tasa > 0:
-                return tasa, fecha_val
+            fecha_val = datos.get('fechaActualizacion', 'En Vivo')[:10]
+            return tasa, fecha_val
     except Exception as e:
         print(f"⚠️ Falló DolarApi: {e}")
 
-    # --- INTENTO 2: CriptoYa BCV (Respaldo ultrarrápido) ---
+    # --- INTENTO 3: CriptoYa (Respaldo) ---
     try:
-        r = requests.get("https://criptoya.com/api/bcv", headers=headers, timeout=2)
+        r = requests.get("https://criptoya.com/api/bcv", headers=headers, timeout=3)
         if r.status_code == 200:
-            datos = r.json()
-            tasa = float(datos.get('usd', 0))
-            if tasa > 0:
-                return tasa, "En Vivo"
+            tasa = float(r.json().get('usd', 0))
+            return tasa, "En Vivo"
     except Exception as e:
         print(f"⚠️ Falló CriptoYa: {e}")
 

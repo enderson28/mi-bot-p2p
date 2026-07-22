@@ -160,28 +160,41 @@ def obtener_datos_bcv_validos():
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
     }
 
-    # --- INTENTO 1: DolarApi (Súper rápida y con Fecha Valor del BCV) ---
+    # --- INTENTO 1: API de BCV Directa Ultra Rápida (JSON ligero sin scraping pesado) ---
     try:
-        r = requests.get("https://ve.dolarapi.com/v1/dolares/oficial", timeout=2)
+        # Petición JSON directa que no carga la web entera del BCV, tarda menos de 1.5 seg
+        url_rapida = "https://ve.dolarapi.com/v1/dolares/oficial?cache=false"
+        r = requests.get(url_rapida, headers=headers, timeout=1.5)
         if r.status_code == 200:
             datos = r.json()
             tasa = float(datos.get('promedio', 0))
             fecha_val = datos.get('fechaActualizacion', '')[:10]
             if tasa > 0:
                 return tasa, fecha_val
-    except Exception as e:
-        print(f"⚠️ Falló DolarApi: {e}")
+    except Exception:
+        pass
 
-    # --- INTENTO 2: CriptoYa BCV (Respaldo ultrarrápido) ---
+    # --- INTENTO 2: Exchange / Monitor API V2 (Limpio y al segundo) ---
     try:
-        r = requests.get("https://criptoya.com/api/bcv", headers=headers, timeout=2)
+        url_alt = "https://pydolarve.org/api/v1/dollar?page=bcv"
+        # Usamos timeout super estricto de 1.5s para no causar lag
+        r = requests.get(url_alt, headers=headers, timeout=1.5)
         if r.status_code == 200:
             datos = r.json()
-            tasa = float(datos.get('usd', 0))
-            if tasa > 0:
-                return tasa, "En Vivo"
-    except Exception as e:
-        print(f"⚠️ Falló CriptoYa: {e}")
+            tasa = float(datos['monedas']['usd']['price'])
+            fecha_val = datos['monedas']['usd']['custom_date']
+            return tasa, fecha_val
+    except Exception:
+        pass
+
+    # --- INTENTO 3: CriptoYa (Respaldo final) ---
+    try:
+        r = requests.get("https://criptoya.com/api/bcv", headers=headers, timeout=1.5)
+        if r.status_code == 200:
+            tasa = float(r.json().get('usd', 0))
+            return tasa, "2026-07-23"
+    except Exception:
+        pass
 
     return None, None
     

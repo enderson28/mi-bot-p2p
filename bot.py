@@ -359,39 +359,56 @@ def handle_start(message):
         bot.send_message(message.chat.id, TEXTO_START, parse_mode="HTML", reply_markup=obtener_teclado_privado())
         
 
-# Manejador para el botón P2P y el comando /precio
+# Manejador para /precio y el botón P2P
 @bot.message_handler(commands=['precio', 'p2p'])
 @bot.message_handler(func=lambda m: m.text and m.text.strip() == "🟢 P2P-USDT 🟢")
 def handle_precio_comando(message):
+    # 1. SI ES EN UN GRUPO/CANAL, BORRAMOS EL MENSAJE SIEMPRE (Sea admin o usuario común)
+    if message.chat.type != 'private':
+        try:
+            bot.delete_message(message.chat.id, message.message_id)
+        except Exception:
+            pass
+
+    # 2. VERIFICACIÓN DE PERMISOS: ¿Tiene autorización para recibir la respuesta?
+    # (Si es en privado, exige estar autorizado; si es en grupo, valida el chat/usuario)
     if not es_chat_permitido(message, CHATS_PERMITIDOS, USUARIOS_AUTORIZADOS, CREADOR_ID):
         return
-    # 2. Borra INMEDIATAMENTE el texto/comando enviado por el usuario en el grupo
-    try:
-        bot.delete_message(message.chat.id, message.message_id)
-    except Exception:
-        pass  # Si es en privado o falla el permiso, continua suavemente
+        
+    # 3. Si pasó la validación, envía la información
     procesar_precio(message)
 # Manejador para el botón de Intervención y el comando /intervencion
 @bot.message_handler(commands=['intervencion'])
-@bot.message_handler(func=lambda m: m.text and "Intervención" in m.text and m.text.strip().startswith("📊"))
+@bot.message_handler(func=lambda m: m.text and "Intervención" in m.text and m.text.strip().startswith("🏛️"))
 def handle_intervencion_comando(message):
+    # 1. SI ES EN UN GRUPO/CANAL, BORRAMOS EL MENSAJE SIEMPRE
+    if message.chat.type != 'private':
+        try:
+            bot.delete_message(message.chat.id, message.message_id)
+        except Exception:
+            pass
+
+    # 2. VERIFICACIÓN DE PERMISOS
     if not es_chat_permitido(message, CHATS_PERMITIDOS, USUARIOS_AUTORIZADOS, CREADOR_ID):
         return
-    # 2. Borra INMEDIATAMENTE el texto/comando enviado por el usuario en el grupo
-    try:
-        bot.delete_message(message.chat.id, message.message_id)
-    except Exception:
-        pass  # Si es en privado o falla el permiso, continua suavemente
+
+    # 3. Procesa la orden
     procesar_intervencion(message)
+# Manejador para los comandos /bpay y /gpay
 @bot.message_handler(commands=['bpay', 'gpay'])
 def handle_guias_comando(message):
+    # 1. SI ES EN UN GRUPO/CANAL, BORRAMOS EL MENSAJE SIEMPRE
+    if message.chat.type != 'private':
+        try:
+            bot.delete_message(message.chat.id, message.message_id)
+        except Exception:
+            pass
+
+    # 2. VERIFICACIÓN DE PERMISOS
     if not es_chat_permitido(message, CHATS_PERMITIDOS, USUARIOS_AUTORIZADOS, CREADOR_ID):
         return
-    # 2. Borra INMEDIATAMENTE el texto/comando enviado por el usuario en el grupo
-    try:
-        bot.delete_message(message.chat.id, message.message_id)
-    except Exception:
-        pass  # Si es en privado o falla el permiso, continua suavemente
+
+    # 3. Procesa la orden
     procesar_guias(message)
 @bot.message_handler(commands=['bot'])
 def handle_invitacion_comando(message):

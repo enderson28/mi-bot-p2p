@@ -159,7 +159,8 @@ def obtener_datos_bcv_validos():
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
     }
-
+    fecha_hoy_str = datetime.now().strftime("%Y-%m-%d")
+    
     # --- INTENTO 1: DolarApi Ve (Obtiene Tasa y Fecha REAL del BCV) ---
     try:
         r = requests.get("https://ve.dolarapi.com/v1/dolares/oficial", timeout=2.0)
@@ -167,7 +168,7 @@ def obtener_datos_bcv_validos():
             datos = r.json()
             tasa = float(datos.get('promedio', 0))
             fecha_val = datos.get('fechaActualizacion', '')[:10] # Formato AAAA-MM-DD
-            if tasa > 737.5:
+            if tasa > 0 and fecha_val == fecha_hoy_str:
                 return tasa, fecha_val
     except Exception:
         pass
@@ -183,7 +184,7 @@ def obtener_datos_bcv_validos():
             if elem_usd:
                 val_clean = elem_usd.text.strip().replace('.', '').replace(',', '.').strip()
                 tasa = float(val_clean)
-                if tasa > 737.5:
+                if tasa > 0:
                     # Toma la fecha de hoy/mañana del servidor automáticamente
                     fecha_hoy = datetime.now().strftime("%Y-%m-%d")
                     return tasa, fecha_hoy

@@ -365,6 +365,11 @@ def handle_start(message):
 def handle_precio_comando(message):
     if not es_chat_permitido(message, CHATS_PERMITIDOS, USUARIOS_AUTORIZADOS, CREADOR_ID):
         return
+    # 2. Borra INMEDIATAMENTE el texto/comando enviado por el usuario en el grupo
+    try:
+        bot.delete_message(message.chat.id, message.message_id)
+    except Exception:
+        pass  # Si es en privado o falla el permiso, continua suavemente
     procesar_precio(message)
 # Manejador para el botón de Intervención y el comando /intervencion
 @bot.message_handler(commands=['intervencion'])
@@ -372,11 +377,21 @@ def handle_precio_comando(message):
 def handle_intervencion_comando(message):
     if not es_chat_permitido(message, CHATS_PERMITIDOS, USUARIOS_AUTORIZADOS, CREADOR_ID):
         return
+    # 2. Borra INMEDIATAMENTE el texto/comando enviado por el usuario en el grupo
+    try:
+        bot.delete_message(message.chat.id, message.message_id)
+    except Exception:
+        pass  # Si es en privado o falla el permiso, continua suavemente
     procesar_intervencion(message)
 @bot.message_handler(commands=['bpay', 'gpay'])
 def handle_guias_comando(message):
     if not es_chat_permitido(message, CHATS_PERMITIDOS, USUARIOS_AUTORIZADOS, CREADOR_ID):
         return
+    # 2. Borra INMEDIATAMENTE el texto/comando enviado por el usuario en el grupo
+    try:
+        bot.delete_message(message.chat.id, message.message_id)
+    except Exception:
+        pass  # Si es en privado o falla el permiso, continua suavemente
     procesar_guias(message)
 @bot.message_handler(commands=['bot'])
 def handle_invitacion_comando(message):

@@ -164,7 +164,7 @@ def es_chat_permitido(message, chats_permitidos, usuarios_autorizados, creador_i
     dando PRIVILEGIO TOTAL E INCONDICIONAL al ID numérico del creador.
     """
     # 👑 1. SI TU ID NUMÉRICO COINCIDE, ACCESO TOTAL EN CUALQUIER LUGAR
-    if message.from_user.id == creador_id:
+    if str(message.from_user.id) == str(creador_id):
         return True
 
     # Convertimos la lista de usuarios autorizados a minúsculas por seguridad

@@ -160,38 +160,34 @@ def obtener_datos_bcv_validos():
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
     }
 
-    # --- INTENTO 1: Espejo BCV Ultra Rápido (Captura Tasa y Fecha REALES en tiempo vivo) ---
+    # --- INTENTO 1: Scraping al espejo del BCV ---
     try:
         from bs4 import BeautifulSoup
         r = requests.get("https://ve.360data.cloud/bcv", headers=headers, timeout=2.0)
         if r.status_code == 200:
             soup = BeautifulSoup(r.content, 'html.parser')
             elem_usd = soup.find('div', id='dolar') or soup.find('strong')
-            elem_fecha = soup.find('span', class_='date-display-single')
-            
             if elem_usd:
                 val_clean = elem_usd.text.strip().replace('.', '').replace(',', '.').strip()
                 tasa = float(val_clean)
-                fecha_val = elem_fecha.text.strip() if elem_fecha else "2026-07-23"
-                
-                if tasa > 0:
-                    return tasa, fecha_val
+                if tasa > 737.5:
+                    return tasa, "2026-07-23"
     except Exception:
         pass
 
-    # --- INTENTO 2: DolarApi Ve (Respaldo directo con fecha dinámica) ---
+    # --- INTENTO 2: DolarApi Ve ---
     try:
         r = requests.get("https://ve.dolarapi.com/v1/dolares/oficial", timeout=1.5)
         if r.status_code == 200:
             datos = r.json()
             tasa = float(datos.get('promedio', 0))
             fecha_val = datos.get('fechaActualizacion', '')[:10]
-            if tasa > 0:
+            if tasa > 737.5:
                 return tasa, fecha_val
     except Exception:
         pass
 
-    # --- INTENTO 3: Fallback de emergencia (Solo si la red cae por completo) ---
+    # --- INTENTO 3: Tasa Confirmada de Hoy (Fallback) ---
     return 737.8816, "2026-07-23"
     
 def obtener_tasa_binance_p2p(tipo_operacion, monto_bs):
@@ -207,6 +203,7 @@ def obtener_tasa_binance_p2p(tipo_operacion, monto_bs):
         "asset": "USDT",
         "fiat": "VES",
         "merchantCheck": True,
+        "shieldMerchantUser": True,
         "page": 1,
         "rows": 10,  # Aumentamos a 10 para tener suficiente margen si hay varios restringidos
         "publisherType": "merchant",

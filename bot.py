@@ -6,7 +6,7 @@ import threading
 from datetime import datetime
 from telebot.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
 from anuncios import iniciar_modulo_anuncios
-from seguridad import validar_copia_pega, es_admin_vip, es_admin_especial, es_administrador
+from seguridad import validar_copia_pega, es_admin_vip, es_admin_especial, es_administrador, es_chat_permitido
 from seguridad import limpiar_comandos_chat
 import re
 import requests
@@ -25,8 +25,12 @@ CANAL_PRUEBA = "@COMUNIDV"       # Canal de prueba
 CANAL_CONGESTIONADO = "@COMUNIDADAS04" # Canal principal
 CANAL_ADMINS = "@IDVADMINS"  # Reemplaza con el @ de tu grupo de admins
 # USUARIOS AUTORIZADOS PARA EL COMANDO /bot
-USUARIOS_AUTORIZADOS = ["@enderson28", "@AntonyS4", "@papitamaster"]
+USUARIOS_AUTORIZADOS = ["5073264705", "@AntonyS4", "@papitamaster"]
+# Creador Supremo (Tu ID numérico real)
+CREADOR_ID = 5073264705  # Reemplaza por tu ID numérico
 
+# Lista unificada de chats donde el bot responderá a los demás
+CHATS_PERMITIDOS = [CANAL_PRUEBA, CANAL_CONGESTIONADO, CANAL_ADMINS]
 # CONFIGURACIÓN DE TIEMPOS
 RATE_LIMIT_AVISO = 600       # 10 minutos para enfriamiento de avisos a usuarios
 TIEMPO_VIDA_TABLA = 300      # 5 minutos para autodestrucción del monitor/intervención
@@ -359,16 +363,20 @@ def handle_start(message):
 @bot.message_handler(commands=['precio', 'p2p'])
 @bot.message_handler(func=lambda m: m.text and m.text.strip() == "🟢 P2P-USDT 🟢")
 def handle_precio_comando(message):
+    if not es_chat_permitido(message, CHATS_PERMITIDOS, USUARIOS_AUTORIZADOS, CREADOR_ID):
+        return
     procesar_precio(message)
-
 # Manejador para el botón de Intervención y el comando /intervencion
 @bot.message_handler(commands=['intervencion'])
 @bot.message_handler(func=lambda m: m.text and "Intervención" in m.text and m.text.strip().startswith("📊"))
 def handle_intervencion_comando(message):
+    if not es_chat_permitido(message, CHATS_PERMITIDOS, USUARIOS_AUTORIZADOS, CREADOR_ID):
+        return
     procesar_intervencion(message)
-    
 @bot.message_handler(commands=['bpay', 'gpay'])
 def handle_guias_comando(message):
+    if not es_chat_permitido(message, CHATS_PERMITIDOS, USUARIOS_AUTORIZADOS, CREADOR_ID):
+        return
     procesar_guias(message)
 @bot.message_handler(commands=['bot'])
 def handle_invitacion_comando(message):

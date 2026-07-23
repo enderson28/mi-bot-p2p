@@ -721,18 +721,26 @@ def callback_borrar_tabla_admin(call):
             text="⚠️ No se pudo eliminar el mensaje o ya fue borrado."
         )      
 # ==========================================
-#     FILTRO DE SEGURIDAD GENERAL (ABAJO)
+# FILTRO DE SEGURIDAD GENERAL (ABAJO)
 # ==========================================
 
-@bot.message_handler(func=lambda m: m.chat.type != "private", content_types=['text'])
+@bot.message_handler(func=lambda m: m.chat.type != 'private', content_types=['text'])
 def filtro_seguridad_chat(message):
-    # 1. Borra comandos no deseados (/ban, /sexo, etc.)
-    if limpiar_comandos_chat(bot, message):
-        return
-        
+    # 1. Si el mensaje empieza con '/', LO BORRAMOS DE INMEDIATO (Sea cual sea el comando)
+    if message.text and message.text.strip().startswith("/"):
+        # Intentamos usar la limpieza de Group Help para respetar el cooldown si aplica
+        if not limpiar_comandos_chat(bot, message):
+            # Si no era de Group Help, lo borramos de todos modos para evitar spam
+            try:
+                bot.delete_message(message.chat.id, message.message_id)
+            except Exception:
+                pass
+        return  # Detenemos aquí para que no siga procesando nada más
+
+    # 2. Verificamos si es administrador
     es_admin = es_administrador(bot, message.chat.id, message.from_user.id, message.from_user)
-    
-    # Si un usuario común pegó un reporte oficial, lo borra y se detiene
+
+    # 3. Si un usuario común pegó un reporte oficial, lo borra y se detiene
     if validar_copia_pega(bot, message, es_admin):
         return
 # ==========================================

@@ -196,37 +196,45 @@ def obtener_datos_bcv_validos():
     
 def obtener_tasa_binance_p2p(tipo_operacion, monto_bs):
     url = "https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search"
-    
+
     headers = {
         "Accept": "*/*",
         "Content-Type": "application/json",
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36"
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     }
-    
+
     payload = {
         "asset": "USDT",
         "fiat": "VES",
         "merchantCheck": True,
         "page": 1,
-        "rows": 5,
+        "rows": 10,  # Aumentamos a 10 para tener suficiente margen si hay varios restringidos
         "publisherType": "merchant",
         "tradeType": tipo_operacion.upper(),
         "transAmount": str(int(monto_bs))
     }
-    
+
     try:
-        r = requests.post(url, json=payload, headers=headers, timeout=2)
+        r = requests.post(url, json=payload, headers=headers, timeout=3)
         if r.status_code == 200:
             datos = r.json().get('data', [])
             if datos:
-                for anuncio in datos:
-                    adv = anuncio.get('adv', {})
-                    # Verificamos que el anuncio tenga precio y no esté pausado/deshabilitado
-                    if adv.get('price') and adv.get('tradeType'):
-                        return float(adv['price'])    
+                for elemento in datos:
+                    adv = elemento.get('adv', {})
+                    advertiser = elemento.get('advertiser', {})
+                    
+                    # 1. Validar que el anuncio esté activo y con precio
+                    precio = adv.get('price')
+                    
+                    # 2. Validar que el comerciante NO tenga estado bloqueado/restringido
+                    # Si 'userType' existe y el estado del usuario no es restringido
+                    user_status = advertiser.get('userStatus', '')
+                    
+                    if precio and user_status != 'BLOCKED':
+                        return float(precio)
     except Exception as e:
         print(f"⚠️ Error conectando con Binance P2P: {e}")
-        
+
     return None
 
 # ==========================================

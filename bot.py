@@ -271,16 +271,18 @@ def construir_monitor_texto_html():
         tasa_venta = obtener_tasa_binance_p2p("SELL", monto_filtro_bs)
 
         if tasa_compra and tasa_venta:
-            # Calculamos dinámicamente los Bolívares necesarios para cada operación
-            filtro_p2p_bs = usd_ref * tasa_compra
             filtro_bcv_bs = usd_ref * tasa_bcv_ajustada
-
             spread = tasa_venta - tasa_compra
             porcentaje_spread = (spread / tasa_compra) * 100
 
             texto += f"🔷 <b>{nombre_rango}</b>\n"
-            texto += f"🟢 <b>Compra USDT</b> (Filtro P2P: ~{filtro_p2p_bs:,.0f} Bs): <b>{tasa_compra:.2f} Bs</b>\n"
-            texto += f"🔴 <b>Venta (Intervención Electrónica)</b> (Filtro BCV: ~{filtro_bcv_bs:,.0f} Bs): <b>{tasa_venta:.2f} Bs</b>\n"
+            texto += f"🟢 <b>Compra USDT:</b> <b>{tasa_compra:.2f} Bs</b>\n"
+            texto += f"🔴 <b>Venta:</b> <b>{tasa_venta:.2f} Bs</b>\n"
+            
+            # Solo si es el Rango Mayor ($500+), insertamos el filtro justo debajo de 🔴 Venta
+            if usd_ref == 500.0:
+                texto += f"   └ 💡 <i>(Filtro base: ~{filtro_bcv_bs:,.0f} Bs)</i>\n"
+
             texto += f"📉 Spread: <b>{spread:.2f} Bs</b> (<b>{porcentaje_spread:.2f}%</b>)\n\n"
         else:
             texto += f"🔷 <b>{nombre_rango}</b>\n⚠️ <i>No se pudieron obtener tasas para este rango.</i>\n\n"

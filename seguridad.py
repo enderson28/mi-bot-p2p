@@ -158,5 +158,35 @@ def limpiar_comandos_chat(bot, message):
 
     return False
     
+def es_chat_permitido(message, chats_permitidos, usuarios_autorizados, creador_id):
+    """
+    Verifica si el mensaje proviene de un chat/usuario autorizado,
+    dando PRIVILEGIO TOTAL E INCONDICIONAL al ID numérico del creador.
+    """
+    # 👑 1. SI TU ID NUMÉRICO COINCIDE, ACCESO TOTAL EN CUALQUIER LUGAR
+    if message.from_user.id == creador_id:
+        return True
+
+    # Convertimos la lista de usuarios autorizados a minúsculas por seguridad
+    usuarios_permitidos_lower = [u.lower() for u in usuarios_autorizados]
+
+    # 2. Si es mensaje privado, permite solo a los admins autorizados
+    if message.chat.type == 'private':
+        username_usuario = f"@{message.from_user.username}" if message.from_user.username else ""
+        return username_usuario.lower() in usuarios_permitidos_lower
+
+    # 3. En grupos/canales, permite solo si el chat está permitido
+    chat_username = f"@{message.chat.username}".lower() if message.chat.username else None
+    chat_id = message.chat.id
+
+    # Normalizamos la lista de chats permitidos
+    chats_permitidos_lower = [c.lower() if isinstance(c, str) else c for c in chats_permitidos]
+
+    if (chat_username and chat_username in chats_permitidos_lower) or chat_id in chats_permitidos_lower:
+        return True
+
+    return False
+    
+    
     
     

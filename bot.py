@@ -246,51 +246,46 @@ def construir_monitor_texto_html():
     if not tasa_bcv_cruda:
         return "❌ Error temporal al conectar con la tasa base del BCV."
 
-    tasa_bcv_ajustada = tasa_bcv_cruda * 1.005
+    tasa_bcv_ajustada = tasa_bcv_cruda * 1.005 # BCV + 0.5% (Intervención)
 
-    # 1. Definimos los 3 rangos originales
+    # Definimos los 3 rangos con su nombre y el monto de USD de referencia
     rangos = [
-        ("Pequeño ($50 - $100)", 50.0),
-        ("Mediano ($100 - $300)", 150.0),
-        ("Mayor ($500+)", 500.0)
+        ("Rango Pequeño ($50 - $100)", 50.0),
+        ("Rango Mediano ($100 - $300)", 150.0),
+        ("Rango Mayor ($500+)", 500.0)
     ]
 
-    texto = (
-        f"📊 <b>Monitor de Tasas Arbitraje P2P</b>\n"
-        f"📅 <b>Vigencia BCV:</b> {fecha_valor_bcv}\n"
-        f"🏛️ BCV Oficial: {tasa_bcv_cruda:.2f} Bs\n"
-        f"⚙️ BCV + 0.5%: {tasa_bcv_ajustada:.2f} Bs\n"
-        f"🛡️ <i>Filtros activos: Solo Anunciantes Verificados</i>\n"
-        f"----------------------------------------\n\n"
-    )
+    texto = f"📊 <b>Monitor de Tasas Arbitraje P2P</b>\n"
+    texto += f"📅 Vigencia BCV: <code>{fecha_valor_bcv}</code>\n"
+    texto += f"🏛 BCV Oficial: <b>{tasa_bcv_cruda:.2f} Bs</b>\n"
+    texto += f"⚙️ BCV + 0.5%: <b>{tasa_bcv_ajustada:.2f} Bs</b>\n"
+    texto += f"🛡 <i>Filtros activos: Solo Anunciantes Verificados | Anuncios Comerciables</i>\n"
+    texto += "----------------------------------------\n\n"
 
-    for nombre, factor in rangos:
-        # 1. Filtro VENTA: Volumen en Bs para la masa equivalente al banco (Intervención)
-        filtro_venta = factor * tasa_bcv_ajustada
-        
-        # 2. Filtro COMPRA: Volumen en Bs para los USDT paralelos completos ($500 x tasa estimada)
-        # Usa una estimación base (~870 Bs) o un multiplicador dinámico para simular el volumen real en Bs
-        filtro_compra = factor * 870.0  
+    for nombre_rango, usd_ref in rangos:
+        # Monto estimado en Bs para hacer la consulta del filtro en Binance
+        monto_filtro_bs = usd_ref * tasa_bcv_ajustada
 
-        # 3. Llamada separada con filtros independientes
-        try:
-            c = obtener_tasa_binance_p2p("BUY", filtro_compra)
-            v = obtener_tasa_binance_p2p("SELL", filtro_venta)  
-        except Exception as e:
-            print(f"⚠️ Error Binance P2P ({nombre}): {e}")
-            c, v = None, None
+        # Obtenemos las tasas en tiempo real de Binance pasando el monto del filtro
+        tasa_compra = obtener_tasa_binance_p2p("BUY", monto_filtro_bs)
+        tasa_venta = obtener_tasa_binance_p2p("SELL", monto_filtro_bs)
 
-        if c and v:
-            s = v - c
-            p = (s / c) * 100
-            texto += (
-                f"🔹 <b>Rango {nombre}</b>\n"
-                f"🟢 Compra: {c:.2f} Bs | 🔴 Venta: {v:.2f} Bs\n"
-                f"📉 Spread: {s:.2f} Bs ({p:.2f}%)\n\n"
-            )
+        if tasa_compra and tasa_venta:
+            # Calculamos dinámicamente los Bolívares necesarios para cada operación
+            filtro_p2p_bs = usd_ref * tasa_compra
+            filtro_bcv_bs = usd_ref * tasa_bcv_ajustada
+
+            spread = tasa_venta - tasa_compra
+            porcentaje_spread = (spread / tasa_compra) * 100
+
+            texto += f"🔷 <b>{nombre_rango}</b>\n"
+            texto += f"🟢 <b>Compra USDT</b> (Filtro P2P: ~{filtro_p2p_bs:,.0f} Bs): <b>{tasa_compra:.2f} Bs</b>\n"
+            texto += f"🔴 <b>Venta (Intervención Electrónica)</b> (Filtro BCV: ~{filtro_bcv_bs:,.0f} Bs): <b>{tasa_venta:.2f} Bs</b>\n"
+            texto += f"📉 Spread: <b>{spread:.2f} Bs</b> (<b>{porcentaje_spread:.2f}%</b>)\n\n"
         else:
-            texto += f"🔹 <b>Rango {nombre}:</b> <i>Cargando anunciantes Binance...</i>\n\n"
+            texto += f"🔷 <b>{nombre_rango}</b>\n⚠️ <i>No se pudieron obtener tasas para este rango.</i>\n\n"
 
+    texto += "<i>Última actualización de tasas en vivo: Hace un instante.</i>"
     return texto
     
     

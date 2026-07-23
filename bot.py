@@ -286,7 +286,7 @@ def construir_monitor_texto_html():
         else:
             texto += f"🔷 <b>{nombre_rango}</b>\n⚠️ <i>No se pudieron obtener tasas para este rango.</i>\n\n"
 
-    texto += "<i>Última actualización de tasas en vivo: Hace un instante.</i>"
+    #texto += "<i>Última actualización de tasas en vivo: Hace un instante.</i>"
     return texto
     
     

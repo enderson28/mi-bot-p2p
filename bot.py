@@ -160,9 +160,22 @@ def obtener_datos_bcv_validos():
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
     }
 
-    # --- INTENTO 1: Scraping al espejo del BCV ---
+    # --- INTENTO 1: DolarApi Ve (Obtiene Tasa y Fecha REAL del BCV) ---
+    try:
+        r = requests.get("https://ve.dolarapi.com/v1/dolares/oficial", timeout=2.0)
+        if r.status_code == 200:
+            datos = r.json()
+            tasa = float(datos.get('promedio', 0))
+            fecha_val = datos.get('fechaActualizacion', '')[:10] # Formato AAAA-MM-DD
+            if tasa > 737.5:
+                return tasa, fecha_val
+    except Exception:
+        pass
+
+    # --- INTENTO 2: Scraping espejo BCV ---
     try:
         from bs4 import BeautifulSoup
+        from datetime import datetime
         r = requests.get("https://ve.360data.cloud/bcv", headers=headers, timeout=2.0)
         if r.status_code == 200:
             soup = BeautifulSoup(r.content, 'html.parser')
@@ -171,24 +184,15 @@ def obtener_datos_bcv_validos():
                 val_clean = elem_usd.text.strip().replace('.', '').replace(',', '.').strip()
                 tasa = float(val_clean)
                 if tasa > 737.5:
-                    return tasa, "2026-07-23"
+                    # Toma la fecha de hoy/mañana del servidor automáticamente
+                    fecha_hoy = datetime.now().strftime("%Y-%m-%d")
+                    return tasa, fecha_hoy
     except Exception:
         pass
 
-    # --- INTENTO 2: DolarApi Ve ---
-    try:
-        r = requests.get("https://ve.dolarapi.com/v1/dolares/oficial", timeout=1.5)
-        if r.status_code == 200:
-            datos = r.json()
-            tasa = float(datos.get('promedio', 0))
-            fecha_val = datos.get('fechaActualizacion', '')[:10]
-            if tasa > 737.5:
-                return tasa, fecha_val
-    except Exception:
-        pass
-
-    # --- INTENTO 3: Tasa Confirmada de Hoy (Fallback) ---
-    return 737.8816, "2026-07-23"
+    # --- INTENTO 3: Fallback de Seguridad ---
+    from datetime import datetime
+    return 737.8816, datetime.now().strftime("%Y-%m-%d")
     
 def obtener_tasa_binance_p2p(tipo_operacion, monto_bs):
     url = "https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search"

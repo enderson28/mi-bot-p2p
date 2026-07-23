@@ -259,7 +259,7 @@ def construir_monitor_texto_html():
     texto += f"📅 Vigencia BCV: <code>{fecha_valor_bcv}</code>\n"
     texto += f"🏛 BCV Oficial: <b>{tasa_bcv_cruda:.2f} Bs</b>\n"
     texto += f"⚙️ BCV + 0.5%: <b>{tasa_bcv_ajustada:.2f} Bs</b>\n"
-    texto += f"🛡 <i>Filtros activos: Solo Anunciantes Verificados | Anuncios Comerciables</i>\n"
+    texto += f"🛡 <i>Filtros activos: Verificados | Comerciables 🟡🔻 | Pago: Todos ▼</i>\n"
     texto += "----------------------------------------\n\n"
 
     for nombre_rango, usd_ref in rangos:
@@ -335,7 +335,7 @@ def handle_start(message):
             
             texto_vip = (
                 f"👋 <b>¡Hola, {message.from_user.first_name}!</b>\n\n"
-                "Gracias por tu valiosa labor diaria manteniendo el orden en la comunidad.\n"
+                "Gracias por tu valiosa labor diaria manteniendo el orden en la comunidad - AntonyS4.\n"
                 "🛡️ <i>Tienes activo el entorno VIP de trabajo rápido (sin distracciones ni guías de inicio).</i>"
             )
             bot.send_message(message.chat.id, texto_vip, parse_mode="HTML", reply_markup=markup)

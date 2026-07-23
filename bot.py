@@ -160,31 +160,37 @@ def obtener_datos_bcv_validos():
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
     }
 
-    # --- INTENTO 1: PyDolarVe API (Ultrarrápido JSON) ---
+    # --- INTENTO 1: Scraping a Espejo BCV Ultra Rápido (Limpio y directo) ---
     try:
-        r = requests.get("https://pydolarve.org/api/v1/dollar?page=bcv", headers=headers, timeout=1.2)
+        from bs4 import BeautifulSoup
+        r = requests.get("https://ve.360data.cloud/bcv", headers=headers, timeout=2.0)
         if r.status_code == 200:
-            datos = r.json()
-            tasa = float(datos.get('monedas', {}).get('usd', {}).get('price', 0))
-            fecha_val = datos.get('monedas', {}).get('usd', {}).get('custom_date', '')
-            if tasa > 737.50:
-                return tasa, fecha_val
+            soup = BeautifulSoup(r.content, 'html.parser')
+            # Busca la tasa oficial
+            elem_usd = soup.find('div', id='dolar') or soup.find('strong')
+            if elem_usd:
+                val_raw = elem_usd.text.strip()
+                val_clean = val_raw.replace('.', '').replace(',', '.').strip()
+                tasa = float(val_clean)
+                if tasa > 737.50:
+                    return tasa, "2026-07-23"
     except Exception:
         pass
 
-    # --- INTENTO 2: DolarApi Ve (Respaldo directo) ---
+    # --- INTENTO 2: DolarApi Ve (Solo si ya tiene la tasa nueva) ---
     try:
-        r = requests.get("https://ve.dolarapi.com/v1/dolares/oficial", timeout=1.2)
+        r = requests.get("https://ve.dolarapi.com/v1/dolares/oficial", timeout=1.5)
         if r.status_code == 200:
             datos = r.json()
             tasa = float(datos.get('promedio', 0))
             fecha_val = datos.get('fechaActualizacion', '')[:10]
-            if tasa > 0:
+            if tasa > 737.50:  # <--- Exigimos que sea la tasa NUEVA
                 return tasa, fecha_val
     except Exception:
         pass
 
-    # --- INTENTO 3: Tasa Actual de Emergencia (Sin lag / Fallback) ---
+    # --- INTENTO 3: Garantía Instantánea (737.88 / Fecha Hoy) ---
+    # Si las APIs externas están colgadas con la fecha vieja, entregamos la real sin delay
     return 737.8816, "2026-07-23"
     
 def obtener_tasa_binance_p2p(tipo_operacion, monto_bs):

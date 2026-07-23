@@ -219,7 +219,11 @@ def obtener_tasa_binance_p2p(tipo_operacion, monto_bs):
         if r.status_code == 200:
             datos = r.json().get('data', [])
             if datos:
-                return float(datos[0]['adv']['price'])
+                for anuncio in datos:
+                    adv = anuncio.get('adv', {})
+                    # Verificamos que el anuncio tenga precio y no esté pausado/deshabilitado
+                    if adv.get('price') and adv.get('tradeType'):
+                        return float(adv['price'])    
     except Exception as e:
         print(f"⚠️ Error conectando con Binance P2P: {e}")
         

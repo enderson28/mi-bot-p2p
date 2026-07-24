@@ -533,14 +533,21 @@ def procesar_intervencion(message):
         if not usuario_esta_unido(user_id):
             bot.reply_to(message, "❌ No tienes acceso. Debes unirte al canal oficial para usar el bot.")
             return
-            
+
         # Creamos el botón flotante para actualizar
         markup_intervencion = InlineKeyboardMarkup()
         markup_intervencion.add(InlineKeyboardButton("🔄 Actualizar Cálculo", callback_data="refrescar_intervencion"))
 
+        # 🎯 EVALUACIÓN DE EXCEPCIÓN 1%:
+        # Si es el admin especial (@carloses783), le construimos su texto al 1%
+        if es_admin_especial(message.from_user):
+            texto_intervencion = construir_intervencion_texto_html(porcentaje=1.0)
+        else:
+            texto_intervencion = construir_intervencion_texto_html()
+
         bot.send_message(
-            chat_id, 
-            construir_intervencion_texto_html(), 
+            chat_id,
+            texto_intervencion,
             parse_mode="HTML",
             reply_markup=markup_intervencion
         )

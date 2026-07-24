@@ -68,9 +68,7 @@ def es_administrador(bot, chat_id, user_id, user=None):
     except Exception:
         pass
 
-    # Si no cumple ninguna de las 3, es un usuario común
     return False
-    
     
     
 # ============================================
@@ -159,17 +157,10 @@ def limpiar_comandos_chat(bot, message):
     return False
     
 def es_chat_permitido(bot, message, chats_permitidos, usuarios_autorizados, creador_id):
-    """
-    Verifica si el mensaje proviene de un chat/usuario autorizado:
-    1. Si eres el Creador Supremo, tienes acceso total e incondicional.
-    2. En chat privado, valida si el usuario está autorizado/unido.
-    3. En grupos/canales de la lista blanca fija, siempre responde.
-    4. En GRUPOS NUEVOS/AJENOS: Solo responde si el CREADOR está dentro del grupo.
-    """
     user_id = str(message.from_user.id) if message.from_user else ""
     creador_str = str(creador_id)
 
-    # 1. SI TU ID NUMÉRICO COINCIDE, ACCESO TOTAL EN CUALQUIER LUGAR
+    # 1. SI TU ID NUMÉRICO COINCIDE, ACCESO TOTAL
     if user_id == creador_str:
         return True
 
@@ -183,24 +174,24 @@ def es_chat_permitido(bot, message, chats_permitidos, usuarios_autorizados, crea
     chat_username = f"@{message.chat.username}".lower() if message.chat.username else None
     chat_id = message.chat.id
 
-    # Normalizamos la lista de chats permitidos (@COMUNIDADAS04, @COMUNIDV, etc.)
     chats_permitidos_lower = [c.lower() if isinstance(c, str) else c for c in chats_permitidos]
 
-    # A) Si es uno de los canales oficiales fijos, ACCESO PERMITIDO
+    # A) Si es uno de los canales oficiales fijos (@COMUNIDADAS04, @COMUNIDV, @IDVADMINS)
     if (chat_username and chat_username in chats_permitidos_lower) or (chat_id in chats_permitidos_lower):
         return True
 
     # B) SI ES UN CANAL/GRUPO NUEVO O AJENO:
-    # Verificamos si tú (el CREADOR_ID) estás físicamente en ese chat
+    # Solo se permite si TÚ (CREADOR_ID) estás físicamente en ese grupo
     try:
         miembro_creador = bot.get_chat_member(chat_id, int(creador_id))
         if miembro_creador.status in ['creator', 'administrator', 'member']:
-            return True  # Estás adentro -> El bot responde
+            return True
     except Exception:
-        pass  # Si no estás o da error de consulta -> Se bloquea abajo
+        pass
 
-    # Si no estás presente y el grupo no es oficial, SE BLOQUEA
+    # Si no estás presente y tampoco es un canal oficial, SE BLOQUEA
     return False
+    
     
     
     

@@ -227,15 +227,15 @@ def obtener_tasa_binance_p2p(tipo_operacion, monto_bs):
 
                     # 1. Ignorar si el usuario está bloqueado o inactivo
                     if user_status in ['BLOCKED', 'INACTIVE']:
-                    continue
+                        continue
 
                     # 2. Ignorar si el anuncio tiene botón "Restringido"
                     if is_restricted:
-                    continue
+                        continue
 
                     # Si pasa todos los filtros, devolvemos el precio inmediatamente
                     if precio:
-                       return float(precio)
+                        return float(precio)
                     
     except Exception as e:
         print(f"⚠️ Error conectando con Binance P2P: {e}")

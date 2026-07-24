@@ -421,7 +421,27 @@ def handle_botones_menu(message):
             procesar_intervencion(message)
         elif message.text in ["🔶 BPay 🔶", "🔵 GPay 🔵"]:
             procesar_guias(message)
+# ==========================================
+# REEMPLAZO LIMPIO PARA CHAT PRIVADO
+# ==========================================
+ultimos_mensajes_privados = {}
 
+def enviar_o_reemplazar_privado(chat_id, user_id, texto, reply_markup=None):
+    if user_id in ultimos_mensajes_privados:
+        try:
+            bot.delete_message(chat_id, ultimos_mensajes_privados[user_id])
+        except Exception:
+            pass
+            
+    nuevo_msg = bot.send_message(
+        chat_id, 
+        texto, 
+        parse_mode="HTML", 
+        reply_markup=reply_markup
+    )
+    
+    ultimos_mensajes_privados[user_id] = nuevo_msg.message_id
+    return nuevo_msg
 # ==========================================
 #  LÓGICA CON AUTODESTRUCCIÓN Y LIMPIEZA
 # ==========================================
@@ -454,7 +474,7 @@ def procesar_precio(message):
                 texto_completo = monitor_base + TEXTO_REGLA_ORO_HTML
 
             # 3. Enviamos el mensaje correspondiente
-            bot.send_message(chat_id, texto_completo, parse_mode="HTML", reply_markup=obtener_boton_actualizar_inline())
+            enviar_o_reemplazar_privado(chat_id, user_id, texto_completo, reply_markup=obtener_boton_actualizar_monitor())
 
         except Exception as e:
             print(f"Error en precio privado: {e}")

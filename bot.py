@@ -473,8 +473,16 @@ def procesar_precio(message):
             else:
                 texto_completo = monitor_base + TEXTO_REGLA_ORO_HTML
 
-            # 3. Enviamos el mensaje correspondiente
-            enviar_o_reemplazar_privado(chat_id, user_id, texto_completo, reply_markup=obtener_boton_actualizar_monitor())
+            # 3. Creamos el botón de actualizar y enviamos/reemplazamos
+            markup_tasas = InlineKeyboardMarkup()
+            markup_tasas.add(InlineKeyboardButton("🔄 Actualizar Tasas", callback_data="refrescar_tasas"))
+
+            enviar_o_reemplazar_privado(
+            chat_id, 
+            user_id, 
+            texto_completo, 
+            reply_markup=markup_tasas
+            )
 
         except Exception as e:
             print(f"Error en precio privado: {e}")

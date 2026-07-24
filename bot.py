@@ -431,10 +431,17 @@ def procesar_precio(message):
 
     # --- 1. CHAT PRIVADO ---
     if message.chat.type == "private":
+        # 👑 ORDEN DE MANDO: Borra el comando enviado por el usuario si empieza con '/'
+        if message.text and message.text.strip().startswith('/'):
+            try:
+                bot.delete_message(chat_id, message.message_id)
+            except Exception:
+                pass
+
         if not usuario_esta_unido(user_id):
             bot.reply_to(message, "❌ No tienes acceso. Debes unirte al canal oficial para usar el bot.")
             return
-
+            
         try:
             # 1. Armamos el monitor base
             monitor_base = construir_monitor_texto_html()
@@ -516,10 +523,17 @@ def procesar_intervencion(message):
 
     # --- 1. CHAT PRIVADO ---
     if message.chat.type == "private":
+        # 👑 ORDEN DE MANDO: Borra el comando enviado por el usuario si empieza con '/'
+        if message.text and message.text.strip().startswith('/'):
+            try:
+                bot.delete_message(chat_id, message.message_id)
+            except Exception:
+                pass
+
         if not usuario_esta_unido(user_id):
             bot.reply_to(message, "❌ No tienes acceso. Debes unirte al canal oficial para usar el bot.")
             return
-
+            
         # Creamos el botón flotante para actualizar
         markup_intervencion = InlineKeyboardMarkup()
         markup_intervencion.add(InlineKeyboardButton("🔄 Actualizar Cálculo", callback_data="refrescar_intervencion"))
@@ -590,9 +604,16 @@ def procesar_guias(message):
 
     # --- 1. CHAT PRIVADO ---
     if message.chat.type == "private":
+        # 👑 ORDEN DE MANDO: Borra el comando enviado por el usuario si empieza con '/'
+        if message.text and message.text.strip().startswith('/'):
+            try:
+                bot.delete_message(chat_id, message.message_id)
+            except Exception:
+                pass
+
         if not usuario_esta_unido(user_id):
             bot.reply_to(message, "❌ No tienes acceso. Debes unirte al canal oficial para usar el bot.")
-            return
+            return   
             
         if es_bpay:
             bot.reply_to(message, TEXTO_BPAY, parse_mode="HTML")

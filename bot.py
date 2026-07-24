@@ -447,8 +447,13 @@ def enviar_o_reemplazar_privado(chat_id, user_id, texto, reply_markup=None):
 #  LÓGICA CON AUTODESTRUCCIÓN Y LIMPIEZA
 # ==========================================
 def procesar_precio(message):
+    # --- FILTRO DE SEGURIDAD GENERAL ---
+    if not es_chat_permitido(bot, message, CHATS_PERMITIDOS, USUARIOS_AUTORIZADOS, CREADOR_ID):
+        return  # Si el canal no está autorizado y el creador NO está adentro, no hace nada.
+
     user_id = message.from_user.id
     chat_id = message.chat.id
+    
 
     # --- 1. CHAT PRIVADO ---
     if message.chat.type == "private":
@@ -547,8 +552,13 @@ def procesar_precio(message):
                 pass
 
 def procesar_intervencion(message):
+    # --- FILTRO DE SEGURIDAD GENERAL ---
+    if not es_chat_permitido(bot, message, CHATS_PERMITIDOS, USUARIOS_AUTORIZADOS, CREADOR_ID):
+        return  # Si el canal no está autorizado y el creador NO está adentro, no hace nada.
+
     user_id = message.from_user.id
     chat_id = message.chat.id
+
 
     # --- 1. CHAT PRIVADO ---
     if message.chat.type == "private":

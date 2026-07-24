@@ -350,7 +350,7 @@ def handle_start(message):
             texto_bloqueo = (
                 "⚠️ <b>Acceso Restringido</b>\n\n"
                 "Este bot es de uso exclusivo para nuestra comunidad.\n"
-                "📢 <b>Únete a la comunidad oficial aquí:</b> @COMUNIDAS04\n\n"
+                "📢 <b>Únete a la comunidad oficial aquí:</b> @COMUNIDADAS04\n\n"
                 "<i>Una vez te hayas unido, vuelve a presionar /start.</i>"
             )
             bot.send_message(message.chat.id, texto_bloqueo, parse_mode="HTML")

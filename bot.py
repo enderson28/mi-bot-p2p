@@ -218,16 +218,25 @@ def obtener_tasa_binance_p2p(tipo_operacion, monto_bs):
                 for elemento in datos:
                     adv = elemento.get('adv', {})
                     advertiser = elemento.get('advertiser', {})
-                    
-                    # 1. Validar que el anuncio esté activo y con precio
+
                     precio = adv.get('price')
-                    
-                    # 2. Validar que el comerciante NO tenga estado bloqueado/restringido
-                    # Si 'userType' existe y el estado del usuario no es restringido
                     user_status = advertiser.get('userStatus', '')
+                
+                    # Detectar si el anuncio o el usuario tienen restricciones/condiciones especiales
+                    is_restricted = adv.get('isRestricted') or adv.get('tradeTypeCondition') or False
+
+                    # 1. Ignorar si el usuario está bloqueado o inactivo
+                    if user_status in ['BLOCKED', 'INACTIVE']:
+                    continue
+
+                    # 2. Ignorar si el anuncio tiene botón "Restringido"
+                    if is_restricted:
+                    continue
+
+                    # Si pasa todos los filtros, devolvemos el precio inmediatamente
+                    if precio:
+                       return float(precio)
                     
-                    if precio and user_status != 'BLOCKED':
-                        return float(precio)
     except Exception as e:
         print(f"⚠️ Error conectando con Binance P2P: {e}")
 

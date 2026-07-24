@@ -158,34 +158,50 @@ def limpiar_comandos_chat(bot, message):
 
     return False
     
-def es_chat_permitido(message, chats_permitidos, usuarios_autorizados, creador_id):
+def es_chat_permitido(bot, message, chats_permitidos, usuarios_autorizados, creador_id):
     """
-    Verifica si el mensaje proviene de un chat/usuario autorizado,
-    dando PRIVILEGIO TOTAL E INCONDICIONAL al ID numérico del creador.
+    Verifica si el mensaje proviene de un chat/usuario autorizado:
+    1. Si eres el Creador Supremo, tienes acceso total e incondicional.
+    2. En chat privado, valida si el usuario está autorizado/unido.
+    3. En grupos/canales de la lista blanca fija, siempre responde.
+    4. En GRUPOS NUEVOS/AJENOS: Solo responde si el CREADOR está dentro del grupo.
     """
-    # 👑 1. SI TU ID NUMÉRICO COINCIDE, ACCESO TOTAL EN CUALQUIER LUGAR
-    if str(message.from_user.id) == str(creador_id):
+    user_id = str(message.from_user.id) if message.from_user else ""
+    creador_str = str(creador_id)
+
+    # 1. SI TU ID NUMÉRICO COINCIDE, ACCESO TOTAL EN CUALQUIER LUGAR
+    if user_id == creador_str:
         return True
 
-    # Convertimos la lista de usuarios autorizados a minúsculas por seguridad
-    usuarios_permitidos_lower = [u.lower() for u in usuarios_autorizados]
-
-    # 2. Si es mensaje privado, permite solo a los admins autorizados
+    # 2. SI ES CHAT PRIVADO
     if message.chat.type == 'private':
-        username_usuario = f"@{message.from_user.username}" if message.from_user.username else ""
-        return username_usuario.lower() in usuarios_permitidos_lower
+        usuarios_permitidos_lower = [str(u).lower() for u in usuarios_autorizados]
+        username_usuario = f"@{message.from_user.username}".lower() if message.from_user.username else ""
+        return username_usuario in usuarios_permitidos_lower or user_id in usuarios_permitidos_lower
 
-    # 3. En grupos/canales, permite solo si el chat está permitido
+    # 3. EN GRUPOS / CANALES
     chat_username = f"@{message.chat.username}".lower() if message.chat.username else None
     chat_id = message.chat.id
 
-    # Normalizamos la lista de chats permitidos
+    # Normalizamos la lista de chats permitidos (@COMUNIDADAS04, @COMUNIDV, etc.)
     chats_permitidos_lower = [c.lower() if isinstance(c, str) else c for c in chats_permitidos]
 
-    if (chat_username and chat_username in chats_permitidos_lower) or chat_id in chats_permitidos_lower:
+    # A) Si es uno de los canales oficiales fijos, ACCESO PERMITIDO
+    if (chat_username and chat_username in chats_permitidos_lower) or (chat_id in chats_permitidos_lower):
         return True
 
+    # B) SI ES UN CANAL/GRUPO NUEVO O AJENO:
+    # Verificamos si tú (el CREADOR_ID) estás físicamente en ese chat
+    try:
+        miembro_creador = bot.get_chat_member(chat_id, int(creador_id))
+        if miembro_creador.status in ['creator', 'administrator', 'member']:
+            return True  # Estás adentro -> El bot responde
+    except Exception:
+        pass  # Si no estás o da error de consulta -> Se bloquea abajo
+
+    # Si no estás presente y el grupo no es oficial, SE BLOQUEA
     return False
+    
     
     
     

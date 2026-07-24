@@ -163,39 +163,36 @@ def obtener_datos_bcv_validos():
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
     }
-    fecha_hoy_str = datetime.now().strftime("%Y-%m-%d")
-
-    # --- INTENTO 1: DolarApi Ve (Obtiene Tasa y Fecha REAL del BCV) ---
+    
+    # --- INTENTO 1: Open API PyDolarVenezuela (Rápida, sin delay y con fecha real) ---
     try:
-        r = requests.get("https://ve.dolarapi.com/v1/dolares/oficial", timeout=2.0)
+        r = requests.get("https://pydolarvenezuela-api.vercel.app/api/v1/dollar?page=bcv", timeout=2.5)
+        if r.status_code == 200:
+            datos = r.json()
+            tasa = float(datos.get('monitors', {}).get('usd', {}).get('price', 0))
+            fecha_val = datos.get('monitors', {}).get('usd', {}).get('last_update', '')
+            
+            if tasa > 0:
+                # Devuelve la tasa y la fecha valor real del BCV automáticamente
+                return tasa, fecha_val if fecha_val else datetime.now().strftime("%Y-%m-%d")
+    except Exception:
+        pass
+
+    # --- INTENTO 2: DolarApi Ve (Respaldo automático secundario) ---
+    try:
+        r = requests.get("https://ve.dolarapi.com/v1/dolares/oficial", timeout=2.5)
         if r.status_code == 200:
             datos = r.json()
             tasa = float(datos.get('promedio', 0))
-            fecha_val = datos.get('fechaActualizacion', '')[:10]  # Formato AAAA-MM-DD
+            fecha_val = datos.get('fechaActualizacion', '')[:10]
             
-            # REGLA DE ORO: Tasa mayor a 0 Y fecha estrictamente igual a HOY
-            if tasa > 0 and fecha_val == fecha_hoy_str:
-                return tasa, fecha_val
+            if tasa > 0:
+                return tasa, fecha_val if fecha_val else datetime.now().strftime("%Y-%m-%d")
     except Exception:
         pass
 
-    # --- INTENTO 2: Scraping espejo BCV ---
-    try:
-        from bs4 import BeautifulSoup
-        r = requests.get("https://ve.360data.cloud/bcv", headers=headers, timeout=2.0)
-        if r.status_code == 200:
-            soup = BeautifulSoup(r.content, 'html.parser')
-            elem_usd = soup.find('div', id='dolar') or soup.find('strong')
-            if elem_usd:
-                val_clean = elem_usd.text.strip().replace('.', '').replace(',', '.').strip()
-                tasa = float(val_clean)
-                if tasa > 0:
-                    return tasa, fecha_hoy_str
-    except Exception:
-        pass
-
-    # --- INTENTO 3: Fallback de Seguridad ---
-    return 737.88, fecha_hoy_str
+    # --- INTENTO 3: Fallback de Emergencia (Solo si falla todo el internet) ---
+    return 742.22, "2026-07-27"
     
 def obtener_tasa_binance_p2p(tipo_operacion, monto_bs):
     url = "https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search"

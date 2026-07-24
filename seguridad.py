@@ -184,7 +184,7 @@ def es_chat_permitido(bot, message, chats_permitidos, usuarios_autorizados, crea
     # Solo se permite si TÚ (CREADOR_ID) estás físicamente en ese grupo
     try:
         miembro_creador = bot.get_chat_member(chat_id, int(creador_id))
-        if miembro_creador.status in ['creator', 'administrator', 'member']:
+        if miembro_creador.status in ['creator', 'administrator']:
             return True
     except Exception:
         pass

@@ -147,7 +147,7 @@ def limpiar_comandos_chat(bot, message):
 
         # Si es un comando oficial de Group Help, esperamos medio segundo
         if comando in COMANDOS_GROUP_HELP:
-            time.sleep(0.5)
+            time.sleep(4)
 
         # Borramos el mensaje de texto del comando
         try:

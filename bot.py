@@ -573,10 +573,10 @@ def procesar_intervencion(message):
         else:
             texto_intervencion = construir_intervencion_texto_html()
 
-        bot.send_message(
+        enviar_o_reemplazar_privado(
             chat_id,
+            user_id,
             texto_intervencion,
-            parse_mode="HTML",
             reply_markup=markup_intervencion
         )
         return
@@ -650,10 +650,13 @@ def procesar_guias(message):
             bot.reply_to(message, "❌ No tienes acceso. Debes unirte al canal oficial para usar el bot.")
             return   
             
-        if es_bpay:
-            bot.reply_to(message, TEXTO_BPAY, parse_mode="HTML")
-        else:
-            bot.reply_to(message, TEXTO_GPAY, parse_mode="HTML")
+        texto_guia = TEXTO_BPAY if es_bpay else TEXTO_GPAY
+
+        enviar_o_reemplazar_privado(
+            chat_id,
+            user_id,
+            texto_guia
+        )
         return  # 👈 Este return corta la función AQUÍ si es privado
 
     # --- 2. EN GRUPOS (SILENCIO ABSOLUTO Y BORRADO AUTOMÁTICO) ---

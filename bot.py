@@ -500,6 +500,7 @@ def procesar_precio(message):
                 texto_completo,
                 reply_markup=markup_tasas
             )
+            return
 
         except Exception as e:
             print(f"Error en precio privado: {e}")

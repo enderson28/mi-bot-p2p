@@ -55,15 +55,17 @@ def borrar_mensaje_luego(chat_id, message_id, segundos):
 # ==========================================
 def obtener_teclado_privado():
     markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-    btn_precio = KeyboardButton("🟢 P2P~USDT 🔴")
+    btn_precio = KeyboardButton("🟢 P2P~USDT 🟢")
     btn_intervencion = KeyboardButton("📊 Intervención 📊")
-    btn_regla = KeyboardButton("📜 Regla de Oro 📜") # <-- Botón nuevo
-    btn_bpay = KeyboardButton("🔶 BPay 🔶")
+    btn_regla = KeyboardButton("📜 Regla de Oro 📜")
+    btn_bpay = KeyboardButton("🔸 BPay 🔸")
     btn_gpay = KeyboardButton("🔵 GPay 🔵")
+    btn_soporte = KeyboardButton("⚙️ Soporte")  # <-- Botón nuevo
 
     markup.add(btn_precio, btn_intervencion)
-    markup.add(btn_regla) # <-- Ocupará toda la fila central
+    markup.add(btn_regla)
     markup.add(btn_bpay, btn_gpay)
+    markup.add(btn_soporte)  # <-- Ocupará la fila inferior completa
     return markup
 
 def obtener_boton_actualizar_inline():
@@ -135,6 +137,22 @@ TEXTO_REGLA_ORO_HTML = (
     f"3️⃣ Convierte a USDT y vende usando la tasa de <code>🔴 Venta</code> de este monitor.\n\n"
     f"🛡️ <b>Estrategia de Capital Seguro:</b>\n"
     f"Al vender en VES, consulta mañana este bot. Usa solo los bolívares necesarios para volver a comprar tu capital base en el banco (<code>BCV + 0.5%</code>). <b>¡Deja tus ganancias acumuladas en USDT dentro de Binance como tu colchón de ahorro seguro!</b>"
+)
+
+TEXTO_SOPORTE = (
+    "<b>⚙️ Soporte y Colaboraciones</b>\n\n"
+    "Cualquier duda sobre el uso de la herramienta implementada, "
+    "puedes consultar directamente a Soporte:\n"
+    "👤 <a href='tg://user?id=5073264705'>Enderson García</a>\n\n"
+    "<i>Para mantener la funcionalidad y eficiencia de la herramienta, "
+    "puedes colaborar de forma voluntaria:</i>\n\n"
+    "<b>Donaciones:</b>\n"
+    "🔸 <b>Binance ID:</b> <code>214109465</code>\n"
+    "🇻🇪 <b>Pago Móvil: BDV 0102 BBVA 0108</b> <code>04145057892</code> <code>23007945</code>\n"
+    "🔵 <b>PayPal:</b> <code>@ender310</code>\n"
+    "🟡 <b>Transferencia Bancaria:</b> <code>01080066810100257971</code>\n"
+    "🇻🇪 <code>01020435610001901072</code>\n"
+    "<i>(Toca sobre los datos para copiarlos)</i>"
 )
 
 # ==========================================
@@ -415,7 +433,7 @@ def handle_invitacion_comando(message):
         )
         borrar_mensaje_luego(message.chat.id, aviso.message_id, 5)
         
-@bot.message_handler(func=lambda message: message.text in ["🟢 P2P~USDT 🔴", "📊 Intervención 📊", "📜 Regla de Oro 📜", "🔶 BPay 🔶", "🔵 GPay 🔵"])
+@bot.message_handler(func=lambda message: message.text in ["🟢 P2P~USDT 🟢", "📊 Intervención 📊", "📜 Regla de Oro 📜", "🔸 BPay 🔸", "🔵 GPay 🔵", "⚙️ Soporte"])
 def handle_botones_menu(message):
     if message.chat.type == "private":
         if message.text == "🟢 P2P~USDT 🔴":
@@ -426,6 +444,8 @@ def handle_botones_menu(message):
             procesar_regla_oro(message) # <-- NUEVA LLAMADA
         elif message.text in ["🔶 BPay 🔶", "🔵 GPay 🔵"]:
             procesar_guias(message)
+        elif message.text == "⚙️ Soporte":
+            procesar_soporte(message)
 # ==========================================
 # REEMPLAZO LIMPIO PARA CHAT PRIVADO
 # ==========================================
@@ -717,7 +737,34 @@ def procesar_regla_oro(message):
         bot.delete_message(chat_id, message.message_id)
     except Exception:
         pass
-    
+def procesar_soporte(message):
+    user_id = message.from_user.id
+    chat_id = message.chat.id
+
+    # --- 1. CHAT PRIVADO ---
+    if message.chat.type == "private":
+        if message.text and message.text.strip().startswith('/'):
+            try:
+                bot.delete_message(chat_id, message.message_id)
+            except Exception:
+                pass
+
+        if not usuario_esta_unido(user_id):
+            bot.reply_to(message, "❌ No tienes acceso. Debes unirte al canal oficial para usar el bot.")
+            return
+
+        enviar_o_reemplazar_privado(
+            chat_id,
+            user_id,
+            TEXTO_SOPORTE
+        )
+        return  # Corta la ejecución si es privado
+
+    # --- 2. EN GRUPOS (SILENCIO ABSOLUTO Y BORRADO AUTOMÁTICO) ---
+    try:
+        bot.delete_message(chat_id, message.message_id)
+    except Exception:
+        pass
 
 # ==========================================
 #    MANEJADOR DEL BOTÓN INLINE (REFRESCAR)

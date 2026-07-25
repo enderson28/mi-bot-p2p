@@ -164,11 +164,10 @@ def es_chat_permitido(bot, message, chats_permitidos, usuarios_autorizados, crea
     if user_id == creador_str:
         return True
 
-    # 2. SI ES CHAT PRIVADO
+    # 2. SI ES CHAT PRIVADO: Permitimos el paso libre para que procesar_precio / intervencion
+    # validen después si el usuario está unido al canal oficial (@COMUNIDADAS04)
     if message.chat.type == 'private':
-        usuarios_permitidos_lower = [str(u).lower() for u in usuarios_autorizados]
-        username_usuario = f"@{message.from_user.username}".lower() if message.from_user.username else ""
-        return username_usuario in usuarios_permitidos_lower or user_id in usuarios_permitidos_lower
+        return True
 
     # 3. EN GRUPOS / CANALES
     chat_username = f"@{message.chat.username}".lower() if message.chat.username else None
@@ -180,8 +179,8 @@ def es_chat_permitido(bot, message, chats_permitidos, usuarios_autorizados, crea
     if (chat_username and chat_username in chats_permitidos_lower) or (chat_id in chats_permitidos_lower):
         return True
 
-    # B) SI ES UN CANAL/GRUPO NUEVO O AJENO:
-    # Solo se permite si TÚ (CREADOR_ID) estás físicamente en ese grupo
+    # B) EXCEPCIÓN DINÁMICA EN CANALES/GRUPOS AJENOS:
+    # Solo se autoriza si TÚ (CREADOR_ID) eres ADMINISTRADOR o CREADOR en ese grupo ajeno
     try:
         miembro_creador = bot.get_chat_member(chat_id, int(creador_id))
         if miembro_creador.status in ['creator', 'administrator']:
@@ -189,8 +188,9 @@ def es_chat_permitido(bot, message, chats_permitidos, usuarios_autorizados, crea
     except Exception:
         pass
 
-    # Si no estás presente y tampoco es un canal oficial, SE BLOQUEA
+    # Si no eres admin en ese grupo ajeno o no estás, SE BLOQUEA
     return False
+    
     
     
     

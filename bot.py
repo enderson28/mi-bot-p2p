@@ -55,7 +55,7 @@ def borrar_mensaje_luego(chat_id, message_id, segundos):
 # ==========================================
 def obtener_teclado_privado():
     markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-    btn_precio = KeyboardButton("🟢 P2P~USDT 🟢")
+    btn_precio = KeyboardButton("🟢 P2P~USDT 🔴")
     btn_intervencion = KeyboardButton("📊 Intervención 📊")
     btn_regla = KeyboardButton("📜 Regla de Oro 📜") # <-- Botón nuevo
     btn_bpay = KeyboardButton("🔶 BPay 🔶")
@@ -79,7 +79,7 @@ TEXTO_START = (
     "👋 <b>¡Bienvenido al Monitor Oficial IDV ~ Arbitraje P2P!</b>\n\n"
     "Este bot es tu herramienta aliada para proteger tu capital y generar ganancias reales en Venezuela 🇻🇪. Aquí no tienes que adivinar; el sistema calcula todo por ti.\n\n"
     "🚀 <b>¿Cómo empezar? Usa el menú interactivo de botones aquí abajo o escribe los comandos:</b>\n"
-    "➡️ <code>/precio</code> o botón 🟢 <b>P2P~USDT</b> — Muestra las tasas reales BCV, precios P2P 🟢🔴.\n"
+    "➡️ <code>/precio</code> o botón 🟢🔴 <b>P2P~USDT</b> — Muestra las tasas reales BCV, precios P2P.\n"
     "➡️ <code>/intervencion</code> o botón 📊<b>Intervención</b> — Desglose de bolívares requeridos para la compra de dólares oficiales.\n"
     "➡️ <code>/bpay</code> o botón 🔸<b>BPay</b> 🔸— Guía paso a paso para cargar USD bancarios a Binance.\n"
     "➡️ <code>/gpay</code> o botón 🔹<b>GPay</b> 🔹— Ruta alternativa para Deposito USD usando Google Pay.\n\n"
@@ -337,7 +337,7 @@ def handle_start(message):
         if es_admin_vip(message.from_user):
             # Teclado ultralimpio para Administradores
             markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-            markup.add(KeyboardButton("🟢 P2P-USDT 🟢"), KeyboardButton("📊 Intervención 📊"))
+            markup.add(KeyboardButton("🟢 P2P-USDT 🔴"), KeyboardButton("📊 Intervención 📊"))
             
             texto_vip = (
                 f"👋 <b>¡Hola, {message.from_user.first_name}!</b>\n\n"
@@ -364,7 +364,7 @@ def handle_start(message):
 
 # Manejador para /precio y el botón P2P
 @bot.message_handler(commands=['precio', 'p2p'])
-@bot.message_handler(func=lambda m: m.text and m.text.strip() == "🟢 P2P-USDT 🟢")
+@bot.message_handler(func=lambda m: m.text and m.text.strip() == "🟢 P2P-USDT 🔴")
 def handle_precio_comando(message):
     procesar_precio(message)
 
@@ -415,10 +415,10 @@ def handle_invitacion_comando(message):
         )
         borrar_mensaje_luego(message.chat.id, aviso.message_id, 5)
         
-@bot.message_handler(func=lambda message: message.text in ["🟢 P2P~USDT 🟢", "📊 Intervención 📊", "📜 Regla de Oro 📜", "🔶 BPay 🔶", "🔵 GPay 🔵"])
+@bot.message_handler(func=lambda message: message.text in ["🟢 P2P~USDT 🔴", "📊 Intervención 📊", "📜 Regla de Oro 📜", "🔶 BPay 🔶", "🔵 GPay 🔵"])
 def handle_botones_menu(message):
     if message.chat.type == "private":
-        if message.text == "🟢 P2P~USDT 🟢":
+        if message.text == "🟢 P2P~USDT 🔴":
             procesar_precio(message)
         elif message.text == "📊 Intervención 📊":
             procesar_intervencion(message)

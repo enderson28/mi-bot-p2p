@@ -57,10 +57,12 @@ def obtener_teclado_privado():
     markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
     btn_precio = KeyboardButton("🟢 P2P~USDT 🟢")
     btn_intervencion = KeyboardButton("📊 Intervención 📊")
+    btn_regla = KeyboardButton("📜 Regla de Oro 📜") # <-- Botón nuevo
     btn_bpay = KeyboardButton("🔶 BPay 🔶")
     btn_gpay = KeyboardButton("🔵 GPay 🔵")
-    
+
     markup.add(btn_precio, btn_intervencion)
+    markup.add(btn_regla) # <-- Ocupará toda la fila central
     markup.add(btn_bpay, btn_gpay)
     return markup
 
@@ -413,13 +415,15 @@ def handle_invitacion_comando(message):
         )
         borrar_mensaje_luego(message.chat.id, aviso.message_id, 5)
         
-@bot.message_handler(func=lambda message: message.text in ["🟢 P2P~USDT 🟢", "📊 Intervención 📊", "🔶 BPay 🔶", "🔵 GPay 🔵"])
+@bot.message_handler(func=lambda message: message.text in ["🟢 P2P~USDT 🟢", "📊 Intervención 📊", "📜 Regla de Oro 📜", "🔶 BPay 🔶", "🔵 GPay 🔵"])
 def handle_botones_menu(message):
     if message.chat.type == "private":
         if message.text == "🟢 P2P~USDT 🟢":
             procesar_precio(message)
         elif message.text == "📊 Intervención 📊":
             procesar_intervencion(message)
+        elif message.text == "📜 Regla de Oro 📜":
+            procesar_regla_oro(message) # <-- NUEVA LLAMADA
         elif message.text in ["🔶 BPay 🔶", "🔵 GPay 🔵"]:
             procesar_guias(message)
 # ==========================================
@@ -473,22 +477,31 @@ def procesar_precio(message):
             monitor_base = construir_monitor_texto_html()
 
             # 2. Si es Admin VIP, mostramos SOLO el monitor (ultralimpio)
-            # Si es usuario común, le pegamos la Regla de Oro abajo
-            if es_admin_vip(message.from_user):
-                texto_completo = monitor_base
-            else:
-                texto_completo = monitor_base + TEXTO_REGLA_ORO_HTML
+                    # Mensaje de invitación exclusivo para usuarios comunes
+        aviso_regla = (
+            "\n\n👉 <b>¿Quieres saber cómo calcular tus ganancias paso a paso?</b>\n"
+            "Presiona el botón <b>📜 Regla de Oro 📜</b> en el menú de abajo. 👇🏽👇🏽"
+        )
 
-            # 3. Creamos el botón de actualizar y enviamos/reemplazamos
-            markup_tasas = InlineKeyboardMarkup()
-            markup_tasas.add(InlineKeyboardButton("🔄 Actualizar Tasas", callback_data="refrescar_tasas"))
+        # EVALUACIÓN DE PRIVILEGIOS
+        if es_admin_vip(message.from_user):
+            # Admin VIP: Monitor 100% limpio sin texto extra
+            texto_completo = monitor_base
+        else:
+            # Usuario Común: Monitor con la invitación al botón
+            texto_completo = monitor_base + aviso_regla
 
-            enviar_o_reemplazar_privado(
-            chat_id, 
-            user_id, 
-            texto_completo, 
+        # 3. Teclado flotante (Inline) de Actualizar Tasas
+        markup_tasas = InlineKeyboardMarkup()
+        markup_tasas.add(InlineKeyboardButton("🔄 Actualizar Tasas", callback_data="refrescar_tasas"))
+
+        enviar_o_reemplazar_privado(
+            chat_id,
+            user_id,
+            texto_completo,
             reply_markup=markup_tasas
-            )
+        )
+        
 
         except Exception as e:
             print(f"Error en precio privado: {e}")
@@ -677,7 +690,36 @@ def procesar_guias(message):
     except Exception:
         pass
         
-        
+def procesar_regla_oro(message):
+    user_id = message.from_user.id
+    chat_id = message.chat.id
+
+    # --- 1. CHAT PRIVADO ---
+    if message.chat.type == "private":
+        # Borra el comando enviado por el usuario si empieza con '/'
+        if message.text and message.text.strip().startswith('/'):
+            try:
+                bot.delete_message(chat_id, message.message_id)
+            except Exception:
+                pass
+
+        if not usuario_esta_unido(user_id):
+            bot.reply_to(message, "❌ No tienes acceso. Debes unirte al canal oficial para usar el bot.")
+            return
+
+        enviar_o_reemplazar_privado(
+            chat_id,
+            user_id,
+            TEXTO_REGLA_ORO_HTML
+        )
+        return
+
+    # --- 2. EN GRUPOS (SILENCIO ABSOLUTO Y BORRADO AUTOMÁTICO) ---
+    try:
+        bot.delete_message(chat_id, message.message_id)
+    except Exception:
+        pass
+    
 
 # ==========================================
 #    MANEJADOR DEL BOTÓN INLINE (REFRESCAR)
@@ -691,11 +733,16 @@ def callback_refrescar_tasas(call):
     try:
         monitor_fresco = construir_monitor_texto_html()
 
-        if es_admin_vip(call.from_user):
-            texto_editado = monitor_fresco + f"\n\n<i>Última actualización de tasas en vivo: Hace un instante.</i>"
-        else:
-            texto_editado = monitor_fresco + TEXTO_REGLA_ORO_HTML + f"\n\n<i>Última actualización de tasas en vivo: Hace un instante.</i>"
+        aviso_regla = (
+            "\n\n👉 <b>¿Quieres saber cómo calcular tus ganancias paso a paso?</b>\n"
+            "Presiona el botón <b>📜 Regla de Oro 📜</b> en el menú de abajo. 👇🏽👇🏽"
+    )
 
+        if es_admin_vip(call.from_user):
+            texto_editado = monitor_fresco + f"\n\n<i>Última actualización de tasas en vivo: Hace un instante</i>"
+        else:
+            texto_editado = monitor_fresco + aviso_regla + f"\n\n<i>Última actualización de tasas en vivo: Hace un instante</i>"
+        
         # Construimos el teclado evaluando si está en el grupo de admins
         markup_tasas = InlineKeyboardMarkup()
         if call.message.chat.id == CANAL_ADMINS or es_admin_vip(call.from_user):

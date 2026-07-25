@@ -476,38 +476,35 @@ def procesar_precio(message):
             # 1. Armamos el monitor base
             monitor_base = construir_monitor_texto_html()
 
-            # 2. Si es Admin VIP, mostramos SOLO el monitor (ultralimpio)
-                    # Mensaje de invitación exclusivo para usuarios comunes
-        aviso_regla = (
-            "\n\n👉 <b>¿Quieres saber cómo calcular tus ganancias paso a paso?</b>\n"
-            "Presiona el botón <b>📜 Regla de Oro 📜</b> en el menú de abajo. 👇🏽👇🏽"
-        )
+            # Mensaje de invitación exclusivo para usuarios comunes
+            aviso_regla = (
+                "\n\n👉 <b>¿Quieres saber cómo calcular tus ganancias paso a paso?</b>\n"
+                "Presiona el botón <b>📜 Regla de Oro 📜</b> en el menú de abajo. 👇🏽👇🏽"
+            )
 
-        # EVALUACIÓN DE PRIVILEGIOS
-        if es_admin_vip(message.from_user):
-            # Admin VIP: Monitor 100% limpio sin texto extra
-            texto_completo = monitor_base
-        else:
-            # Usuario Común: Monitor con la invitación al botón
-            texto_completo = monitor_base + aviso_regla
+            # 2. EVALUACIÓN DE PRIVILEGIOS
+            if es_admin_vip(message.from_user):
+                # Admin VIP: Monitor 100% limpio sin texto extra
+                texto_completo = monitor_base
+            else:
+                # Usuario Común: Monitor con la invitación al botón
+                texto_completo = monitor_base + aviso_regla
 
-        # 3. Teclado flotante (Inline) de Actualizar Tasas
-        markup_tasas = InlineKeyboardMarkup()
-        markup_tasas.add(InlineKeyboardButton("🔄 Actualizar Tasas", callback_data="refrescar_tasas"))
+            # 3. Teclado flotante (Inline) de Actualizar Tasas
+            markup_tasas = InlineKeyboardMarkup()
+            markup_tasas.add(InlineKeyboardButton("🔄 Actualizar Tasas", callback_data="refrescar_tasas"))
 
-        enviar_o_reemplazar_privado(
-            chat_id,
-            user_id,
-            texto_completo,
-            reply_markup=markup_tasas
-        )
-        
+            enviar_o_reemplazar_privado(
+                chat_id,
+                user_id,
+                texto_completo,
+                reply_markup=markup_tasas
+            )
 
         except Exception as e:
             print(f"Error en precio privado: {e}")
             bot.reply_to(message, "❌ Error al generar la consulta privada.")
-        return
-        
+            return
 
     # --- 2. EN GRUPOS ---
     # A) Borramos inmediatamente el mensaje del comando ejecutado (sea Admin o Usuario)

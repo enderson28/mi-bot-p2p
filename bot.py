@@ -221,13 +221,15 @@ def obtener_tasa_binance_p2p(tipo_operacion, monto_bs):
         "asset": "USDT",
         "fiat": "VES",
         "merchantCheck": True,
-        "shieldMerchantUser": False,
+        "publisherType": "merchant",
         "page": 1,
         "rows": 10,
-        "publisherType": None,  # Permite ver ofertas reales no restrictivas
         "tradeType": tipo_operacion.upper(),
-        "transAmount": str(int(monto_bs))
+        "transAmount": str(int(monto_bs)),
+        "filterType": "all",
+        "periods": []
     }
+
 
     try:
         r = requests.post(url, json=payload, headers=headers, timeout=(2.0, 2.0))
@@ -240,6 +242,7 @@ def obtener_tasa_binance_p2p(tipo_operacion, monto_bs):
 
                     precio = adv.get('price')
                     user_status = advertiser.get('userStatus', '')
+                    user_type = advertiser.get('userType', '')  # <--- AGREGAR ESTA LÍNEA
                     
                     # Verificación rigurosa de condiciones/restricciones
                     is_restricted = adv.get('isRestricted')
@@ -253,7 +256,12 @@ def obtener_tasa_binance_p2p(tipo_operacion, monto_bs):
                     # 2. Ignorar si el anuncio requiere condiciones especiales (Restringido)
                     if is_restricted or trade_conditions or has_conditions:
                         continue
-
+                        
+                    # FILTRO DE SEGURIDAD EXPLICITO:
+                    # Solo acepta si es comerciante ('merchant') o si tiene badge de verificado
+                    if user_type != 'merchant':
+                        continue
+                        
                     if precio:
                         return float(precio)
     except Exception as e:

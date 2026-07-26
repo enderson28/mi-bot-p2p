@@ -350,33 +350,36 @@ def construir_monitor_texto_html():
     return texto
     
     
-def construir_intervencion_texto_html(usuario=None):
-    tasa_bcv_cruda = CACHE_TASAS.get("bcv_tasa")
-    fecha_valor_bcv = CACHE_TASAS.get("bcv_fecha")
+def construir_intervencion_texto_html(user=None, porcentaje=None):
+    # Determinar el porcentaje
+    if porcentaje is None:
+        if user and es_admin_especial(user):
+            porcentaje = 1.0
+        else:
+            porcentaje = 0.5
 
-    if not tasa_bcv_cruda:
-        return "❌ Error al obtener la tasa cambiaria de intervención."
+    porcentaje_txt = "1.0%" if porcentaje == 1.0 else "0.5%"
+    
+    # Obtener tasas actualizadas
+    # 🟢 CÓDIGO CORREGIDO:
+    tasa_bcv, fecha_valor_bcv = obtener_datos_bcv_validos()
 
-    if usuario and es_admin_especial(usuario):
-        porcentaje_txt = "1% Agregado"
-        factor_multiplicador = 1.01
-    else:
-        porcentaje_txt = "0.5% Agregado"
-        factor_multiplicador = 1.005
+    tasa_intervencion = tasa_bcv * (1 + (porcentaje / 100))
 
-    tasa_intervencion = tasa_bcv_cruda * factor_multiplicador
-
+    # Construcción de la tabla
     texto = (
-        f"🏦 <b>¿Cuántos bolívares necesitas para comprar en Intervención?</b>\n"
-        f"📅 <b>Fecha Valor BCV:</b> {fecha_valor_bcv}\n\n"
-        f"💡 <i>Monto con el {porcentaje_txt}:</i> <b>{tasa_intervencion:.2f} Bs</b>\n\n"
-        f"<b>100$ 💵 = {(100 * tasa_intervencion):,.2f} Bs</b>\n"
-        f"<b>200$ 💵 = {(200 * tasa_intervencion):,.2f} Bs</b>\n"
-        f"<b>300$ 💵 = {(300 * tasa_intervencion):,.2f} Bs</b>\n"
-        f"<b>400$ 💵 = {(400 * tasa_intervencion):,.2f} Bs</b>\n"
-        f"<b>500$ 💵 = {(500 * tasa_intervencion):,.2f} Bs</b>\n"
-        f"<b>1.000$ 💵 = {(1000 * tasa_intervencion):,.2f} Bs</b>\n"
+        f"🚨 <b>¿Cuántos bolívares necesitas para comprar en Intervención?</b>\n"
+        f"📅 <b>Fecha Valor BCV:</b> {fecha_valor_bcv}\n"
+        f"🏛 <b>Tasa BCV Oficial:</b> {tasa_bcv:,.2f} Bs\n"
+        f"💵 <b>Tasa Intervención:</b> {tasa_intervencion:,.2f} Bs ({porcentaje_txt} Agregado)\n"
+        f"----------------------------------------\n"
     )
+
+    # Rangos de 100 a 1000 USD
+    for monto_usd in range(100, 1100, 100):
+        monto_bs = monto_usd * tasa_intervencion
+        texto += f"💵 <b>{monto_usd:,} USD</b> ➡️ <b>Bs. {monto_bs:,.2f}</b>\n"
+
     return texto
     
 # ==========================================
@@ -664,7 +667,13 @@ def procesar_intervencion(message):
     except Exception:
         pass
 
-    if str(user_id) == str(CREADOR_ID) or es_admin_vip(bot, message.from_user) or es_administrador(bot, chat_id, user_id, message.from_user):
+    es_admin_g = False
+    try:
+        es_admin_g = es_administrador(bot, chat_id, user_id, message.from_user)
+    except Exception:
+        es_admin_g = False
+
+    if str(user_id) == str(CREADOR_ID) or es_admin_vip(bot, message.from_user) or es_admin_g:
         try:
             # 2. SOLO si estamos en el grupo de admins, creamos los 2 botones VIP
             if chat_id == CANAL_ADMINS or (message.chat.username and f"@{message.chat.username.lower()}" == CANAL_ADMINS.lower()):
@@ -679,7 +688,7 @@ def procesar_intervencion(message):
             # 3. ENVIAMOS EL MENSAJE (Se envía en TODOS los grupos donde seas Admin/Propietario)
             msg_enviado = bot.send_message(
                 chat_id,
-                construir_intervencion_texto_html(),
+                construir_intervencion_texto_html(message.from_user),
                 parse_mode="HTML",
                 reply_markup=markup_intervencion  # Será None en los grupos normales, y con botones en Admin
             )

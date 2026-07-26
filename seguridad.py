@@ -167,30 +167,31 @@ def limpiar_comandos_chat(bot, message):
     return False
     
 def es_chat_permitido(bot, message, chats_permitidos, usuarios_autorizados, creador_id):
+    if not message or not message.chat:
+        return False
+
     user_id = str(message.from_user.id) if message.from_user else ""
     creador_str = str(creador_id)
 
-    # 1. SI TU ID NUMÉRICO COINCIDE, ACCESO TOTAL
-    if user_id == creador_str:
+    # 1. SI TU ID NUMÉRICO COINCIDE O ERES ADMIN VIP, ACCESO TOTAL EN CUALQUIER LUGAR
+    if user_id == creador_str or es_admin_vip(bot, message.from_user):
         return True
 
-    # 2. SI ES CHAT PRIVADO: Permitimos el paso libre para que procesar_precio / intervencion
-    # validen después si el usuario está unido al canal oficial (@COMUNIDADAS04)
-    if message.chat.type == 'private':
+    # 2. CHAT PRIVADO
+    if message.chat.type == "private":
         return True
 
-    # 3. EN GRUPOS / CANALES
-    chat_username = f"@{message.chat.username}".lower() if message.chat.username else None
+    # 3. VERIFICACIÓN EN GRUPOS / CANALES PERMITIDOS
     chat_id = message.chat.id
+    chat_username = f"@{message.chat.username}".lower() if message.chat.username else ""
 
-    chats_permitidos_lower = [c.lower() if isinstance(c, str) else c for c in chats_permitidos]
+    # Convertimos los permitidos a minúsculas y strings para evitar fallos de tipo (str vs int)
+    permitidos_str = [str(c).lower() for c in chats_permitidos]
 
-    # A) Si es uno de los canales oficiales fijos (@COMUNIDADAS04, @COMUNIDV, @IDVADMINS)
-    if (chat_username and chat_username in chats_permitidos_lower) or (chat_id in chats_permitidos_lower):
+    if str(chat_id) in permitidos_str or (chat_username and chat_username in permitidos_str):
         return True
 
-    # B) EXCEPCIÓN DINÁMICA EN CANALES/GRUPOS AJENOS:
-    # Solo se autoriza si TÚ (CREADOR_ID) eres ADMINISTRADOR o CREADOR en ese grupo ajeno
+    # 4. EXCEPCIÓN DINÁMICA EN OTROS GRUPOS
     try:
         miembro_creador = bot.get_chat_member(chat_id, int(creador_id))
         if miembro_creador.status in ['creator', 'administrator']:
@@ -198,8 +199,8 @@ def es_chat_permitido(bot, message, chats_permitidos, usuarios_autorizados, crea
     except Exception:
         pass
 
-    # Si no eres admin en ese grupo ajeno o no estás, SE BLOQUEA
     return False
+    
     
     
     

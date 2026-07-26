@@ -352,7 +352,7 @@ def construir_intervencion_texto_html(usuario=None):
 def handle_start(message):
     if message.chat.type == "private":
         # 1. SI ES ADMINISTRADOR VIP
-        if es_admin_vip(message.from_user):
+        if es_admin_vip(bot, message.from_user):
             # Teclado ultralimpio para Administradores
             markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
             markup.add(KeyboardButton("🟢 P2P-USDT 🔴"), KeyboardButton("📊 Intervención 📊"))
@@ -504,7 +504,7 @@ def procesar_precio(message):
             )
 
             # 2. EVALUACIÓN DE PRIVILEGIOS
-            if es_admin_vip(message.from_user):
+            if es_admin_vip(bot, message.from_user):
                 # Admin VIP: Monitor 100% limpio sin texto extra
                 texto_completo = monitor_base
             else:

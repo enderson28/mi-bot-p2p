@@ -262,65 +262,101 @@ def obtener_tasa_binance_p2p(tipo_operacion, monto_bs):
 
     return None
 
-# ==========================================
-#    CONSTRUCTORES DE MENSAJES (HTML)
-# ==========================================
+# --- CACHÉ GLOBAL DE TASAS ---
+CACHE_TASAS = {
+    "bcv_tasa": 742.22,
+    "bcv_fecha": "2026-07-27",
+    "rangos": {}  # Guardará las tasas calculadas por rango
+}
+
+def actualizar_cache_segundo_plano():
+    global CACHE_TASAS
+    while True:
+        try:
+            # 1. Obtener BCV
+            tasa_bcv, fecha_bcv = obtener_datos_bcv_validos()
+            if tasa_bcv:
+                CACHE_TASAS["bcv_tasa"] = tasa_bcv
+                CACHE_TASAS["bcv_fecha"] = fecha_bcv
+                
+                # Preparamos los datos por rango usando la tasa ajustada
+                tasa_bcv_ajustada = tasa_bcv * 1.005
+                rangos_def = [
+                    ("Rango Pequeño ($50 - $100)", 50.0),
+                    ("Rango Mediano ($100 - $300)", 150.0),
+                    ("Rango Mayor ($500+)", 500.0),
+                ]
+                
+                nuevos_rangos = {}
+                for nombre, usd_ref in rangos_def:
+                    monto_bs = usd_ref * tasa_bcv_ajustada
+                    compra = obtener_tasa_binance_p2p("BUY", monto_bs)
+                    venta = obtener_tasa_binance_p2p("SELL", monto_bs)
+                    nuevos_rangos[usd_ref] = {
+                        "nombre": nombre,
+                        "compra": compra,
+                        "venta": venta
+                    }
+                
+                CACHE_TASAS["rangos"] = nuevos_rangos
+
+        except Exception as e:
+            print(f"Error actualizando caché: {e}")
+            time.sleep(60) # Actualiza cada 1 minuto en segundo plano
+
+threading.Thread(target=actualizar_cache_segundo_plano, daemon=True).start()
+
 def construir_monitor_texto_html():
-    tasa_bcv_cruda, fecha_valor_bcv = obtener_datos_bcv_validos()
+    tasa_bcv_cruda = CACHE_TASAS.get("bcv_tasa")
+    fecha_valor_bcv = CACHE_TASAS.get("bcv_fecha")
+
     if not tasa_bcv_cruda:
         return "❌ Error temporal al conectar con la tasa base del BCV."
 
-    tasa_bcv_ajustada = tasa_bcv_cruda * 1.005 # BCV + 0.5% (Intervención)
-
-    # Definimos los 3 rangos con su nombre y el monto de USD de referencia
-    rangos = [
-        ("Rango Pequeño ($50 - $100)", 50.0),
-        ("Rango Mediano ($100 - $300)", 150.0),
-        ("Rango Mayor ($500+)", 500.0)
-    ]
+    tasa_bcv_ajustada = tasa_bcv_cruda * 1.005
 
     texto = f"📊 <b>Monitor de Tasas Arbitraje P2P</b>\n"
     texto += f"📅 Vigencia BCV: <code>{fecha_valor_bcv}</code>\n"
-    texto += f"🏛 BCV Oficial: <b>{tasa_bcv_cruda:.2f} Bs</b>\n"
-    texto += f"⚙️ BCV + 0.5%: <b>{tasa_bcv_ajustada:.2f} Bs</b>\n"
-    texto += f"🛡 <i>Filtros activos: Verificados | Comerciables 🟡🔻 | Pago: Todos ▼</i>\n"
-    texto += "----------------------------------------\n\n"
+    texto += f"🏛️ BCV Oficial: <b>{tasa_bcv_cruda:.2f}</b> Bs\n"
+    texto += f"⚙️ BCV + 0.5%: <b>{tasa_bcv_ajustada:.2f}</b> Bs\n"
+    texto += f"🛡️ <i>Filtros activos: Verificados | Comerciables 🟡 | Pago: Todos 🔻</i>\n"
+    texto += "-----------------------------------\n\n"
 
-    for nombre_rango, usd_ref in rangos:
-        # Monto estimado en Bs para hacer la consulta del filtro en Binance
-        monto_filtro_bs = usd_ref * tasa_bcv_ajustada
+    rangos_cache = CACHE_TASAS.get("rangos", {})
 
-        # Obtenemos las tasas en tiempo real de Binance pasando el monto del filtro
-        tasa_compra = obtener_tasa_binance_p2p("BUY", monto_filtro_bs)
-        tasa_venta = obtener_tasa_binance_p2p("SELL", monto_filtro_bs)
+    for usd_ref in [50.0, 150.0, 500.0]:
+        datos = rangos_cache.get(usd_ref)
+        if datos and datos["compra"] and datos["venta"]:
+            nombre_rango = datos["nombre"]
+            tasa_compra = datos["compra"]
+            tasa_venta = datos["venta"]
 
-        if tasa_compra and tasa_venta:
             filtro_bcv_bs = usd_ref * tasa_bcv_ajustada
             spread = tasa_venta - tasa_compra
             porcentaje_spread = (spread / tasa_compra) * 100
 
-            texto += f"🔷 <b>{nombre_rango}</b>\n"
-            texto += f"🟢 <b>Compra USDT:</b> <b>{tasa_compra:.2f} Bs</b>\n"
-            texto += f"🔴 <b>Venta:</b> <b>{tasa_venta:.2f} Bs</b>\n"
-            
-            # Solo si es el Rango Mayor ($500+), insertamos el filtro justo debajo de 🔴 Venta
+            texto += f"🟢 <b>{nombre_rango}</b>\n"
+            texto += f"🟢 <b>Compra USDT:</b> <b>{tasa_compra:.2f}</b> Bs\n"
+            texto += f"🔴 <b>Venta:</b> <b>{tasa_venta:.2f}</b> Bs\n"
+
             if usd_ref == 500.0:
-                texto += f"   └ 💡 <i>(Filtro base: ~{filtro_bcv_bs:,.0f} Bs)</i>\n"
+                texto += f"  ↳ 💡 <i>(Filtro base: ~{filtro_bcv_bs:.0f} Bs)</i>\n"
 
-            texto += f"📉 Spread: <b>{spread:.2f} Bs</b> (<b>{porcentaje_spread:.2f}%</b>)\n\n"
+            texto += f"📈 Spread: <b>{spread:.2f}</b> Bs (<b>{porcentaje_spread:.2f}%</b>)\n\n"
         else:
-            texto += f"🔷 <b>{nombre_rango}</b>\n⚠️ <i>No se pudieron obtener tasas para este rango.</i>\n\n"
+            nombre_def = "Rango Pequeño" if usd_ref == 50.0 else ("Rango Mediano" if usd_ref == 150.0 else "Rango Mayor")
+            texto += f"🟢 <b>{nombre_def}</b>\n⚠️ <i>Cargando tasas en segundo plano...</i>\n\n"
 
-    #texto += "<i>Última actualización de tasas en vivo: Hace un instante.</i>"
     return texto
     
     
 def construir_intervencion_texto_html(usuario=None):
-    tasa_bcv_cruda, fecha_valor_bcv = obtener_datos_bcv_validos()
+    tasa_bcv_cruda = CACHE_TASAS.get("bcv_tasa")
+    fecha_valor_bcv = CACHE_TASAS.get("bcv_fecha")
+
     if not tasa_bcv_cruda:
         return "❌ Error al obtener la tasa cambiaria de intervención."
 
-    # Si es el admin especial, usa 1% (1.01). Si no, usa 0.5% (1.005)
     if usuario and es_admin_especial(usuario):
         porcentaje_txt = "1% Agregado"
         factor_multiplicador = 1.01
@@ -331,20 +367,18 @@ def construir_intervencion_texto_html(usuario=None):
     tasa_intervencion = tasa_bcv_cruda * factor_multiplicador
 
     texto = (
-        f"🚨 <b>¿Cuántos bolívares necesitas para comprar en Intervención?</b>\n"
-        f"📅 <b>Fecha Valor BCV:</b> {fecha_valor_bcv}\n"
-        f"🏛️ Tasa BCV Oficial: {tasa_bcv_cruda:.2f} Bs\n"
-        f"💸 <b>Tasa Intervención: {tasa_intervencion:.2f} Bs</b> ({porcentaje_txt})\n"
-        f"-----------------------------------\n"
+        f"🏦 <b>¿Cuántos bolívares necesitas para comprar en Intervención?</b>\n"
+        f"📅 <b>Fecha Valor BCV:</b> {fecha_valor_bcv}\n\n"
+        f"💡 <i>Monto con el {porcentaje_txt}:</i> <b>{tasa_intervencion:.2f} Bs</b>\n\n"
+        f"<b>100$ 💵 = {(100 * tasa_intervencion):,.2f} Bs</b>\n"
+        f"<b>200$ 💵 = {(200 * tasa_intervencion):,.2f} Bs</b>\n"
+        f"<b>300$ 💵 = {(300 * tasa_intervencion):,.2f} Bs</b>\n"
+        f"<b>400$ 💵 = {(400 * tasa_intervencion):,.2f} Bs</b>\n"
+        f"<b>500$ 💵 = {(500 * tasa_intervencion):,.2f} Bs</b>\n"
+        f"<b>1.000$ 💵 = {(1000 * tasa_intervencion):,.2f} Bs</b>\n"
     )
-    
-    
-    for usd in range(100, 1100, 100):
-        total_ves = usd * tasa_intervencion
-        texto += f"💵 {usd:,} USD  ➡️  <b>Bs. {total_ves:,.2f}</b>\n"
-        
     return texto
-
+    
 # ==========================================
 #     MANEJADORES DE COMANDOS Y BOTONES
 # ==========================================

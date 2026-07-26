@@ -868,21 +868,21 @@ def callback_refrescar_tasas(call):
     try:
         # 2. Forzamos la actualización de tasas desde Binance
         refrescar_tasas_en_vivo()
-        monitor_fresco = construir_monitor_texto_html()
+        monitor_fresco = construir_monitor_texto_html(call.from_user)
 
         aviso_regla = (
             "\n\n💡 <b>¿Quieres saber cómo calcular tus ganancias paso a paso?</b>\n"
             "Presiona el botón <b>💡 Regla de Oro 💡</b> en el menú de abajo. 👇👇"
         )
 
-        if es_admin_vip(call.from_user):
+        if es_admin_vip(bot, call.from_user):
             texto_editado = monitor_fresco + "\n\n<i>🕒 Última actualización de tasas en vivo: Hace un instante</i>"
         else:
             texto_editado = monitor_fresco + aviso_regla + "\n\n<i>🕒 Última actualización de tasas en vivo: Hace un instante</i>"
 
         # 3. Construimos el teclado
         markup_tasas = InlineKeyboardMarkup()
-        if call.message.chat.id == CANAL_ADMINS or es_admin_vip(call.from_user):
+        if call.message.chat.id == CANAL_ADMINS or es_admin_vip(bot, call.from_user):
             markup_tasas.row(
                 InlineKeyboardButton("🔄 Actualizar Tasas", callback_data="refrescar_tasas"),
                 InlineKeyboardButton("🗑️ Borrar", callback_data="borrar_mensaje")

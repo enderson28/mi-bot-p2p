@@ -230,7 +230,6 @@ def obtener_tasa_binance_p2p(tipo_operacion, monto_bs):
         "periods": []
     }
 
-
     try:
         r = requests.post(url, json=payload, headers=headers, timeout=(2.0, 2.0))
         if r.status_code == 200:
@@ -242,29 +241,28 @@ def obtener_tasa_binance_p2p(tipo_operacion, monto_bs):
 
                     precio = adv.get('price')
                     user_status = advertiser.get('userStatus', '')
-                    user_type = advertiser.get('userType', '')  # <--- AGREGAR ESTA LÍNEA
-                    
-                    # Verificación rigurosa de condiciones/restricciones
-                    is_restricted = adv.get('isRestricted', False)
-                    trade_conditions = bool(adv.get('tradeTypeCondition'))
-
-                    # Binance envía las condiciones del comerciante en 'tradeMethods' o listas de condiciones
-                    adv_conditions = adv.get('advConditions') or adv.get('classificationConditions')
-                    has_conditions = bool(adv_conditions) if adv_conditions is not None else False
+                    user_type = advertiser.get('userType', '')
 
                     # 1. Ignorar usuarios bloqueados o inactivos
                     if user_status in ['BLOCKED', 'INACTIVE']:
                         continue
 
-                    # 2. Ignorar si el anuncio tiene botón "Restringido" o requiere condiciones especiales
-                    if is_restricted or trade_conditions or has_conditions:
+                    # 2. FILTRO DEFINITIVO DE RESTRINGIDOS
+                    # Captura la lista 'classifying' que usa Binance para bloquear anuncios a ciertos usuarios
+                    classifying = adv.get('classifying') or []
+                    is_restricted = adv.get('isRestricted', False)
+                    trade_conditions = bool(adv.get('tradeTypeCondition'))
+                    adv_conditions = adv.get('advConditions') or adv.get('classificationConditions')
+                    has_conditions = bool(adv_conditions) if adv_conditions is not None else False
+
+                    # Si el anuncio requiere condiciones especiales o tiene restricciones en 'classifying'
+                    if is_restricted or trade_conditions or has_conditions or len(classifying) > 0:
                         continue
-    
-                    # FILTRO DE SEGURIDAD EXPLICITO:
-                    # Solo acepta si es comerciante ('merchant') o si tiene badge de verificado
+
+                    # 3. Solo aceptar comerciante verificado
                     if user_type != 'merchant':
                         continue
-                        
+
                     if precio:
                         return float(precio)
     except Exception as e:
@@ -301,8 +299,8 @@ def actualizar_cache_segundo_plano():
                 nuevos_rangos = {}
                 for nombre, usd_ref in rangos_def:
                     monto_bs = usd_ref * tasa_bcv_ajustada
-                    compra = obtener_tasa_binance_p2p("BUY", monto_bs)
-                    venta = obtener_tasa_binance_p2p("SELL", monto_bs)
+                    compra = obtener_tasa_binance_p2p("BUY", monto_bs) or 0.0
+                    venta = obtener_tasa_binance_p2p("SELL", monto_bs) or 0.0
                     nuevos_rangos[usd_ref] = {
                         "nombre": nombre,
                         "compra": compra,
@@ -310,10 +308,11 @@ def actualizar_cache_segundo_plano():
                     }
                 
                 CACHE_TASAS["rangos"] = nuevos_rangos
-
+            # 🟢 AQUÍ VA EL PAUSA CUANDO TODO TIENE ÉXITO (Misma sangría/indentación del if)
+            time.sleep(60)
         except Exception as e:
             print(f"Error actualizando caché: {e}")
-            time.sleep(60) # Actualiza cada 1 minuto en segundo plano
+            time.sleep(10) # 🔴 pausa corta si ocurrió un erorr anres de reintentar
 
 threading.Thread(target=actualizar_cache_segundo_plano, daemon=True).start()
 

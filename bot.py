@@ -231,7 +231,7 @@ def obtener_tasa_binance_p2p(tipo_operacion, monto_bs):
     }
 
     try:
-        r = requests.post(url, json=payload, headers=headers, timeout=(1.5, 1.5)
+        r = requests.post(url, json=payload, headers=headers, timeout=(1.5, 1.5))
         if r.status_code == 200:
             datos = r.json().get('data', [])
             if datos:

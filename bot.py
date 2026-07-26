@@ -211,7 +211,6 @@ def obtener_datos_bcv_validos():
     
 def obtener_tasa_binance_p2p(tipo_operacion, monto_bs):
     url = "https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search"
-
     headers = {
         "Accept": "*/*",
         "Content-Type": "application/json",
@@ -222,16 +221,16 @@ def obtener_tasa_binance_p2p(tipo_operacion, monto_bs):
         "asset": "USDT",
         "fiat": "VES",
         "merchantCheck": True,
-        "shieldMerchantUser": True,
+        "shieldMerchantUser": False,
         "page": 1,
-        "rows": 10,  # Aumentamos a 10 para tener suficiente margen si hay varios restringidos
-        "publisherType": "merchant",
+        "rows": 10,
+        "publisherType": None,  # Permite ver ofertas reales no restrictivas
         "tradeType": tipo_operacion.upper(),
         "transAmount": str(int(monto_bs))
     }
 
     try:
-        r = requests.post(url, json=payload, headers=headers, timeout=(1.5, 1.5))
+        r = requests.post(url, json=payload, headers=headers, timeout=(2.0, 2.0))
         if r.status_code == 200:
             datos = r.json().get('data', [])
             if datos:
@@ -241,26 +240,27 @@ def obtener_tasa_binance_p2p(tipo_operacion, monto_bs):
 
                     precio = adv.get('price')
                     user_status = advertiser.get('userStatus', '')
-                
-                    # Detectar si el anuncio o el usuario tienen restricciones/condiciones especiales
-                    is_restricted = adv.get('isRestricted') or adv.get('tradeTypeCondition') or False
+                    
+                    # Verificación rigurosa de condiciones/restricciones
+                    is_restricted = adv.get('isRestricted')
+                    trade_conditions = adv.get('tradeTypeCondition')
+                    has_conditions = bool(adv.get('advConditions'))
 
-                    # 1. Ignorar si el usuario está bloqueado o inactivo
+                    # 1. Ignorar usuarios bloqueados o inactivos
                     if user_status in ['BLOCKED', 'INACTIVE']:
                         continue
 
-                    # 2. Ignorar si el anuncio tiene botón "Restringido"
-                    if is_restricted:
+                    # 2. Ignorar si el anuncio requiere condiciones especiales (Restringido)
+                    if is_restricted or trade_conditions or has_conditions:
                         continue
 
-                    # Si pasa todos los filtros, devolvemos el precio inmediatamente
                     if precio:
                         return float(precio)
-                    
     except Exception as e:
         print(f"⚠️ Error conectando con Binance P2P: {e}")
 
     return None
+                    
 
 # --- CACHÉ GLOBAL DE TASAS ---
 CACHE_TASAS = {
@@ -306,6 +306,38 @@ def actualizar_cache_segundo_plano():
 
 threading.Thread(target=actualizar_cache_segundo_plano, daemon=True).start()
 
+def refrescar_tasas_en_vivo():
+    global CACHE_TASAS
+    tasa_bcv, fecha_bcv = obtener_datos_bcv_validos()
+    if tasa_bcv:
+        CACHE_TASAS["bcv_tasa"] = tasa_bcv
+        CACHE_TASAS["bcv_fecha"] = fecha_bcv
+
+        tasa_bcv_ajustada = tasa_bcv * 1.005
+        rangos_def = [
+            ("Rango Pequeño ($50 - $100)", 50.0),
+            ("Rango Mediano ($100 - $300)", 150.0),
+            ("Rango Mayor ($500+)", 500.0)
+        ]
+
+        nuevos_rangos = {}
+        for nombre, usd_ref in rangos_def:
+            monto_bs = usd_ref * tasa_bcv_ajustada
+            try: 
+                compra = obtener_tasa_binance_p2p("BUY", monto_bs) or 0.0
+                venta = obtener_tasa_binance_p2p("SELL", monto_bs) or 0.0
+            except Exception as e:
+                print(f"Error al obtener tasas P2P para {nombre}: {e}")
+                compra, venta = 0.0, 0.0   
+            nuevos_rangos[usd_ref] = {
+                "nombre": nombre,
+                "compra": compra,
+                "venta": venta
+            }
+            
+        CACHE_TASAS["rangos"] = nuevos_rangos
+        
+
 def construir_monitor_texto_html():
     tasa_bcv_cruda = CACHE_TASAS.get("bcv_tasa")
     fecha_valor_bcv = CACHE_TASAS.get("bcv_fecha")
@@ -326,14 +358,15 @@ def construir_monitor_texto_html():
 
     for usd_ref in [50.0, 150.0, 500.0]:
         datos = rangos_cache.get(usd_ref)
-        if datos and datos["compra"] and datos["venta"]:
+        
+        if datos and datos["compra"] is not None and datos["venta"] is not None:
             nombre_rango = datos["nombre"]
             tasa_compra = datos["compra"]
             tasa_venta = datos["venta"]
 
             filtro_bcv_bs = usd_ref * tasa_bcv_ajustada
             spread = tasa_venta - tasa_compra
-            porcentaje_spread = (spread / tasa_compra) * 100
+            porcentaje_spread = (spread / tasa_compra) * 100 if tasa_compra > 0 else 0.0
 
             texto += f"🟢 <b>{nombre_rango}</b>\n"
             texto += f"🟢 <b>Compra USDT:</b> <b>{tasa_compra:.2f}</b> Bs\n"
@@ -820,7 +853,9 @@ def callback_refrescar_tasas(call):
         return
 
     try:
+        refrescar_tasas_en_vivo()  # 👈 AGREGA SOLO ESTA LÍNEA AQUÍ
         monitor_fresco = construir_monitor_texto_html()
+        
 
         aviso_regla = (
             "\n\n👉 <b>¿Quieres saber cómo calcular tus ganancias paso a paso?</b>\n"

@@ -434,7 +434,7 @@ def handle_invitacion_comando(message):
         )
         borrar_mensaje_luego(message.chat.id, aviso.message_id, 5)
         
-@bot.message_handler(func=lambda message: message.text in ["🟢 P2P~USDT 🟢", "📊 Intervención 📊", "📜 Regla de Oro 📜", "🔸 BPay 🔸", "🔵 GPay 🔵", "⚙️ Soporte"])
+@bot.message_handler(func=lambda message: message.text in ["🟢 P2P~USDT 🔴", "📊 Intervención 📊", "📜 Regla de Oro 📜", "🔸 BPay 🔸", "🔵 GPay 🔵", "⚙️ Soporte"])
 def handle_botones_menu(message):
     if message.chat.type == "private":
         if message.text == "🟢 P2P~USDT 🔴":
@@ -525,7 +525,7 @@ def procesar_precio(message):
 
         except Exception as e:
             print(f"Error en precio privado: {e}")
-            bot.reply_to(message, "❌ Error al generar la consulta privada.")
+            bot.send_message(chat_id, "❌ Error temporal al obtener tasas. Inténtalo de nuevo en unos segundos.")
             return
 
     # --- 2. EN GRUPOS ---

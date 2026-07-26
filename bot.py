@@ -356,6 +356,7 @@ def handle_start(message):
             # Teclado ultralimpio para Administradores
             markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
             markup.add(KeyboardButton("🟢 P2P-USDT 🔴"), KeyboardButton("📊 Intervención 📊"))
+            markup.add(KeyboardButton("⚙️ Soporte"))
             
             texto_vip = (
                 f"👋 <b>¡Hola, {message.from_user.first_name}!</b>\n\n"

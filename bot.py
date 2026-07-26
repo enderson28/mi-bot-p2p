@@ -245,18 +245,21 @@ def obtener_tasa_binance_p2p(tipo_operacion, monto_bs):
                     user_type = advertiser.get('userType', '')  # <--- AGREGAR ESTA LÍNEA
                     
                     # Verificación rigurosa de condiciones/restricciones
-                    is_restricted = adv.get('isRestricted')
-                    trade_conditions = adv.get('tradeTypeCondition')
-                    has_conditions = bool(adv.get('advConditions'))
+                    is_restricted = adv.get('isRestricted', False)
+                    trade_conditions = bool(adv.get('tradeTypeCondition'))
+
+                    # Binance envía las condiciones del comerciante en 'tradeMethods' o listas de condiciones
+                    adv_conditions = adv.get('advConditions') or adv.get('classificationConditions')
+                    has_conditions = bool(adv_conditions) if adv_conditions is not None else False
 
                     # 1. Ignorar usuarios bloqueados o inactivos
                     if user_status in ['BLOCKED', 'INACTIVE']:
                         continue
 
-                    # 2. Ignorar si el anuncio requiere condiciones especiales (Restringido)
+                    # 2. Ignorar si el anuncio tiene botón "Restringido" o requiere condiciones especiales
                     if is_restricted or trade_conditions or has_conditions:
                         continue
-                        
+    
                     # FILTRO DE SEGURIDAD EXPLICITO:
                     # Solo acepta si es comerciante ('merchant') o si tiene badge de verificado
                     if user_type != 'merchant':
@@ -860,22 +863,25 @@ def callback_refrescar_tasas(call):
         bot.answer_callback_query(call.id, text="❌ Acceso denegado. No perteneces al canal.")
         return
 
+    # 1. Responder de inmediato a Telegram para quitar el reloj de carga del botón
+    bot.answer_callback_query(call.id, text="🔄 Actualizando tasas en vivo...")
+
     try:
-        refrescar_tasas_en_vivo()  # 👈 AGREGA SOLO ESTA LÍNEA AQUÍ
+        # 2. Forzamos la actualización de tasas desde Binance
+        refrescar_tasas_en_vivo()
         monitor_fresco = construir_monitor_texto_html()
-        
 
         aviso_regla = (
-            "\n\n👉 <b>¿Quieres saber cómo calcular tus ganancias paso a paso?</b>\n"
-            "Presiona el botón <b>📜 Regla de Oro 📜</b> en el menú de abajo. 👇🏽👇🏽"
-    )
+            "\n\n💡 <b>¿Quieres saber cómo calcular tus ganancias paso a paso?</b>\n"
+            "Presiona el botón <b>💡 Regla de Oro 💡</b> en el menú de abajo. 👇👇"
+        )
 
         if es_admin_vip(call.from_user):
-            texto_editado = monitor_fresco + f"\n\n<i>Última actualización de tasas en vivo: Hace un instante</i>"
+            texto_editado = monitor_fresco + "\n\n<i>🕒 Última actualización de tasas en vivo: Hace un instante</i>"
         else:
-            texto_editado = monitor_fresco + aviso_regla + f"\n\n<i>Última actualización de tasas en vivo: Hace un instante</i>"
-        
-        # Construimos el teclado evaluando si está en el grupo de admins
+            texto_editado = monitor_fresco + aviso_regla + "\n\n<i>🕒 Última actualización de tasas en vivo: Hace un instante</i>"
+
+        # 3. Construimos el teclado
         markup_tasas = InlineKeyboardMarkup()
         if call.message.chat.id == CANAL_ADMINS or es_admin_vip(call.from_user):
             markup_tasas.row(
@@ -885,6 +891,7 @@ def callback_refrescar_tasas(call):
         else:
             markup_tasas.add(InlineKeyboardButton("🔄 Actualizar Tasas", callback_data="refrescar_tasas"))
 
+        # 4. Editamos el mensaje
         bot.edit_message_text(
             chat_id=call.message.chat.id,
             message_id=call.message.message_id,
@@ -892,9 +899,10 @@ def callback_refrescar_tasas(call):
             parse_mode="HTML",
             reply_markup=markup_tasas
         )
-        bot.answer_callback_query(call.id, text="¡Monitor de Arbitraje actualizado! ⚡")
-    except Exception:
-        bot.answer_callback_query(call.id, text="Las tasas en Binance siguen siendo las mismas.")
+
+    except Exception as e:
+        # Si el texto es idéntico o falla la edición, se ignora limpiamente sin romper el bot
+        print(f"Aviso al refrescar tasas: {e}")
 
 # ==========================================
 # BOTÓN FLOTANTE PARA REFRESCAR INTERVENCIÓN

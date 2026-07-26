@@ -97,16 +97,27 @@ ADMINS_VIP = [
 ADMIN_ESPECIAL_1_PORCIENTO = "@carloses783"
 
 
-def es_admin_vip(user):
-    """Verifica si un usuario es Admin VIP por su ID o Username"""
+def es_admin_vip(bot, user, chat_canal="@COMUNIDADAS04"):
+    """Verifica si un usuario es Admin VIP por lista o si es admin del canal oficial"""
     if not user:
         return False
-    
+
     user_id = user.id
     username = f"@{user.username.lower()}" if user.username else ""
-    
-    # Compara tanto el ID numérico como el username en minúsculas
-    return (user_id in ADMINS_VIP) or (username.lower() in [u.lower() for u in ADMINS_VIP])
+
+    # 1. Revisa si está en la lista fija
+    if user_id in ADMINS_VIP or (username.lower() in [u.lower() for u in ADMINS_VIP]):
+        return True
+
+    # 2. Revisa si es Administrador o Creador del canal principal
+    try:
+        miembro = bot.get_chat_member(chat_canal, user_id)
+        if miembro.status in ['administrator', 'creator']:
+            return True
+    except Exception:
+        pass
+
+    return False
 
 
 def es_admin_especial(user):

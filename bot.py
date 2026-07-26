@@ -862,23 +862,27 @@ def callback_refrescar_tasas(call):
         bot.answer_callback_query(call.id, text="❌ Acceso denegado. No perteneces al canal.")
         return
 
-    # 1. Responder de inmediato a Telegram para quitar el reloj de carga del botón
+    # 1. Responder de inmediato al botón
     bot.answer_callback_query(call.id, text="🔄 Actualizando tasas en vivo...")
 
     try:
-        # 2. Forzamos la actualización de tasas desde Binance
+        # 2. Forzamos la actualización desde Binance
         refrescar_tasas_en_vivo()
-        monitor_fresco = construir_monitor_texto_html(call.from_user)
+        monitor_fresco = construir_monitor_texto_html()
+
+        # Generamos la hora exacta con segundos para forzar el cambio en Telegram
+        hora_actual = datetime.now().strftime("%I:%M:%S %p")
+        texto_hora = f"\n\n<i>🔄 Última actualización: {hora_actual}</i>"
 
         aviso_regla = (
             "\n\n💡 <b>¿Quieres saber cómo calcular tus ganancias paso a paso?</b>\n"
-            "Presiona el botón <b>💡 Regla de Oro 💡</b> en el menú de abajo. 👇👇"
+            "Presiona el botón <b>📜 Regla de Oro 📜</b> en el menú de abajo. 👇👇"
         )
 
         if es_admin_vip(bot, call.from_user):
-            texto_editado = monitor_fresco + "\n\n<i>🕒 Última actualización de tasas en vivo: Hace un instante</i>"
+            texto_editado = monitor_fresco + texto_hora
         else:
-            texto_editado = monitor_fresco + aviso_regla + "\n\n<i>🕒 Última actualización de tasas en vivo: Hace un instante</i>"
+            texto_editado = monitor_fresco + aviso_regla + texto_hora
 
         # 3. Construimos el teclado
         markup_tasas = InlineKeyboardMarkup()
@@ -900,7 +904,6 @@ def callback_refrescar_tasas(call):
         )
 
     except Exception as e:
-        # Si el texto es idéntico o falla la edición, se ignora limpiamente sin romper el bot
         print(f"Aviso al refrescar tasas: {e}")
 
 # ==========================================

@@ -187,7 +187,7 @@ def obtener_datos_bcv_validos():
     # --- INTENTO 1: Extracción directa BCV Oficial (Ultra Rápido) ---
     try:
         from bs4 import BeautifulSoup
-        r = requests.get("https://www.bcv.org.ve", headers=headers, timeout=2.0, verify=False)
+        r = requests.get("https://www.bcv.org.ve", headers=headers, timeout=(1.5, 1.5), verify=False)
         if r.status_code == 200:
             soup = BeautifulSoup(r.content, 'html.parser')
             
@@ -231,7 +231,7 @@ def obtener_tasa_binance_p2p(tipo_operacion, monto_bs):
     }
 
     try:
-        r = requests.post(url, json=payload, headers=headers, timeout=3)
+        r = requests.post(url, json=payload, headers=headers, timeout=(1.5, 1.5)
         if r.status_code == 200:
             datos = r.json().get('data', [])
             if datos:

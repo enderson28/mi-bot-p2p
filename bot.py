@@ -534,7 +534,7 @@ def procesar_precio(message):
         bot.delete_message(chat_id, message.message_id)
     except Exception:
         pass
-    if es_administrador(bot, chat_id, user_id, message.from_user):
+    if str(user_id) == str(CREADOR_ID) or es_admin_vip(bot, message.from_user) or es_administrador(bot, chat_id, user_id, message.from_user):
         try:
             # B) Por defecto NO hay botones para evitar spam en grupos públicos
             markup_precio = None
@@ -630,7 +630,7 @@ def procesar_intervencion(message):
     except Exception:
         pass
 
-    if es_administrador(bot, chat_id, user_id, message.from_user):
+    if str(user_id) == str(CREADOR_ID) or es_admin_vip(bot, message.from_user) or es_administrador(bot, chat_id, user_id, message.from_user):
         try:
             # 2. SOLO si estamos en el grupo de admins, creamos los 2 botones VIP
             if chat_id == CANAL_ADMINS or (message.chat.username and f"@{message.chat.username.lower()}" == CANAL_ADMINS.lower()):

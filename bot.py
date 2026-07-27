@@ -359,16 +359,16 @@ def construir_monitor_texto_html():
 
     texto = f"📊 <b>Monitor de Tasas Arbitraje P2P</b>\n"
     texto += f"📅 Vigencia BCV: <code>{fecha_valor_bcv}</code>\n"
-    texto += f"🏛️ BCV Oficial: <b>{tasa_bcv_cruda:.2f}</b> Bs\n"
-    texto += f"⚙️ BCV + 0.5%: <b>{tasa_bcv_ajustada:.2f}</b> Bs\n"
+    texto += f"🏛️ BCV Oficial: <b>{tasa_bcv_cruda:.2f} Bs</b>\n"
+    texto += f"⚙️ BCV + 0.5%: <b>{tasa_bcv_ajustada:.2f} Bs</b>\n"
     texto += f"🛡️ <i>Filtros activos: Verificados | Comerciables 🟡 | Pago: Todos 🔻</i>\n"
-    texto += "-----------------------------------\n\n"
+    texto += "----------------------------------\n\n"
 
-    rangos_cache = CACHE_TASAS.get("rangos", {})
+    ranges_cache = CACHE_TASAS.get("ranges", {})
 
     for usd_ref in [50.0, 150.0, 500.0]:
-        datos = rangos_cache.get(usd_ref)
-        
+        datos = ranges_cache.get(usd_ref)
+
         if datos and datos["compra"] is not None and datos["venta"] is not None:
             nombre_rango = datos["nombre"]
             tasa_compra = datos["compra"]
@@ -379,16 +379,20 @@ def construir_monitor_texto_html():
             porcentaje_spread = (spread / tasa_compra) * 100 if tasa_compra > 0 else 0.0
 
             texto += f"🟢 <b>{nombre_rango}</b>\n"
-            texto += f"🟢 <b>Compra USDT:</b> <b>{tasa_compra:.2f}</b> Bs\n"
-            texto += f"🔴 <b>Venta:</b> <b>{tasa_venta:.2f}</b> Bs\n"
+            texto += f"🟢 <b>Compra USDT:</b> <b>{tasa_compra:.2f} Bs</b>\n"
+            texto += f"🔴 <b>Venta:</b> <b>{tasa_venta:.2f} Bs</b>\n"
 
             if usd_ref == 500.0:
-                texto += f"  ↳ 💡 <i>(Filtro base: ~{filtro_bcv_bs:.0f} Bs)</i>\n"
+                texto += f"└ 💡 <i>(Filtro base: ~{filtro_bcv_bs:.0f} Bs)</i>\n"
 
-            texto += f"📈 Spread: <b>{spread:.2f}</b> Bs (<b>{porcentaje_spread:.2f}%</b>)\n\n"
+            texto += f"📈 <b>Spread:</b> <b>{spread:.2f} Bs ({porcentaje_spread:.2f}%)</b>\n\n"
         else:
             nombre_def = "Rango Pequeño" if usd_ref == 50.0 else ("Rango Mediano" if usd_ref == 150.0 else "Rango Mayor")
             texto += f"🟢 <b>{nombre_def}</b>\n⚠️ <i>Cargando tasas en segundo plano...</i>\n\n"
+
+    # Calculamos la hora de Venezuela (-4 horas UTC)
+    hora_actual = (datetime.now() - timedelta(hours=4)).strftime("%I:%M:%S %p")
+    texto += f"\n🔄 <i>Última actualización: {hora_actual}</i>"
 
     return texto
     

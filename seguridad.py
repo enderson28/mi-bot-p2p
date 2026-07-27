@@ -115,9 +115,10 @@ def es_admin_vip(bot, user, chat_canal="@COMUNIDADES04"):
 
     # 1. VERIFICACIÓN INSTANTÁNEA (En memoria local, 0 milisegundos)
     admins_vip_lower = [str(u).lower() for u in ADMINS_VIP]
-    if user_id in ADMINS_VIP or str(user_id) in ADMINS_VIP or username in admins_vip_lower:
+
+    if str(user_id) in admins_vip_lower or username in admins_vip_lower:
         return True
-        
+    
     # 2. Solo si NO está en la lista VIP local, le consulta a Telegram
     try:
         miembro = bot.get_chat_member(chat_canal, user_id)

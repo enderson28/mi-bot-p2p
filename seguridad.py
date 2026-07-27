@@ -18,7 +18,7 @@ FRASES_PROHIBIDAS = [
     "para mantener el grupo libre de spam",
     
     # Avisos de restricción y autoría
-    "comando exclusivo para administradores",
+    "comando exclusivo para administradores", 
     "comando exclusivo del creador del bot"
 ]
 

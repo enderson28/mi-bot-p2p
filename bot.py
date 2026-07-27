@@ -875,9 +875,6 @@ def callback_refrescar_tasas(call):
         refrescar_tasas_en_vivo()
         monitor_fresco = construir_monitor_texto_html()
 
-        # Restamos 4 horas a la hora UTC del servidor para ajustar a Venezuela (UTC-4)
-        hora_actual = (datetime.now() - timedelta(hours=4)).strftime("%I:%M:%S %p")
-        texto_hora = f"\n\n<i>🔄 Última actualización: {hora_actual}</i>"
 
         aviso_regla = (
             "\n\n💡 <b>¿Quieres saber cómo calcular tus ganancias paso a paso?</b>\n"
@@ -885,9 +882,9 @@ def callback_refrescar_tasas(call):
         )
 
         if es_admin_vip(bot, call.from_user):
-            texto_editado = monitor_fresco + texto_hora
+            texto_editado = monitor_fresco 
         else:
-            texto_editado = monitor_fresco + aviso_regla + texto_hora
+            texto_editado = monitor_fresco + aviso_regla 
 
         # 3. Construimos el teclado
         markup_tasas = InlineKeyboardMarkup()

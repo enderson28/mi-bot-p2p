@@ -392,7 +392,9 @@ def construir_monitor_texto_html():
 
     # Calculamos la hora de Venezuela (-4 horas UTC)
     hora_actual = (datetime.now() - timedelta(hours=4)).strftime("%I:%M:%S %p")
-    texto += f"\n🔄 <i>Última actualización: {hora_actual}</i>"
+    texto += "\n\n"
+    texto += f"🔄 <i>Última actualización: {hora_actual}</i>"
+
 
     return texto
     

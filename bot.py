@@ -921,7 +921,7 @@ def callback_refrescar_intervencion(call):
 
         # Construimos el teclado evaluando si está en el grupo de admins
         markup_intervencion = InlineKeyboardMarkup()
-        if call.message.chat.id == CANAL_ADMINS or es_admin_vip(call.from_user):
+        if call.message.chat.id == CANAL_ADMINS or es_admin_vip(bot, call.from_user):
             markup_intervencion.row(
                 InlineKeyboardButton("🔄 Actualizar Cálculo", callback_data="refrescar_intervencion"),
                 InlineKeyboardButton("🗑️ Borrar", callback_data="borrar_mensaje")
@@ -949,9 +949,9 @@ def callback_borrar_tabla_admin(call):
     es_privado = call.message.chat.type == "private"
     
     if es_privado:
-        es_admin_o_vip = es_admin_vip(call.from_user)
+        es_admin_o_vip = es_admin_vip(bot, call.from_user)
     else:
-        es_admin_o_vip = es_admin_vip(call.from_user) or es_administrador(bot, call.message.chat.id, call.from_user.id, call.from_user)
+        es_admin_o_vip = es_admin_vip(bot, call.from_user) or es_administrador(bot, call.message.chat.id, call.from_user.id, call.from_user)
 
     if not es_admin_o_vip:
         bot.answer_callback_query(

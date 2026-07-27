@@ -3,7 +3,7 @@ import requests
 import telebot
 import time
 import threading
-from datetime import datetime
+from datetime import datetime, timedelta
 from telebot.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
 from anuncios import iniciar_modulo_anuncios
 from seguridad import validar_copia_pega, es_admin_vip, es_admin_especial, es_administrador, es_chat_permitido
@@ -389,6 +389,10 @@ def construir_monitor_texto_html():
         else:
             nombre_def = "Rango Pequeño" if usd_ref == 50.0 else ("Rango Mediano" if usd_ref == 150.0 else "Rango Mayor")
             texto += f"🟢 <b>{nombre_def}</b>\n⚠️ <i>Cargando tasas en segundo plano...</i>\n\n"
+    # Calculamos la hora de Venezuela (-4 horas UTC)
+    hora_actual = (datetime.now() - timedelta(hours=4)).strftime("%I:%M:%S %p")
+    texto += "\n\n"
+    texto += f"🔄 <i>Última actualización: {hora_actual}</i>"
 
     return texto
     

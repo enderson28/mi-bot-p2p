@@ -48,7 +48,7 @@ def validar_copia_pega(bot, message, es_admin):
     
 def es_administrador(bot, chat_id, user_id, user=None):
     # 1. Si está en la lista VIP/Especial manual
-    if user and es_admin_vip(user):
+    if user and es_admin_vip(bot, user):
         return True
 
     # 2. Si es Administrador o Creador en el grupo/chat actual

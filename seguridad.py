@@ -85,7 +85,7 @@ def es_administrador(bot, chat_id, user_id, user=None):
 
 # Lista de administradores VIP (convertidos a minúsculas)
 ADMINS_VIP = [ 
-    "5073264705",
+    "@enderson28",
     "@antonys4", 
     "@papitamaster", 
     "@bazoner", 

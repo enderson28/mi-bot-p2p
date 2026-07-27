@@ -29,7 +29,7 @@ def validar_copia_pega(bot, message, es_admin):
     """
     # 1. Si es Administrador, lo dejamos hablar tranquilamente
     if es_admin:
-        return False
+        return False 
 
     # 2. Convertimos el texto del mensaje a minúsculas para comparar
     texto = message.text.lower() if message and message.text else ""

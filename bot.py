@@ -390,12 +390,6 @@ def construir_monitor_texto_html():
             nombre_def = "Rango Pequeño" if usd_ref == 50.0 else ("Rango Mediano" if usd_ref == 150.0 else "Rango Mayor")
             texto += f"🟢 <b>{nombre_def}</b>\n⚠️ <i>Cargando tasas en segundo plano...</i>\n\n"
 
-    # Calculamos la hora de Venezuela (-4 horas UTC)
-    hora_actual = (datetime.now() - timedelta(hours=4)).strftime("%I:%M:%S %p")
-    texto += "\n\n"
-    texto += f"🔄 <i>Última actualización: {hora_actual}</i>"
-
-
     return texto
     
     

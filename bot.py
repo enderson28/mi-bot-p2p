@@ -3,7 +3,7 @@ import requests
 import telebot
 import time
 import threading
-from datetime import datetime
+from datetime import datetime, timedelta
 from telebot.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
 from anuncios import iniciar_modulo_anuncios
 from seguridad import validar_copia_pega, es_admin_vip, es_admin_especial, es_administrador, es_chat_permitido
@@ -870,8 +870,8 @@ def callback_refrescar_tasas(call):
         refrescar_tasas_en_vivo()
         monitor_fresco = construir_monitor_texto_html()
 
-        # Generamos la hora exacta con segundos para forzar el cambio en Telegram
-        hora_actual = datetime.now().strftime("%I:%M:%S %p")
+        # Restamos 4 horas a la hora UTC del servidor para ajustar a Venezuela (UTC-4)
+        hora_actual = (datetime.now() - timedelta(hours=4)).strftime("%I:%M:%S %p")
         texto_hora = f"\n\n<i>🔄 Última actualización: {hora_actual}</i>"
 
         aviso_regla = (
@@ -945,11 +945,18 @@ def callback_refrescar_intervencion(call):
 # ============================================
 @bot.callback_query_handler(func=lambda call: call.data == "borrar_mensaje")
 def callback_borrar_tabla_admin(call):
-    # 1. Verifica si quien presiona es Administrador o VIP
-    if not es_administrador(bot, call.message.chat.id, call.from_user.id, call.from_user):
+    # 1. Verificamos si es chat privado O si tiene rango en un grupo/canal
+    es_privado = call.message.chat.type == "private"
+    
+    if es_privado:
+        es_admin_o_vip = es_admin_vip(call.from_user)
+    else:
+        es_admin_o_vip = es_admin_vip(call.from_user) or es_administrador(bot, call.message.chat.id, call.from_user.id, call.from_user)
+
+    if not es_admin_o_vip:
         bot.answer_callback_query(
-            call.id, 
-            text="❌ Solo los administradores pueden eliminar esta tabla.", 
+            call.id,
+            text="❌ Solo los administradores pueden eliminar esta tabla.",
             show_alert=True
         )
         return
@@ -957,11 +964,13 @@ def callback_borrar_tabla_admin(call):
     # 2. Borra la tabla al instante (sea de precio o intervención)
     try:
         bot.delete_message(call.message.chat.id, call.message.message_id)
+        bot.answer_callback_query(call.id, text="🗑️ Mensaje borrado.")
     except Exception:
         bot.answer_callback_query(
-            call.id, 
+            call.id,
             text="⚠️ No se pudo eliminar el mensaje o ya fue borrado."
-        )      
+        )
+        
 # ==========================================
 # FILTRO DE SEGURIDAD GENERAL (ABAJO)
 # ==========================================

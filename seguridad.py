@@ -47,11 +47,21 @@ def validar_copia_pega(bot, message, es_admin):
     return False
     
 def es_administrador(bot, chat_id, user_id, user=None):
-    # 1. Si está en la lista VIP/Especial manual
+    # 1. Si está en la lista VIP (memoria local, 0 milisegundos)
     if user and es_admin_vip(bot, user):
         return True
 
-    # 2. Si es Administrador o Creador en el grupo/chat actual
+    # 2. Si el chat es PRIVADO y no es VIP, evitamos consultar a Telegram
+    es_privado = False
+    if isinstance(chat_id, int) and chat_id > 0:
+        es_privado = True
+    elif isinstance(chat_id, str) and not chat_id.startswith("-"):
+        es_privado = True
+
+    if es_privado:
+        return False
+
+    # 3. Si es un GRUPO, recién aquí consulta a Telegram si es Admin del grupo
     try:
         member = bot.get_chat_member(chat_id, user_id)
         if member.status in ['administrator', 'creator']:
@@ -59,7 +69,7 @@ def es_administrador(bot, chat_id, user_id, user=None):
     except Exception:
         pass
 
-    # 3. Verifica si es Administrador del CANAL PRINCIPAL
+    # 4. Verifica si es Administrador del CANAL PRINCIPAL
     try:
         canal_principal = "@COMUNIDADAS04"
         member_canal = bot.get_chat_member(canal_principal, user_id)
@@ -97,19 +107,19 @@ ADMINS_VIP = [
 ADMIN_ESPECIAL_1_PORCIENTO = "@carloses783"
 
 
-def es_admin_vip(bot, user, chat_canal="@COMUNIDADAS04"):
-    """Verifica si un usuario es Admin VIP por lista o si es admin del canal oficial"""
+def es_admin_vip(bot, user, chat_canal="@COMUNIDADES04"):
     if not user:
         return False
 
     user_id = user.id
     username = f"@{user.username.lower()}" if user.username else ""
 
-    # 1. Revisa si está en la lista fija
-    if user_id in ADMINS_VIP or (username.lower() in [u.lower() for u in ADMINS_VIP]):
+    # 1. VERIFICACIÓN INSTANTÁNEA (En memoria local, 0 milisegundos)
+    admins_vip_lower = [u.lower() for u in ADMINS_VIP]
+    if user_id in ADMINS_VIP or username in admins_vip_lower:
         return True
 
-    # 2. Revisa si es Administrador o Creador del canal principal
+    # 2. Solo si NO está en la lista VIP local, le consulta a Telegram
     try:
         miembro = bot.get_chat_member(chat_canal, user_id)
         if miembro.status in ['administrator', 'creator']:

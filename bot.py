@@ -83,8 +83,8 @@ TEXTO_START = (
     "🚀 <b>¿Cómo empezar? Usa el menú interactivo de botones aquí abajo o escribe los comandos:</b>\n"
     "➡️ <code>/precio</code> o botón 🟢🔴 <b>P2P~USDT</b> — Muestra las tasas reales BCV, precios P2P.\n"
     "➡️ <code>/intervencion</code> o botón 📊<b>Intervención</b> — Desglose de bolívares requeridos para la compra de dólares oficiales.\n"
-    "➡️ <code>/bpay</code> o botón 🔶<b>BPay</b> 🔶— Guía paso a paso para cargar USD bancarios a Binance.\n"
-    "➡️ <code>/gpay</code> o botón 🔵<b>GPay</b> 🔵— Ruta alternativa para Deposito USD usando Google Pay.\n\n"
+    "➡️ <code>/bpay</code> o botón 🔶<b>BPay</b>🔶— Guía paso a paso para cargar USD bancarios a Binance.\n"
+    "➡️ <code>/gpay</code> o botón 🔵<b>GPay</b>🔵— Ruta alternativa para Deposito USD usando Google Pay.\n\n"
     "💡 <b>Nota:</b> <i>Si eres nuevo, lee con atención ~ Boton 👇🏽📜 Regla de Oro 📜. ¡Evita comprar costoso en el P2P!</i>"
 )
 
@@ -514,7 +514,7 @@ def handle_invitacion_comando(message):
         )
         borrar_mensaje_luego(message.chat.id, aviso.message_id, 5)
         
-@bot.message_handler(func=lambda message: message.text in ["🟢 P2P~USDT 🔴", "📊 Intervención 📊", "📜 Regla de Oro 📜", "🔸 BPay 🔸", "🔵 GPay 🔵", "⚙️ Soporte"])
+@bot.message_handler(func=lambda message: message.text in ["🟢 P2P~USDT 🔴", "📊 Intervención 📊", "📜 Regla de Oro 📜", "🔶 BPay 🔶", "🔵 GPay 🔵", "⚙️ Soporte"])
 def handle_botones_menu(message):
     if message.chat.type == "private":
         if message.text == "🟢 P2P~USDT 🔴":

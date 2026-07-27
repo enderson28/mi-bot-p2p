@@ -47,18 +47,16 @@ def validar_copia_pega(bot, message, es_admin):
     return False
     
 def es_administrador(bot, chat_id, user_id, user=None):
-    # 1. Si está en la lista VIP (memoria local, 0 milisegundos)
+    # 1. Si está en la lista VIP/Especial manual
     if user and es_admin_vip(bot, user):
         return True
 
-    # 2. Si el chat es PRIVADO y no es VIP, evitamos consultar a Telegram
-    es_privado = False
-    if isinstance(chat_id, int) and chat_id > 0:
-        es_privado = True
-    elif isinstance(chat_id, str) and not chat_id.startswith("-"):
-        es_privado = True
+    # Si no trajo el objeto 'user', intentamos construir la validación VIP solo con el user_id
+    if str(user_id) in [str(u) for u in ADMINS_VIP]:
+        return True
 
-    if es_privado:
+    # 2. Si es chat privado (ID positivo) y no es VIP, es un usuario normal
+    if isinstance(chat_id, int) and chat_id > 0:
         return False
 
     # 3. Si es un GRUPO, recién aquí consulta a Telegram si es Admin del grupo

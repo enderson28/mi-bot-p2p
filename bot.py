@@ -58,7 +58,7 @@ def obtener_teclado_privado():
     btn_precio = KeyboardButton("🟢 P2P~USDT 🔴")
     btn_intervencion = KeyboardButton("📊 Intervención 📊")
     btn_regla = KeyboardButton("📜 Regla de Oro 📜")
-    btn_bpay = KeyboardButton("🔸 BPay 🔸")
+    btn_bpay = KeyboardButton("🔶 BPay 🔶")
     btn_gpay = KeyboardButton("🔵 GPay 🔵")
     btn_soporte = KeyboardButton("⚙️ Soporte")  # <-- Botón nuevo
 

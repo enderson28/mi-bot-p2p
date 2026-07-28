@@ -425,9 +425,9 @@ def construir_intervencion_texto_html(user=None, porcentaje=None):
 
     porcentaje_txt = "1.0%" if porcentaje == 1.0 else "0.5%"
     
-    # Obtener tasas actualizadas
-    # CÓDIGO CORREGIDO:
-    tasa_bcv, fecha_valor_bcv = obtener_datos_bcv_validos()
+    # ✅ AHORA (Instantáneo, lee directo de la memoria RAM):
+    tasa_bcv = CACHE_TASAS.get("bcv_tasa", 744.23)
+    fecha_valor_bcv = CACHE_TASAS.get("bcv_fecha", "2026-07-29")
 
     tasa_intervencion = tasa_bcv * (1 + (porcentaje / 100))
 

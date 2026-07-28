@@ -1018,9 +1018,9 @@ def filtro_seguridad_chat(message):
 # ==========================================
 
 if __name__ == "__main__":
-    # Limpia webhooks y conexiones viejas colgadas para evitar choques 409
+    # Limpia webhooks y descarta actualizaciones pendientes para evitar choques 409
     try:
-        bot.remove_webhook()
+        bot.remove_webhook(drop_pending_updates=True)
         time.sleep(1)
     except Exception:
         pass
@@ -1028,6 +1028,7 @@ if __name__ == "__main__":
     iniciar_modulo_anuncios(bot)
     print("🚀 Bot Maestro en línea con limpieza automática y temporizador de 5 min...")
     
-    # Arranca el polling ignorando mensajes viejos acumulados durante el deploy
-    bot.infinity_polling(drop_pending_updates=True)
+    # Arranca el polling limpio
+    bot.infinity_polling()
+    
     

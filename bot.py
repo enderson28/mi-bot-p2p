@@ -395,7 +395,7 @@ def construir_monitor_texto_html():
             spread = tasa_venta - tasa_compra
             porcentaje_spread = (spread / tasa_compra) * 100 if tasa_compra > 0 else 0.0
 
-            texto += f"🟢 <b>{nombre_rango}</b>\n"
+            texto += f"💸 <b>{nombre_rango}</b>\n"
             texto += f"🟢 <b>Compra USDT:</b> <b>{tasa_compra:.2f} Bs</b>\n"
             texto += f"🔴 <b>Venta:</b> <b>{tasa_venta:.2f} Bs</b>\n"
 

@@ -223,7 +223,7 @@ def obtener_datos_bcv_validos():
         pass
 
     # 3. Respaldo manual si la red falla totalmente
-    return 742.81, "2026-07-28"
+    return 744.23, "2026-07-29"
     
 def obtener_tasa_binance_p2p(tipo_operacion, monto_bs):
     url = "https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search"
@@ -290,8 +290,8 @@ def obtener_tasa_binance_p2p(tipo_operacion, monto_bs):
 
 # --- CACHÉ GLOBAL DE TASAS ---
 CACHE_TASAS = {
-    "bcv_tasa": 742.81,
-    "bcv_fecha": "2026-07-28",
+    "bcv_tasa": 744.23,
+    "bcv_fecha": "2026-07-29",
     "rangos": {}  # Guardará las tasas calculadas por rango
 }
 

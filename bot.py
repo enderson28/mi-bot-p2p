@@ -242,7 +242,7 @@ def obtener_tasa_binance_p2p(tipo_operacion, monto_bs):
         "rows": 10,
         "tradeType": tipo_operacion.upper(),
         "transAmount": str(int(monto_bs)),
-        "filterType": "all",
+        "filterType": "tradable",
         "periods": []
     }
 

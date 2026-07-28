@@ -375,7 +375,7 @@ def construir_monitor_texto_html():
     texto += f"🛡️ <i>Filtros activos: Verificados | Comerciables 🟡 | Pago: Todos 🔻</i>\n"
     texto += "----------------------------------\n\n"
 
-    rangos_cache = CACHE_TASAS.get("rangos", {})
+    ranges_cache = CACHE_TASAS.get("rangos", {})
 
     for usd_ref in [50.0, 150.0, 500.0]:
         datos = ranges_cache.get(usd_ref) or ranges_cache.get(float(usd_ref)) or ranges_cache.get(str(usd_ref))

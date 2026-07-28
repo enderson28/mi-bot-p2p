@@ -9,8 +9,10 @@ from anuncios import iniciar_modulo_anuncios
 from seguridad import validar_copia_pega, es_admin_vip, es_admin_especial, es_administrador, es_chat_permitido
 from seguridad import limpiar_comandos_chat
 import re
-import requests
+import urllib3
 from bs4 import BeautifulSoup
+# Desactivar avisos de certificados SSL
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # ==========================================
 # CONFIGURACIÓN Y VARIABLES GLOBALES
@@ -184,26 +186,31 @@ def obtener_datos_bcv_validos():
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     }
 
-    # 1. Intentamos PRIMERO directamente en la página del BCV (La más actualizada)
+    # 1. Scraping Directo al BCV
     try:
-        from bs4 import BeautifulSoup
-        r = requests.get("https://www.bcv.org.ve", headers=headers, timeout=2.5, verify=False)
+        r = requests.get("https://www.bcv.org.ve", headers=headers, timeout=3.0, verify=False)
         if r.status_code == 200:
             soup = BeautifulSoup(r.content, 'html.parser')
             div_dolar = soup.find("div", id="dolar")
             if div_dolar:
-                field = div_dolar.find("strong")
-                if field:
-                    texto = field.text.strip().replace(".", "").replace(",", ".")
-                    tasa = float(texto)
+                # Extraer texto crudo del contenedor del dólar
+                raw_text = div_dolar.get_text()
+                # Buscar un patrón numérico tipo "742,81" o "742,81050000"
+                match = re.search(r'(\d{2,3}[\.,]\d+)', raw_text)
+                if match:
+                    val_str = match.group(1).replace('.', '').replace(',', '.')
+                    tasa = float(val_str)
+                    
+                    # Intentar capturar la Fecha Valor
                     span_fecha = soup.find("span", class_="date-display-single")
                     fecha = span_fecha.text.strip() if span_fecha else "2026-07-28"
-                    if tasa > 0:
+                    
+                    if tasa > 50: # Validación de seguridad básica
                         return tasa, fecha
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"⚠️ Error en scraping directo BCV: {e}")
 
-    # 2. Respaldo secundario: API Espejo DolarAPI
+    # 2. Respaldo por DolarAPI (por si la web del BCV se cae)
     try:
         r = requests.get("https://ve.dolarapi.com/v1/dolares/oficial", headers=headers, timeout=2.0)
         if r.status_code == 200:
@@ -215,7 +222,7 @@ def obtener_datos_bcv_validos():
     except Exception:
         pass
 
-    # 3. Respaldo manual garantizado
+    # 3. Respaldo manual si la red falla totalmente
     return 742.81, "2026-07-28"
     
 def obtener_tasa_binance_p2p(tipo_operacion, monto_bs):

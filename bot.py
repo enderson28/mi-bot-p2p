@@ -181,32 +181,33 @@ def usuario_esta_unido(user_id):
     # Actualizacion de velocidad
 def obtener_datos_bcv_validos():
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     }
-    
-    # --- INTENTO 1: Extracción directa BCV Oficial (Ultra Rápido) ---
     try:
         from bs4 import BeautifulSoup
-        r = requests.get("https://www.bcv.org.ve", headers=headers, timeout=(1.5, 1.5), verify=False)
+        import re
+
+        r = requests.get("https://www.bcv.org.ve", headers=headers, timeout=(3.0, 3.0), verify=False)
         if r.status_code == 200:
             soup = BeautifulSoup(r.content, 'html.parser')
             
-            # Extraemos la tasa del dólar oficial
-            elem_usd = soup.find('div', id='dolar')
-            # Extraemos la fecha valor publicada (ej: "Lunes, 27 Julio 2026" o "2026-07-27")
-            elem_fecha = soup.find('span', class_='date-display-single')
-            
-            if elem_usd:
-                val_clean = elem_usd.text.strip().replace('.', '').replace(',', '.').strip()
-                tasa = float(val_clean)
-                fecha_real = elem_fecha.text.strip() if elem_fecha else "2026-07-27"
+            # Búsqueda flexible del dólar
+            div_dolar = soup.find("div", id="dolar")
+            if div_dolar:
+                field = div_dolar.find("strong") or div_dolar
+                val_clean = field.text.strip().replace(".", "").replace(",", ".").strip()
+                tasa = float(re.findall(r"\d+\.\d+", val_clean)[0])
+                
+                # Búsqueda de la fecha valor
+                span_fecha = soup.find("span", class_="date-display-single")
+                fecha_real = span_fecha.text.strip() if span_fecha else "2026-07-27"
                 
                 if tasa > 0:
                     return tasa, fecha_real
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"⚠️ Error extrayendo BCV: {e}")
 
-    # --- INTENTO 2: Fallback exacto con los datos actuales del BCV ---
+    # Fallback si el BCV falla la conexión
     return 742.22, "2026-07-27"
     
 def obtener_tasa_binance_p2p(tipo_operacion, monto_bs):
@@ -308,11 +309,11 @@ def actualizar_cache_segundo_plano():
                     }
                 
                 CACHE_TASAS["rangos"] = nuevos_rangos
-            # 🟢 AQUÍ VA EL PAUSA CUANDO TODO TIENE ÉXITO (Misma sangría/indentación del if)
+            # AQUÍ VA EL PAUSA CUANDO TODO TIENE ÉXITO (Misma sangría/indentación del if)
             time.sleep(60)
         except Exception as e:
             print(f"Error actualizando caché: {e}")
-            time.sleep(10) # 🔴 pausa corta si ocurrió un erorr anres de reintentar
+            time.sleep(10) # pausa corta si ocurrió un erorr anres de reintentar
 
 threading.Thread(target=actualizar_cache_segundo_plano, daemon=True).start()
 
@@ -407,7 +408,7 @@ def construir_intervencion_texto_html(user=None, porcentaje=None):
     porcentaje_txt = "1.0%" if porcentaje == 1.0 else "0.5%"
     
     # Obtener tasas actualizadas
-    # 🟢 CÓDIGO CORREGIDO:
+    # CÓDIGO CORREGIDO:
     tasa_bcv, fecha_valor_bcv = obtener_datos_bcv_validos()
 
     tasa_intervencion = tasa_bcv * (1 + (porcentaje / 100))

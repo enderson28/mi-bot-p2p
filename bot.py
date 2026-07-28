@@ -367,8 +367,7 @@ def construir_monitor_texto_html():
     ranges_cache = CACHE_TASAS.get("ranges", {})
 
     for usd_ref in [50.0, 150.0, 500.0]:
-        datos = ranges_cache.get(usd_ref)
-
+        datos = ranges_cache.get(usd_ref) or ranges_cache.get(float(usd_ref)) or ranges_cache.get(str(usd_ref))
         if datos and datos.get("compra", 0) > 0 and datos.get("venta", 0) > 0:
             nombre_rango = datos["nombre"]
             tasa_compra = datos["compra"]

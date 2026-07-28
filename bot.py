@@ -243,6 +243,8 @@ def obtener_tasa_binance_p2p(tipo_operacion, monto_bs):
         "tradeType": tipo_operacion.upper(),
         "transAmount": str(int(monto_bs)),
         "filterType": "tradable",
+        "additionalKycVerifyFilter": 0,
+        "shieldMerchantAds": False,
         "periods": []
     }
 
@@ -264,9 +266,8 @@ def obtener_tasa_binance_p2p(tipo_operacion, monto_bs):
                         continue
 
                     # 2. FILTRO DEFINITIVO DE RESTRINGIDOS
-                    # Captura la lista 'classifying' que usa Binance para bloquear anuncios a ciertos usuarios
                     classifying = adv.get('classifying') or []
-                    is_restricted = adv.get('isRestricted', False)
+                    is_restricted = adv.get('isRestricted') or adv.get('restricted') or False
                     trade_conditions = bool(adv.get('tradeTypeCondition'))
                     adv_conditions = adv.get('advConditions') or adv.get('classificationConditions')
                     has_conditions = bool(adv_conditions) if adv_conditions is not None else False
@@ -1017,6 +1018,16 @@ def filtro_seguridad_chat(message):
 # ==========================================
 
 if __name__ == "__main__":
+    # Limpia webhooks y conexiones viejas colgadas para evitar choques 409
+    try:
+        bot.remove_webhook()
+        time.sleep(1)
+    except Exception:
+        pass
+
     iniciar_modulo_anuncios(bot)
     print("🚀 Bot Maestro en línea con limpieza automática y temporizador de 5 min...")
-    bot.infinity_polling()
+    
+    # Arranca el polling ignorando mensajes viejos acumulados durante el deploy
+    bot.infinity_polling(drop_pending_updates=True)
+    

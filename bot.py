@@ -183,9 +183,29 @@ def obtener_datos_bcv_validos():
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     }
-    # 1. Intentamos por API Espejo
+
+    # 1. Intentamos PRIMERO directamente en la página del BCV (La más actualizada)
     try:
-        r = requests.get("https://ve.dolarapi.com/v1/dolares/oficial", timeout=1.5)
+        from bs4 import BeautifulSoup
+        r = requests.get("https://www.bcv.org.ve", headers=headers, timeout=2.5, verify=False)
+        if r.status_code == 200:
+            soup = BeautifulSoup(r.content, 'html.parser')
+            div_dolar = soup.find("div", id="dolar")
+            if div_dolar:
+                field = div_dolar.find("strong")
+                if field:
+                    texto = field.text.strip().replace(".", "").replace(",", ".")
+                    tasa = float(texto)
+                    span_fecha = soup.find("span", class_="date-display-single")
+                    fecha = span_fecha.text.strip() if span_fecha else "2026-07-28"
+                    if tasa > 0:
+                        return tasa, fecha
+    except Exception:
+        pass
+
+    # 2. Respaldo secundario: API Espejo DolarAPI
+    try:
+        r = requests.get("https://ve.dolarapi.com/v1/dolares/oficial", headers=headers, timeout=2.0)
         if r.status_code == 200:
             datos = r.json()
             tasa = float(datos.get("promedio", 0))
@@ -195,28 +215,7 @@ def obtener_datos_bcv_validos():
     except Exception:
         pass
 
-    # 2. Intentamos directamente al BCV parseando el contenedor correcto
-    try:
-        from bs4 import BeautifulSoup
-        r = requests.get("https://www.bcv.org.ve", headers=headers, timeout=1.5, verify=False)
-        if r.status_code == 200:
-            soup = BeautifulSoup(r.content, 'html.parser')
-            div_dolar = soup.find("div", id="dolar")
-            if div_dolar:
-                field = div_dolar.find("strong")
-                if field:
-                    texto = field.text.strip().replace(".", "").replace(",", ".")
-                    tasa = float(texto)
-                    
-                    span_fecha = soup.find("span", class_="date-display-single")
-                    fecha = span_fecha.text.strip() if span_fecha else "2026-07-28"
-                    
-                    if tasa > 0:
-                        return tasa, fecha
-    except Exception:
-        pass
-
-    # 3. Tasa respaldo actualizada al 28 de Julio de 2026
+    # 3. Respaldo manual garantizado
     return 742.81, "2026-07-28"
     
 def obtener_tasa_binance_p2p(tipo_operacion, monto_bs):
@@ -283,8 +282,8 @@ def obtener_tasa_binance_p2p(tipo_operacion, monto_bs):
 
 # --- CACHÉ GLOBAL DE TASAS ---
 CACHE_TASAS = {
-    "bcv_tasa": 742.22,
-    "bcv_fecha": "2026-07-27",
+    "bcv_tasa": 742.81,
+    "bcv_fecha": "2026-07-28",
     "rangos": {}  # Guardará las tasas calculadas por rango
 }
 
@@ -328,8 +327,8 @@ threading.Thread(target=actualizar_cache_segundo_plano, daemon=True).start()
 
 def refrescar_tasas_en_vivo():
     global CACHE_TASAS
-    tasa_bcv = CACHE_TASAS.get("bcv_tasa", 742.22)
-    fecha_bcv = CACHE_TASAS.get("bcv_fecha", "2026-07-27")
+    tasa_bcv = CACHE_TASAS.get("bcv_tasa", 742.81)
+    fecha_bcv = CACHE_TASAS.get("bcv_fecha", "2026-07-28")
     if tasa_bcv:
         CACHE_TASAS["bcv_tasa"] = tasa_bcv
         CACHE_TASAS["bcv_fecha"] = fecha_bcv

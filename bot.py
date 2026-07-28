@@ -181,9 +181,9 @@ def usuario_esta_unido(user_id):
     # Actualizacion de velocidad
 def obtener_datos_bcv_validos():
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     }
-    # Intentamos primero por API Espejo súper rápida (Responde en < 0.3s)
+    # 1. Intentamos por API Espejo
     try:
         r = requests.get("https://ve.dolarapi.com/v1/dolares/oficial", timeout=1.5)
         if r.status_code == 200:
@@ -195,24 +195,29 @@ def obtener_datos_bcv_validos():
     except Exception:
         pass
 
-    # Intentamos directamente al BCV con timeout ultracorto
+    # 2. Intentamos directamente al BCV parseando el contenedor correcto
     try:
         from bs4 import BeautifulSoup
-        import re
-        r = requests.get("https://www.bcv.org.ve", headers=headers, timeout=1.0, verify=False)
+        r = requests.get("https://www.bcv.org.ve", headers=headers, timeout=1.5, verify=False)
         if r.status_code == 200:
             soup = BeautifulSoup(r.content, 'html.parser')
             div_dolar = soup.find("div", id="dolar")
             if div_dolar:
-                val_clean = div_dolar.text.strip().replace(".", "").replace(",", ".").strip()
-                tasa = float(re.findall(r"\d+\.\d+", val_clean)[0])
-                if tasa > 0:
-                    return tasa, "2026-07-27"
+                field = div_dolar.find("strong")
+                if field:
+                    texto = field.text.strip().replace(".", "").replace(",", ".")
+                    tasa = float(texto)
+                    
+                    span_fecha = soup.find("span", class_="date-display-single")
+                    fecha = span_fecha.text.strip() if span_fecha else "2026-07-28"
+                    
+                    if tasa > 0:
+                        return tasa, fecha
     except Exception:
         pass
 
-    # Tasa respaldo por si ambos fallan
-    return 742.22, "2026-07-27"
+    # 3. Tasa respaldo actualizada al 28 de Julio de 2026
+    return 742.81, "2026-07-28"
     
 def obtener_tasa_binance_p2p(tipo_operacion, monto_bs):
     url = "https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search"
@@ -370,7 +375,7 @@ def construir_monitor_texto_html():
     texto += f"🛡️ <i>Filtros activos: Verificados | Comerciables 🟡 | Pago: Todos 🔻</i>\n"
     texto += "----------------------------------\n\n"
 
-    ranges_cache = CACHE_TASAS.get("ranges", {})
+    rangos_cache = CACHE_TASAS.get("rangos", {})
 
     for usd_ref in [50.0, 150.0, 500.0]:
         datos = ranges_cache.get(usd_ref) or ranges_cache.get(float(usd_ref)) or ranges_cache.get(str(usd_ref))

@@ -1,4 +1,7 @@
+import http.server
+import socketserver
 import os
+import json
 import requests
 import telebot
 import time
@@ -1015,6 +1018,55 @@ def filtro_seguridad_chat(message):
     if validar_copia_pega(bot, message, es_admin):
         return
 # ==========================================
+# RECEPTOR WEBHOOK PARA EL CAZADOR
+# ==========================================
+
+CLAVE_SECRETA_BCV = os.getenv("CLAVE_SECRETA_BCV", "mi_clave_super_secreta_123")
+
+class WebhookHandler(http.server.BaseHTTPRequestHandler):
+    def do_POST(self):
+        if self.path == "/actualizar_bcv":
+            content_length = int(self.headers.get('Content-Length', 0))
+            post_data = self.rfile.read(content_length)
+            
+            try:
+                datos = json.loads(post_data.decode('utf-8'))
+                clave = datos.get("clave")
+                tasa = datos.get("tasa")
+                fecha = datos.get("fecha")
+
+                if clave != CLAVE_SECRETA_BCV:
+                    self.send_response(403)
+                    self.end_headers()
+                    self.wfile.write(b'{"status":"error","message":"No autorizado"}')
+                    return
+
+                if tasa and fecha:
+                    CACHE_TASAS["bcv_tasa"] = float(tasa)
+                    CACHE_TASAS["bcv_fecha"] = str(fecha)
+
+                    print(f"🔥 [WEBHOOK] Tasa BCV actualizada por El Cazador: {tasa} Bs ({fecha})")
+
+                    self.send_response(200)
+                    self.send_header('Content-Type', 'application/json')
+                    self.end_headers()
+                    self.wfile.write(b'{"status":"success","message":"Tasa actualizada en RAM"}')
+                    return
+
+            except Exception as e:
+                print(f"Error procesando webhook: {e}")
+
+        self.send_response(400)
+        self.end_headers()
+
+def iniciar_servidor_receptor():
+    port = int(os.getenv("PORT", 8080))
+    handler = WebhookHandler
+    with socketserver.TCPServer(("", port), handler) as httpd:
+        print(f"🚀 Receptor de tasas escuchando en el puerto {port}")
+        httpd.serve_forever()
+                
+# ==========================================
 #            EJECUCIÓN DEL BOT
 # ==========================================
 
@@ -1028,6 +1080,10 @@ if __name__ == "__main__":
 
     iniciar_modulo_anuncios(bot)
     print("🚀 Bot Maestro en línea con limpieza automática y temporizador de 5 min...")
+
+    # Inicia el receptor webhook en segundo plano sin congelar Telegram
+    threading.Thread(target=iniciar_servidor_receptor, daemon=True).start()
+    
     
     # Arranca el polling limpio
     bot.infinity_polling()

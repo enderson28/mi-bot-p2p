@@ -537,12 +537,12 @@ def handle_invitacion_comando(message):
         )
         borrar_mensaje_luego(message.chat.id, aviso.message_id, 5)
         
-@bot.message_handler(func=lambda message: message.text in ["🟢 P2P~USDT 🔴", "📊 Intervención 📊", "📜 Regla de Oro 📜", "🔶 BPay 🔶", "🔵 GPay 🔵", "⚙️ Soporte"])
+@bot.message_handler(func=lambda message: message.text and any(x in message.text for x in ["P2P-USDT", "Intervención", "Regla de Oro", "GPay", "BPay", "Soporte"]))
 def handle_botones_menu(message):
     if message.chat.type == "private":
         if message.text == "🟢 P2P~USDT 🔴":
             procesar_precio(message)
-        elif message.text == "📊 Intervención 📊":
+        elif "Intervención" in message.text:
             procesar_intervencion(message)
         elif message.text == "📜 Regla de Oro 📜":
             procesar_regla_oro(message) # <-- NUEVA LLAMADA

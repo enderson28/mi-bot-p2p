@@ -726,11 +726,14 @@ def procesar_intervencion(message):
         markup_intervencion.add(InlineKeyboardButton("🔄 Actualizar Cálculo", callback_data="refrescar_intervencion"))
 
         # 🎯 EVALUACIÓN DE EXCEPCIÓN 1%:
-        # Si es el admin especial (@carloses783), le construimos su texto al 1%
+    
+        # Evaluamos si es el admin especial pasando el usuario correctamente como primer parámetro
         if es_admin_especial(message.from_user):
-            texto_intervencion = construir_intervencion_texto_html(porcentaje=1.0)
+            # Para el admin especial calcula al 1.0%
+            texto_intervencion = construir_intervencion_texto_html(user=message.from_user, porcentaje=1.0)
         else:
-            texto_intervencion = construir_intervencion_texto_html()
+            # Para los usuarios normales calcula al 0.5%
+            texto_intervencion = construir_intervencion_texto_html(user=message.from_user, porcentaje=0.5)
 
         enviar_o_reemplazar_privado(
             chat_id,

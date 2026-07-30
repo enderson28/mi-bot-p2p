@@ -492,7 +492,7 @@ def handle_precio_comando(message):
 
 # Manejador para el botón de Intervención y el comando /intervencion
 @bot.message_handler(commands=['intervencion'])
-@bot.message_handler(func=lambda m: m.text and "Intervención" in m.text and m.text.strip().startswith("🏛️"))
+@bot.message_handler(func=lambda m: m.text and "Intervención" in m.text)
 def handle_intervencion_comando(message):
     procesar_intervencion(message)
 

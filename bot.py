@@ -294,8 +294,9 @@ def obtener_tasa_binance_p2p(tipo_operacion, monto_bs):
 
 # --- CACHÉ GLOBAL DE TASAS ---
 CACHE_TASAS = {
-    "bcv_tasa": 744.23,
-    "bcv_fecha": "2026-07-29",
+    "bcv_tasa": 745.64,
+    "bcv_tasa_anterior": 744.23,
+    "bcv_fecha": "2026-07-30",
     "rangos": {}  # Guardará las tasas calculadas por rango
 }
 
@@ -306,8 +307,11 @@ def actualizar_cache_segundo_plano():
             # 1. Obtener BCV
             tasa_bcv, fecha_bcv = obtener_datos_bcv_validos()
             if tasa_bcv:
+                if tasa_bcv != CACHE_TASAS.get("bcv_tasa"):
+                    CACHE_TASAS["bcv_tasa_anterior"] = CACHE_TASAS.get("bcv_tasa", tasa_bcv)
                 CACHE_TASAS["bcv_tasa"] = tasa_bcv
                 CACHE_TASAS["bcv_fecha"] = fecha_bcv
+            
                 
                 # Preparamos los datos por rango usando la tasa ajustada
                 tasa_bcv_ajustada = tasa_bcv * 1.005
@@ -451,36 +455,43 @@ def construir_intervencion_texto_html(user=None, porcentaje=None):
         else:
             porcentaje = 0.5
 
-    porcentaje_txt = "1.0%" if porcentaje == 1.0 else "0.5%"
+    porcentaje_txt = "1%" if porcentaje == 1.0 else "0.5%"
 
-    # Emojis Premium en HTML
-    EMOJI_DOLAR = '<tg-emoji emoji-id="5409048419211682843">💵</tg-emoji>'
-    EMOJI_FLECHA = '<tg-emoji emoji-id="5416117059207572332">➡️</tg-emoji>'
-    EMOJI_CALENDARIO = '<tg-emoji emoji-id="5395695537687123235">📅</tg-emoji>'
-    EMOJI_BANCO = '<tg-emoji emoji-id="5413879192267805083">🏛️</tg-emoji>'
+    # Obtener tasas de la caché
+    tasa_bcv = CACHE_TASAS.get("bcv_tasa", 745.64)
+    tasa_anterior = CACHE_TASAS.get("bcv_tasa_anterior", 744.23)
+    fecha_valor_bcv = CACHE_TASAS.get("bcv_fecha", "30 Julio 2026")
 
-    # Lectura de la memoria RAW
-    tasa_bcv = CACHE_TASAS.get("bcv_tasa", 744.23)
-    fecha_valor_bcv = CACHE_TASAS.get("bcv_fecha", "2026-07-29")
+    # Calculamos la diferencia exacta
+    diferencia_bs = tasa_bcv - tasa_anterior
+
+    # Construcción de la línea de variación (rectángulo traslúcido)
+    if diferencia_bs > 0:
+        texto_variacion = f"<blockquote>✅ <b>BCV AUMENTA {diferencia_bs:.2f} BS PARA SU VIGENCIA</b></blockquote>\n"
+    elif diferencia_bs < 0:
+        texto_variacion = f"<blockquote>📉 <b>BCV BAJA {abs(diferencia_bs):.2f} BS PARA SU VIGENCIA</b></blockquote>\n"
+    else:
+        texto_variacion = ""
 
     tasa_intervencion = tasa_bcv * (1 + (porcentaje / 100))
 
-    # Construcción del encabezado y recuadro traslúcido
+    # Encabezado estilizado
     texto = (
         f"🚨 <b>¿Cuántos bolívares necesitas para comprar en Intervención?</b>\n\n"
-        f"<blockquote>{EMOJI_CALENDARIO} <b>Fecha Valor BCV:</b> {fecha_valor_bcv}</blockquote>\n\n"
-        f"{EMOJI_BANCO} <b>Tasa BCV Oficial:</b> {tasa_bcv:,.2f} Bs\n"
-        f"⚖️ <b>BCV + 0.5%:</b> {tasa_intervencion:,.2f} Bs ({porcentaje_txt} Agregado)\n"
+        f"<blockquote>📅 <b>Fecha Valor BCV:</b> {fecha_valor_bcv}</blockquote>\n"
+        f"{texto_variacion}"
+        f"🏛️ <b>Tasa BCV Oficial:</b> <code>{tasa_bcv:,.2f} Bs</code>\n"
+        f"⚖️ <b>Tasa Intervención:</b> <code>{tasa_intervencion:,.2f} Bs</code> ({porcentaje_txt} Agregado)\n"
         f"--------------------------------------------------\n"
     )
 
-    # Rangos de 100 a 1000 USD alineados en una sola línea
+    # Rangos de 100 a 1000 USD alineados en 1 sola línea (sin espacios sobrantes)
     for monto_usd in range(100, 1100, 100):
         monto_bs = monto_usd * tasa_intervencion
-        texto += f"{EMOJI_DOLAR} <b>{monto_usd:} USD</b> {EMOJI_FLECHA} <b>Bs. {monto_bs:,.2f}</b>\n"
+        texto += f"💵 <b>{monto_usd} USD</b> ➡️ <code>Bs: {monto_bs:,.2f}</code>\n"
 
     return texto
-    
+                           
     
 # ==========================================
 #     MANEJADORES DE COMANDOS Y BOTONES
@@ -1076,9 +1087,16 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
                     return
 
                 if tasa and fecha:
-                    CACHE_TASAS["bcv_tasa"] = float(tasa)
-                    CACHE_TASAS["bcv_fecha"] = str(fecha)
+                    tasa_nueva = float(tasa)
+                    tasa_actual = CACHE_TASAS.get("bcv_tasa", tasa_nueva)
 
+                    # Si la tasa recibida es distinta a la actual, la actual pasa a ser la 'anterior'
+                    if tasa_nueva != tasa_actual:
+                        CACHE_TASAS["bcv_tasa_anterior"] = tasa_actual
+
+                    CACHE_TASAS["bcv_tasa"] = tasa_nueva
+                    CACHE_TASAS["bcv_fecha"] = str(fecha)
+                    
                     print(f"🔥 [WEBHOOK] Tasa BCV actualizada por El Cazador: {tasa} Bs ({fecha})")
 
                     self.send_response(200)

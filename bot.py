@@ -439,14 +439,12 @@ def construir_intervencion_texto_html(user=None, porcentaje=None):
     # Encabezado estilizado con Sirena y Balanza
     texto = (
         f"{EMOJI_SIRENA} <b>¿Cuántos bolívares necesitas para comprar en Intervención?</b>\n\n"
-        f"<blockquote>{EMOJI_CALENDARIO} <b>Fecha Valor BCV:</b> {fecha_valor_bcv}</blockquote>\n"
+        f"<blockquote>📅 <b>Fecha Valor BCV:</b> {fecha_valor_bcv}</blockquote>\n"
         f"<blockquote>{texto_tendencia}</blockquote>\n"
         f"{EMOJI_BANCO} <b>Tasa BCV Oficial:</b> <code>{tasa_bcv:.2f}</code> Bs\n"
         f"{EMOJI_BALANZA} <b>Tasa Intervención:</b> <code>{tasa_intervencion:.2f}</code> Bs ({porcentaje_txt} Agregado)\n"
         f"--------------------------------------------------\n"
     )
-
-
 
     # Rangos de 100 a 1000 USD
     for monto_usd in range(100, 1100, 100):

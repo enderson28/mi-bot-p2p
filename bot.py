@@ -390,7 +390,7 @@ def construir_monitor_texto_html():
         f"📊 <b>Monitor de Tasas Arbitraje P2P</b>\n"
         f"<blockquote>{EMOJI_CALENDARIO} <b>Vigencia BCV:</b> {fecha_valor_bcv}</blockquote>\n\n"
         f"{EMOJI_BANCO} <b>BCV Oficial:</b> <code>{tasa_bcv_cruda:,.2f} Bs</code>\n"
-        f"⚙️ <b>BCV + 0.5%:</b> <code>{tasa_bcv_ajustada:,.2f} Bs</code>\n"
+        f"🪙 <b>BCV + 0.5%:</b> <code>{tasa_bcv_ajustada:,.2f} Bs</code>\n"
         f"🛡️ <i>Filtros activos: Verificados | Comerciables 🟡 | Pago: Todos 🔻</i>\n"
         f"--------------------------------------------------\n\n"
     )
@@ -440,7 +440,7 @@ def construir_intervencion_texto_html(user=None, porcentaje=None):
     porcentaje_txt = "1.0%" if porcentaje == 1.0 else "0.5%"
 
     # Emojis Premium en HTML
-    EMOJI_DOLAR = '<tg-emoji emoji-id="5409048419211682843">💲</tg-emoji>'
+    EMOJI_DOLAR = '<tg-emoji emoji-id="5409048419211682843">💵</tg-emoji>'
     EMOJI_FLECHA = '<tg-emoji emoji-id="5416117059207572332">➡️</tg-emoji>'
     EMOJI_CALENDARIO = '<tg-emoji emoji-id="5395695537687123235">📅</tg-emoji>'
     EMOJI_BANCO = '<tg-emoji emoji-id="5413879192267805083">🏛️</tg-emoji>'
@@ -456,7 +456,7 @@ def construir_intervencion_texto_html(user=None, porcentaje=None):
         f"🚨 <b>¿Cuántos bolívares necesitas para comprar en Intervención?</b>\n\n"
         f"<blockquote>{EMOJI_CALENDARIO} <b>Fecha Valor BCV:</b> {fecha_valor_bcv}</blockquote>\n\n"
         f"{EMOJI_BANCO} <b>Tasa BCV Oficial:</b> {tasa_bcv:,.2f} Bs\n"
-        f"{EMOJI_DOLAR} <b>Tasa Intervención:</b> {tasa_intervencion:,.2f} Bs ({porcentaje_txt} Agregado)\n"
+        f"🪙 <b>Tasa Intervención:</b> {tasa_intervencion:,.2f} Bs ({porcentaje_txt} Agregado)\n"
         f"--------------------------------------------------\n"
     )
 

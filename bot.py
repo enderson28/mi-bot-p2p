@@ -345,7 +345,7 @@ def construir_monitor_texto_html():
     tasa_bcv_ajustada = tasa_bcv_cruda * 1.005
 
     # Emojis Premium en HTML
-    EMOJI_DOLAR = '<tg-emoji emoji-id="5409048419211682843">$</tg-emoji>'
+    EMOJI_DOLAR = '<tg-emoji emoji-id="5409048419211682843">💵</tg-emoji>'
     EMOJI_FLECHA = '<tg-emoji emoji-id="5416117059207572332">➡</tg-emoji>'
     EMOJI_CALENDARIO = '<tg-emoji emoji-id="5395695537687123235">📅</tg-emoji>'
     EMOJI_BANCO = '<tg-emoji emoji-id="5413879192267805083">🏠</tg-emoji>'
@@ -399,7 +399,6 @@ def construir_monitor_texto_html():
 
     return texto
 
-
 def construir_intervencion_texto_html(user=None, porcentaje=None):
     if porcentaje is None:
         if user and es_admin_especial(user):
@@ -413,12 +412,13 @@ def construir_intervencion_texto_html(user=None, porcentaje=None):
     tasa_anterior = CACHE_TASAS.get("bcv_tasa_anterior", 744.23)
     fecha_valor_bcv = CACHE_TASAS.get("bcv_fecha", "30 Julio 2026")
 
-    EMOJI_DOLAR = '<tg-emoji emoji-id="5409048419211682843">$</tg-emoji>'
-    EMOJI_FLECHA = '<tg-emoji emoji-id="5416117059207572332">➡</tg-emoji>'
+    # Emojis normales para evitar rebase de limites HTML en el bucle
+    EMOJI_DOLAR = "💵"
+    EMOJI_FLECHA = "➡️"
     EMOJI_CALENDARIO = '<tg-emoji emoji-id="5395695537687123235">📅</tg-emoji>'
-    EMOJI_BANCO = '<tg-emoji emoji-id="5413879192267805083">🏠</tg-emoji>'
-    EMOJI_SIRENA = '<tg-emoji emoji-id="5422521873142589255">🚨</tg-emoji>'
-    EMOJI_BALANZA = '<tg-emoji emoji-id="5418128472918451800">⚖️</tg-emoji>'
+    EMOJI_BANCO = '<tg-emoji emoji-id="5413879192267805083">🏦</tg-emoji>'
+    EMOJI_SIRENA = "🚨"
+    EMOJI_BALANZA = "⚖️"
 
     diferencia = tasa_bcv - tasa_anterior
 
@@ -431,21 +431,22 @@ def construir_intervencion_texto_html(user=None, porcentaje=None):
 
     tasa_intervencion = tasa_bcv * (1 + (porcentaje / 100))
 
-    texto = (
-        f"{EMOJI_SIRENA} <b>¿Cuántos bolívares necesitas para comprar en Intervención?</b>\n\n"
-        f"<blockquote>📅 <b>Fecha Valor BCV:</b> {fecha_valor_bcv}</blockquote>\n"
-        f"<blockquote>{texto_tendencia}</blockquote>\n"
-        f"{EMOJI_BANCO} <b>Tasa BCV Oficial:</b> <code>{tasa_bcv:.2f}</code> Bs\n"
-        f"{EMOJI_BALANZA} <b>Tasa Intervención:</b> <code>{tasa_intervencion:.2f}</code> Bs ({porcentaje_txt} Agregado)\n"
+    # Construccion limpia del texto
+    lineas = [
+        f"{EMOJI_SIRENA} <b>¿Cuántos bolívares necesitas para comprar en Intervención?</b>\n\n",
+        f"<blockquote>{EMOJI_CALENDARIO} <b>Fecha Valor BCV:</b> {fecha_valor_bcv}</blockquote>\n",
+        f"<blockquote>{texto_tendencia}</blockquote>\n",
+        f"{EMOJI_BANCO} <b>Tasa BCV Oficial:</b> <code>{tasa_bcv:.2f}</code> Bs\n",
+        f"{EMOJI_BALANZA} <b>Tasa Intervención:</b> <code>{tasa_intervencion:.2f}</code> Bs ({porcentaje_txt} Agregado)\n",
         f"----------------------------------------\n"
-    )
+    ]
+    texto = "".join(lineas)
 
     for monto_usd in range(100, 1100, 100):
         monto_bs = monto_usd * tasa_intervencion
         texto += f"{EMOJI_DOLAR} <b>{monto_usd} USD</b> {EMOJI_FLECHA} Bs: <code>{monto_bs:.2f}</code>\n"
 
-    return texto
-                           
+    return texto                    
     
 # ==========================================
 #     MANEJADORES DE COMANDOS Y BOTONES

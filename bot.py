@@ -347,9 +347,9 @@ def refrescar_tasas_en_vivo():
 
         tasa_bcv_ajustada = tasa_bcv * 1.005
         rangos_def = [
-            ("🥉Rango Pequeño ($50 - $100)", 50.0),
-            ("🥈Rango Mediano ($100 - $300)", 150.0),
-            ("🥇Rango Mayor ($500+)", 500.0)
+            ("Rango Pequeño ($50 - $100)", 50.0),
+            ("Rango Mediano ($100 - $300)", 150.0),
+            ("Rango Mayor ($500+)", 500.0)
         ]
 
         nuevos_rangos = {}
@@ -418,7 +418,7 @@ def construir_monitor_texto_html():
             texto += f"📈 <b>Spread:</b> <code>{spread:,.2f} Bs</code> ({porcentaje_spread:.2f}%)\n"
             texto += "─────────────────────────────\n"
         else:
-            nombre_def = "Rango Pequeño" if usd_ref == 50.0 else ("Rango Mediano" if usd_ref == 150.0 else "Rango Mayor")
+            nombre_def = "🥉Rango Pequeño" if usd_ref == 50.0 else ("🥈Rango Mediano" if usd_ref == 150.0 else "🥇Rango Mayor")
             texto += f"💸 <b>{nombre_def}</b>\n⚠️ <i>Cargando tasas en segundo plano...</i>\n"
             texto += "─────────────────────────────\n"
 

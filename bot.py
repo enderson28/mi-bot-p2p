@@ -336,28 +336,25 @@ def refrescar_tasas_en_vivo():
 
 
 def construir_monitor_texto_html():
-    tasa_bcv_cruda = CACHE_TASAS.get("bcv_tasa")
-    fecha_valor_bcv = CACHE_TASAS.get("bcv_fecha")
+    tasa_bcv = CACHE_TASAS.get("bcv_tasa", 745.64)
+    fecha_valor_bcv = CACHE_TASAS.get("bcv_fecha", "30 Julio 2026")
+    tasa_intervencion = tasa_bcv * 1.005  # BCV + 0.5%
 
-    if not tasa_bcv_cruda:
-        return "⚠️ Error temporal al conectar con la tasa base del BCV."
-
-    tasa_bcv_ajustada = tasa_bcv_cruda * 1.005
-
-    # Emojis Premium en HTML
-    EMOJI_DOLAR = '<tg-emoji emoji-id="5409048419211682843">💵</tg-emoji>'
-    EMOJI_FLECHA = '<tg-emoji emoji-id="5416117059207572332">➡</tg-emoji>'
     EMOJI_CALENDARIO = '<tg-emoji emoji-id="5395695537687123235">📅</tg-emoji>'
-    EMOJI_BANCO = '<tg-emoji emoji-id="5413879192267805083">🏠</tg-emoji>'
+    EMOJI_MONEDA = "🪙"
+    EMOJI_BALANZA = "⚖️"
+    EMOJI_ESCUDO = "🛡️"
 
-    texto = (
-        f"🖥 <b>Monitor de Tasas Arbitraje P2P</b>\n\n"
-        f"<blockquote>🚨 <b>Vigencia BCV:</b> {fecha_valor_bcv}</blockquote>\n\n"
-        f"{EMOJI_CALENDARIO} <b>BCV Oficial:</b> <code>{tasa_bcv_cruda:.2f}</code> Bs\n"
-        f"⚖️ <b>BCV + 0.5%:</b> <code>{tasa_bcv_ajustada:.2f}</code> Bs\n"
-        f"{EMOJI_BANCO} <i>Filtros activos: Verificados | Comerciables 🟡 | Pago: Todos 🔻</i>\n"
-        f"--------------------------------------------------\n\n"
-    )
+    lineas = [
+        f"<b>🖥️ Monitor de Tasas Arbitraje P2P</b>\n\n",
+        f"<blockquote>{EMOJI_CALENDARIO} <b>Vigencia BCV:</b> {fecha_valor_bcv}</blockquote>\n\n",
+        f"{EMOJI_MONEDA} <b>BCV Oficial:</b> <code>{tasa_bcv:.2f}</code> Bs\n",
+        f"{EMOJI_BALANZA} <b>BCV + 0.5%:</b> <code>{tasa_intervencion:.2f}</code> Bs\n",
+        f"<i>{EMOJI_ESCUDO} <b>Filtros activos:</b> Verificados | Comerciables 🟡 | Pago: Todos 🔻</i>\n",
+        f"----------------------------------------\n\n"
+    ]
+    
+    texto = "".join(lineas)
 
     rangos_cache = CACHE_TASAS.get("rangos", {})
 
@@ -412,26 +409,27 @@ def construir_intervencion_texto_html(user=None, porcentaje=None):
     tasa_anterior = CACHE_TASAS.get("bcv_tasa_anterior", 744.23)
     fecha_valor_bcv = CACHE_TASAS.get("bcv_fecha", "30 Julio 2026")
 
-    # Emojis normales para evitar rebase de limites HTML en el bucle
+    # Emojis probados que funcionan (TG Animados)
+    EMOJI_SIRENA = '<tg-emoji emoji-id="5422521873142589255">🚨</tg-emoji>'
+    EMOJI_CALENDARIO = '<tg-emoji emoji-id="5395695537687123235">📅</tg-emoji>'
+    
+    # Emojis planos seguros
+    EMOJI_BANCO = "🪙"
+    EMOJI_BALANZA = "⚖️"
     EMOJI_DOLAR = "💵"
     EMOJI_FLECHA = "➡️"
-    EMOJI_CALENDARIO = '<tg-emoji emoji-id="5395695537687123235">📅</tg-emoji>'
-    EMOJI_BANCO = '<tg-emoji emoji-id="5413879192267805083">🏦</tg-emoji>'
-    EMOJI_SIRENA = "🚨"
-    EMOJI_BALANZA = "⚖️"
 
     diferencia = tasa_bcv - tasa_anterior
 
     if diferencia > 0:
-        texto_tendencia = f"✅ BCV AUMENTÓ {abs(diferencia):.2f} BS PARA SU 📅 FECHA VALOR BCV"
+        texto_tendencia = f"✅ BCV AUMENTÓ {abs(diferencia):.2f} BS PARA SU {EMOJI_CALENDARIO} FECHA VALOR BCV"
     elif diferencia < 0:
-        texto_tendencia = f"🔻 BCV BAJÓ {abs(diferencia):.2f} BS PARA SU 📅 FECHA VALOR BCV"
+        texto_tendencia = f"🔻 BCV BAJÓ {abs(diferencia):.2f} BS PARA SU {EMOJI_CALENDARIO} FECHA VALOR BCV"
     else:
-        texto_tendencia = f"🔹 BCV MANTIENE SU TASA PARA SU 📅 FECHA VALOR BCV"
+        texto_tendencia = f"🔹 BCV MANTIENE SU TASA PARA SU {EMOJI_CALENDARIO} FECHA VALOR BCV"
 
     tasa_intervencion = tasa_bcv * (1 + (porcentaje / 100))
 
-    # Construccion limpia del texto
     lineas = [
         f"{EMOJI_SIRENA} <b>¿Cuántos bolívares necesitas para comprar en Intervención?</b>\n\n",
         f"<blockquote>{EMOJI_CALENDARIO} <b>Fecha Valor BCV:</b> {fecha_valor_bcv}</blockquote>\n",
@@ -446,7 +444,7 @@ def construir_intervencion_texto_html(user=None, porcentaje=None):
         monto_bs = monto_usd * tasa_intervencion
         texto += f"{EMOJI_DOLAR} <b>{monto_usd} USD</b> {EMOJI_FLECHA} Bs: <code>{monto_bs:.2f}</code>\n"
 
-    return texto                    
+    return texto
     
 # ==========================================
 #     MANEJADORES DE COMANDOS Y BOTONES

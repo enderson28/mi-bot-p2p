@@ -427,9 +427,9 @@ def construir_intervencion_texto_html(user=None, porcentaje=None):
     diferencia = tasa_bcv - tasa_anterior
 
     if diferencia > 0:
-        texto_tendencia = f"✅ BCV AUMENTA {abs(diferencia):.2f} Bs PARA SU PRÓXIMA INTERVENCIÓN"
+        texto_tendencia = f"✅ BCV AUMENTA {abs(diferencia):.2f}Bs PARA SU PRÓXIMA INTERVENCIÓN"
     elif diferencia < 0:
-        texto_tendencia = f"🔻 BCV BAJA {abs(diferencia):.2f} Bs PARA SU PRÓXIMA INTERVENCIÓN"
+        texto_tendencia = f"🔻 BCV BAJA {abs(diferencia):.2f}Bs PARA SU PRÓXIMA INTERVENCIÓN"
     else:
         texto_tendencia = "🔹 BCV MANTIENE SU TASA PARA SU PRÓXIMA INTERVENCIÓN"
     
@@ -448,7 +448,7 @@ def construir_intervencion_texto_html(user=None, porcentaje=None):
     # Rangos de 100 a 1000 USD alineados en 1 sola línea (sin espacios sobrantes)
     for monto_usd in range(100, 1100, 100):
         monto_bs = monto_usd * tasa_intervencion
-        texto += f"💵{monto_usd} USD ➡️ Bs:<code>{monto_bs:,.2f}</code>\n"
+        texto += f"💵{monto_usd} USD ➡️Bs:<code>{monto_bs:,.2f}</code>\n"
 
     return texto
                            

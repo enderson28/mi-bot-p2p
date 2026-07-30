@@ -427,13 +427,14 @@ def construir_intervencion_texto_html(user=None, porcentaje=None):
 
     diferencia = tasa_bcv - tasa_anterior
 
+    texto_fecha_valor = f"{EMOJI_CALENDARIO} FECHA VALOR BCV"
+
     if diferencia > 0:
-        texto_tendencia = f"✅ BCV AUMENTÓ {abs(diferencia):.2f} BS PARA SU {EMOJI_CALENDARIO} FECHA VALOR BCV"
+        texto_tendencia = f"✅ BCV AUMENTÓ {abs(diferencia):.2f} BS PARA SU {texto_fecha_valor}"
     elif diferencia < 0:
-        texto_tendencia = f"🔻 BCV BAJÓ {abs(diferencia):.2f} BS PARA SU {EMOJI_CALENDARIO} FECHA VALOR BCV"
+        texto_tendencia = f"🔻 BCV BAJÓ {abs(diferencia):.2f} BS PARA SU {texto_fecha_valor}"
     else:
-        texto_tendencia = f"🔹 BCV MANTIENE SU TASA PARA SU {EMOJI_CALENDARIO} FECHA VALOR BCV"
-        
+        texto_tendencia = f"🔹 BCV MANTIENE SU TASA PARA SU {texto_fecha_valor}"
 
     tasa_intervencion = tasa_bcv * (1 + (porcentaje / 100))
 
@@ -446,6 +447,7 @@ def construir_intervencion_texto_html(user=None, porcentaje=None):
         f"{EMOJI_BALANZA} <b>Tasa Intervención:</b> <code>{tasa_intervencion:.2f}</code> Bs ({porcentaje_txt} Agregado)\n"
         f"--------------------------------------------------\n"
     )
+
 
     # Rangos de 100 a 1000 USD
     for monto_usd in range(100, 1100, 100):

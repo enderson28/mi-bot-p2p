@@ -347,31 +347,31 @@ def refrescar_tasas_en_vivo():
     global CACHE_TASAS
     tasa_bcv = CACHE_TASAS.get("bcv_tasa", 745.64)
     fecha_bcv = CACHE_TASAS.get("bcv_fecha", "2026-07-30")
-    
-        tasa_bcv_ajustada = tasa_bcv * 1.005
-        rangos_def = [
-            ("Rango Pequeño ($50 - $100)", 50.0),
-            ("Rango Mediano ($100 - $300)", 150.0),
-            ("Rango Mayor ($500+)", 500.0)
-        ]
 
-        nuevos_rangos = {}
-        for nombre, usd_ref in rangos_def:
-            monto_bs = usd_ref * tasa_bcv_ajustada
-            try: 
-                compra = obtener_tasa_binance_p2p("BUY", monto_bs) or 0.0
-                venta = obtener_tasa_binance_p2p("SELL", monto_bs) or 0.0
-            except Exception as e:
-                print(f"Error al obtener tasas P2P para {nombre}: {e}")
-                compra, venta = 0.0, 0.0   
-            nuevos_rangos[usd_ref] = {
-                "nombre": nombre,
-                "compra": compra,
-                "venta": venta
-            }
-            
-        CACHE_TASAS["rangos"] = nuevos_rangos
-        
+    tasa_bcv_ajustada = tasa_bcv * 1.005
+    rangos_def = [
+        ("Rango Pequeño ($50 - $100)", 50.0),
+        ("Rango Mediano ($100 - $300)", 150.0),
+        ("Rango Mayor ($500+)", 500.0)
+    ]
+
+    nuevos_rangos = {}
+    for nombre, usd_ref in rangos_def:
+        monto_bs = usd_ref * tasa_bcv_ajustada
+        try:
+            compra = obtener_tasa_binance_p2p("BUY", monto_bs) or 0.0
+            venta = obtener_tasa_binance_p2p("SELL", monto_bs) or 0.0
+        except Exception as e:
+            print(f"Error al obtener tasas P2P para {nombre}: {e}")
+            compra, venta = 0.0, 0.0
+        nuevos_rangos[usd_ref] = {
+            "nombre": nombre,
+            "compra": compra,
+            "venta": venta
+        }
+
+    CACHE_TASAS["rangos"] = nuevos_rangos
+
 
 def construir_monitor_texto_html():
     tasa_bcv_cruda = CACHE_TASAS.get("bcv_tasa")

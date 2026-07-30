@@ -307,12 +307,14 @@ def actualizar_cache_segundo_plano():
             # 1. Obtener BCV
             tasa_bcv, fecha_bcv = obtener_datos_bcv_validos()
             if tasa_bcv:
-                if tasa_bcv != CACHE_TASAS.get("bcv_tasa"):
-                    CACHE_TASAS["bcv_tasa_anterior"] = CACHE_TASAS.get("bcv_tasa", tasa_bcv)
-                CACHE_TASAS["bcv_tasa"] = tasa_bcv
+                tasa_actual = CACHE_TASAS.get("bcv_tasa", 745.64)
+                # Solo si la tasa que viene de la web/script es DISTINTA a la que tenemos en memoria
+                if tasa_bcv != tasa_actual:
+                    CACHE_TASAS["bcv_tasa_anterior"] = tasa_actual
+                    CACHE_TASAS["bcv_tasa"] = tasa_bcv
+            
                 CACHE_TASAS["bcv_fecha"] = fecha_bcv
             
-                
                 # Preparamos los datos por rango usando la tasa ajustada
                 tasa_bcv_ajustada = tasa_bcv * 1.005
                 rangos_def = [
@@ -343,12 +345,9 @@ threading.Thread(target=actualizar_cache_segundo_plano, daemon=True).start()
 
 def refrescar_tasas_en_vivo():
     global CACHE_TASAS
-    tasa_bcv = CACHE_TASAS.get("bcv_tasa", 742.81)
-    fecha_bcv = CACHE_TASAS.get("bcv_fecha", "2026-07-28")
-    if tasa_bcv:
-        CACHE_TASAS["bcv_tasa"] = tasa_bcv
-        CACHE_TASAS["bcv_fecha"] = fecha_bcv
-
+    tasa_bcv = CACHE_TASAS.get("bcv_tasa", 745.64)
+    fecha_bcv = CACHE_TASAS.get("bcv_fecha", "2026-07-30")
+    
         tasa_bcv_ajustada = tasa_bcv * 1.005
         rangos_def = [
             ("Rango Pequeño ($50 - $100)", 50.0),

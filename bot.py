@@ -334,68 +334,17 @@ def refrescar_tasas_en_vivo():
 
     CACHE_TASAS["rangos"] = nuevos_rangos
 
-def construir_intervencion_texto_html(user=None, porcentaje=None):
-    if porcentaje is None:
-        if user and es_admin_especial(user):
-            porcentaje = 1.0
-        else:
-            porcentaje = 0.5
-
-    porcentaje_txt = "1%" if porcentaje == 1.0 else "0.5%"
-
-    tasa_bcv = CACHE_TASAS.get("bcv_tasa", 745.64)
-    tasa_anterior = CACHE_TASAS.get("bcv_tasa_anterior", 744.23)
-    fecha_valor_bcv = CACHE_TASAS.get("bcv_fecha", "30 Julio 2026")
-
-    # TG Emoji animado solo fuera de blockquotes
-    EMOJI_SIRENA = '<tg-emoji emoji-id="5422521873142589255">🚨</tg-emoji>'
-    
-    # Emojis normales para dentro de blockquotes o listas
-    EMOJI_BANCO = "🪙"
-    EMOJI_BALANZA = "⚖️"
-
-    diferencia = tasa_bcv - tasa_anterior
-
-    if diferencia > 0:
-        texto_tendencia = f"✅ BCV AUMENTÓ {abs(diferencia):.2f} BS PARA SU 📅 FECHA VALOR BCV"
-    elif diferencia < 0:
-        texto_tendencia = f"🔻 BCV BAJÓ {abs(diferencia):.2f} BS PARA SU 📅 FECHA VALOR BCV"
-    else:
-        texto_tendencia = f"🔹 BCV MANTIENE SU TASA PARA SU 📅 FECHA VALOR BCV"
-
-    tasa_intervencion = tasa_bcv * (1 + (porcentaje / 100))
-
-    texto = (
-        f"{EMOJI_SIRENA} <b>¿Cuántos bolívares necesitas para comprar en Intervención?</b>\n\n"
-        f"<blockquote>📅 <b>Fecha Valor BCV:</b> {fecha_valor_bcv}</blockquote>\n"
-        f"<blockquote>{texto_tendencia}</blockquote>\n"
-        f"{EMOJI_BANCO} <b>Tasa BCV Oficial:</b> <code>{tasa_bcv:.2f}</code> Bs\n"
-        f"{EMOJI_BALANZA} <b>Tasa Intervención:</b> <code>{tasa_intervencion:.2f}</code> Bs ({porcentaje_txt} Agregado)\n"
-        f"----------------------------------------\n"
-    )
-
-    for monto_usd in range(100, 1100, 100):
-        monto_bs = monto_usd * tasa_intervencion
-        texto += f"💵 <b>{monto_usd} USD</b> ➡️ Bs: <code>{monto_bs:.2f}</code>\n"
-
-    return texto
-
-
 def construir_monitor_texto_html():
     tasa_bcv = CACHE_TASAS.get("bcv_tasa", 745.64)
     fecha_valor_bcv = CACHE_TASAS.get("bcv_fecha", "30 Julio 2026")
     tasa_intervencion = tasa_bcv * 1.005
 
-    EMOJI_SIRENA = '<tg-emoji emoji-id="5422521873142589255">🚨</tg-emoji>'
-    EMOJI_BALANZA = "⚖️"
-    EMOJI_ESCUDO = "🛡️"
-
     texto = (
-        f"<b>🖥️ Monitor de Tasas Arbitraje P2P</b>\n\n"
+        f"<blockquote>🖥️ <b>Monitor de Tasas Arbitraje P2P</b></blockquote>\n"
         f"<blockquote>📅 <b>Vigencia BCV:</b> {fecha_valor_bcv}</blockquote>\n\n"
-        f"{EMOJI_SIRENA} <b>BCV Oficial:</b> <code>{tasa_bcv:.2f}</code> Bs\n"
-        f"{EMOJI_BALANZA} <b>BCV + 0.5%:</b> <code>{tasa_intervencion:.2f}</code> Bs\n"
-        f"<i>{EMOJI_ESCUDO} <b>Filtros activos:</b> Verificados | Comerciables 🟡 | Pago: Todos 🔻</i>\n"
+        f"🪙 <b>BCV Oficial:</b> <code>{tasa_bcv:.2f}</code> Bs\n"
+        f"⚖️ <b>BCV + 0.5%:</b> <code>{tasa_intervencion:.2f}</code> Bs\n"
+        f"<i>🛡️ <b>Filtros activos:</b> Verificados | Comerciables 🟡 | Pago: Todos 🔻</i>\n"
         f"----------------------------------------\n\n"
     )
 
@@ -431,6 +380,45 @@ def construir_monitor_texto_html():
 
     hora_actual = (datetime.now() - timedelta(hours=4)).strftime("%I:%M:%S %p")
     texto += f"\n🕒 <i>Última actualización: {hora_actual}</i>"
+
+    return texto
+
+def construir_intervencion_texto_html(user=None, porcentaje=None):
+    if porcentaje is None:
+        if user and es_admin_especial(user):
+            porcentaje = 1.0
+        else:
+            porcentaje = 0.5
+
+    porcentaje_txt = "1%" if porcentaje == 1.0 else "0.5%"
+
+    tasa_bcv = CACHE_TASAS.get("bcv_tasa", 745.64)
+    tasa_anterior = CACHE_TASAS.get("bcv_tasa_anterior", 744.23)
+    fecha_valor_bcv = CACHE_TASAS.get("bcv_fecha", "30 Julio 2026")
+
+    diferencia = tasa_bcv - tasa_anterior
+
+    if diferencia > 0:
+        texto_tendencia = f"✅ BCV AUMENTÓ {abs(diferencia):.2f} BS PARA SU FECHA VALOR BCV 📅"
+    elif diferencia < 0:
+        texto_tendencia = f"🔻 BCV BAJÓ {abs(diferencia):.2f} BS PARA SU FECHA VALOR BCV 📅"
+    else:
+        texto_tendencia = f"🔹 BCV MANTIENE SU TASA PARA SU FECHA VALOR BCV 📅"
+
+    tasa_intervencion = tasa_bcv * (1 + (porcentaje / 100))
+
+    texto = (
+        f"🚨 <b>¿Cuántos bolívares necesitas para comprar en Intervención?</b>\n\n"
+        f"<blockquote>📅 <b>Fecha Valor BCV:</b> {fecha_valor_bcv}</blockquote>\n"
+        f"<blockquote>{texto_tendencia}</blockquote>\n"
+        f"🏦 <b>Tasa BCV Oficial:</b> <code>{tasa_bcv:.2f}</code> Bs\n"
+        f"⚖️ <b>Tasa Intervención:</b> <code>{tasa_intervencion:.2f}</code> Bs ({porcentaje_txt} Agregado)\n"
+        f"----------------------------------------\n"
+    )
+
+    for monto_usd in range(100, 1100, 100):
+        monto_bs = monto_usd * tasa_intervencion
+        texto += f"💵 <b>{monto_usd} USD</b> ➡️ Bs: <code>{monto_bs:.2f}</code>\n"
 
     return texto
     

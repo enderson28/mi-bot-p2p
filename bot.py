@@ -344,13 +344,18 @@ def construir_monitor_texto_html():
 
     tasa_bcv_ajustada = tasa_bcv_cruda * 1.005
 
-    # Encabezado estilizado con recuadro traslúcido y sirena
+    # Emojis Premium en HTML
+    EMOJI_DOLAR = '<tg-emoji emoji-id="5409048419211682843">$</tg-emoji>'
+    EMOJI_FLECHA = '<tg-emoji emoji-id="5416117059207572332">➡</tg-emoji>'
+    EMOJI_CALENDARIO = '<tg-emoji emoji-id="5395695537687123235">📅</tg-emoji>'
+    EMOJI_BANCO = '<tg-emoji emoji-id="5413879192267805083">🏠</tg-emoji>'
+
     texto = (
-        f"📊 <b>Monitor de Tasas Arbitraje P2P</b>\n\n"
+        f"🖥 <b>Monitor de Tasas Arbitraje P2P</b>\n\n"
         f"<blockquote>🚨 <b>Vigencia BCV:</b> {fecha_valor_bcv}</blockquote>\n\n"
-        f"🏦 <b>BCV Oficial:</b> <code>{tasa_bcv_cruda:.2f}</code> Bs\n"
+        f"{EMOJI_CALENDARIO} <b>BCV Oficial:</b> <code>{tasa_bcv_cruda:.2f}</code> Bs\n"
         f"⚖️ <b>BCV + 0.5%:</b> <code>{tasa_bcv_ajustada:.2f}</code> Bs\n"
-        f"🛡 <i>Filtros activos: Verificados | Comerciables 🟡 | Pago: Todos 🔻</i>\n"
+        f"{EMOJI_BANCO} <i>Filtros activos: Verificados | Comerciables 🟡 | Pago: Todos 🔻</i>\n"
         f"--------------------------------------------------\n\n"
     )
 
@@ -363,7 +368,7 @@ def construir_monitor_texto_html():
     }
 
     for usd_ref in [50.0, 150.0, 500.0]:
-        emoji_rango = emojis_rangos.get(usd_ref, "💸")
+        emoji_rango = emojis_rangos.get(usd_ref, "🏷")
         datos = rangos_cache.get(usd_ref) or rangos_cache.get(float(usd_ref)) or rangos_cache.get(str(usd_ref))
 
         if datos and datos.get("compra", 0) > 0 and datos.get("venta", 0) > 0:
@@ -380,7 +385,7 @@ def construir_monitor_texto_html():
             texto += f"🔴 <b>Venta:</b> <code>{tasa_venta:.2f}</code> Bs\n"
 
             if usd_ref == 500.0:
-                texto += f"    └ 💡 <i>(Filtro base: ~{filtro_bcv_bs:,.0f} Bs)</i>\n"
+                texto += f"     └ 💡 <i>(Filtro base: ~{filtro_bcv_bs:,.0f} Bs)</i>\n"
 
             texto += f"📈 <b>Spread:</b> <code>{spread:.2f}</code> Bs ({porcentaje_spread:.2f}%)\n"
             texto += "--------------------------------------------------\n"
@@ -393,10 +398,9 @@ def construir_monitor_texto_html():
     texto += f"\n🔄 <i>Última actualización: {hora_actual}</i>"
 
     return texto
-    
-    
+
+
 def construir_intervencion_texto_html(user=None, porcentaje=None):
-    # Determinar el porcentaje
     if porcentaje is None:
         if user and es_admin_especial(user):
             porcentaje = 1.0
@@ -405,10 +409,16 @@ def construir_intervencion_texto_html(user=None, porcentaje=None):
 
     porcentaje_txt = "1%" if porcentaje == 1.0 else "0.5%"
 
-    # Obtener tasas de la caché
     tasa_bcv = CACHE_TASAS.get("bcv_tasa", 745.64)
     tasa_anterior = CACHE_TASAS.get("bcv_tasa_anterior", 744.23)
     fecha_valor_bcv = CACHE_TASAS.get("bcv_fecha", "30 Julio 2026")
+
+    EMOJI_DOLAR = '<tg-emoji emoji-id="5409048419211682843">$</tg-emoji>'
+    EMOJI_FLECHA = '<tg-emoji emoji-id="5416117059207572332">➡</tg-emoji>'
+    EMOJI_CALENDARIO = '<tg-emoji emoji-id="5395695537687123235">📅</tg-emoji>'
+    EMOJI_BANCO = '<tg-emoji emoji-id="5413879192267805083">🏠</tg-emoji>'
+    EMOJI_SIRENA = '<tg-emoji emoji-id="5422521873142589255">🚨</tg-emoji>'
+    EMOJI_BALANZA = '<tg-emoji emoji-id="5418128472918451800">⚖️</tg-emoji>'
 
     diferencia = tasa_bcv - tasa_anterior
 
@@ -421,25 +431,20 @@ def construir_intervencion_texto_html(user=None, porcentaje=None):
 
     tasa_intervencion = tasa_bcv * (1 + (porcentaje / 100))
 
-    # Encabezado con emojis estándar (100% compatible con Telegram)
     texto = (
-        f"🚨 <b>¿Cuántos bolívares necesitas para comprar en Intervención?</b>\n\n"
+        f"{EMOJI_SIRENA} <b>¿Cuántos bolívares necesitas para comprar en Intervención?</b>\n\n"
         f"<blockquote>📅 <b>Fecha Valor BCV:</b> {fecha_valor_bcv}</blockquote>\n"
         f"<blockquote>{texto_tendencia}</blockquote>\n"
-        f"🏦 <b>Tasa BCV Oficial:</b> <code>{tasa_bcv:.2f}</code> Bs\n"
-        f"⚖️ <b>Tasa Intervención:</b> <code>{tasa_intervencion:.2f}</code> Bs ({porcentaje_txt} Agregado)\n"
+        f"{EMOJI_BANCO} <b>Tasa BCV Oficial:</b> <code>{tasa_bcv:.2f}</code> Bs\n"
+        f"{EMOJI_BALANZA} <b>Tasa Intervención:</b> <code>{tasa_intervencion:.2f}</code> Bs ({porcentaje_txt} Agregado)\n"
         f"--------------------------------------------------\n"
     )
 
-
-    # Rangos de 100 a 1000 USD
     for monto_usd in range(100, 1100, 100):
         monto_bs = monto_usd * tasa_intervencion
-        texto += f"💵 <b>{monto_usd} USD</b> ➡️ Bs: <code>{monto_bs:.2f}</code>\n"
-        
+        texto += f"{EMOJI_DOLAR} <b>{monto_usd} USD</b> {EMOJI_FLECHA} Bs: <code>{monto_bs:.2f}</code>\n"
 
     return texto
-    
                            
     
 # ==========================================

@@ -423,24 +423,23 @@ def construir_intervencion_texto_html(user=None, porcentaje=None):
     tasa_anterior = CACHE_TASAS.get("bcv_tasa_anterior", 744.23)
     fecha_valor_bcv = CACHE_TASAS.get("bcv_fecha", "30 Julio 2026")
 
-    # Calculamos la diferencia exacta
-    diferencia_bs = tasa_bcv - tasa_anterior
+    # Ejemplo de cómo adaptar la lógica de esa línea:
+    diferencia = tasa_bcv - tasa_anterior
 
-    # Construcción de la línea de variación (rectángulo traslúcido)
-    if diferencia_bs > 0:
-        texto_variacion = f"<blockquote>✅ <b>BCV AUMENTA {diferencia_bs:.2f} BS PARA SU VIGENCIA</b></blockquote>\n"
-    elif diferencia_bs < 0:
-        texto_variacion = f"<blockquote>📉 <b>BCV BAJA {abs(diferencia_bs):.2f} BS PARA SU VIGENCIA</b></blockquote>\n"
+    if diferencia > 0:
+        texto_tendencia = f"✅ BCV AUMENTA {abs(diferencia):.2f} BS PARA SU PRÓXIMA INTERVENCIÓN"
+    elif diferencia < 0:
+        texto_tendencia = f"🔻 BCV BAJA {abs(diferencia):.2f} BS PARA SU PRÓXIMA INTERVENCIÓN"
     else:
-        texto_variacion = ""
-
+        texto_tendencia = "🔹 BCV MANTIENE SU TASA PARA SU PRÓXIMA INTERVENCIÓN"
+    
     tasa_intervencion = tasa_bcv * (1 + (porcentaje / 100))
 
     # Encabezado estilizado
     texto = (
         f"🚨 <b>¿Cuántos bolívares necesitas para comprar en Intervención?</b>\n\n"
         f"<blockquote>📅 <b>Fecha Valor BCV:</b> {fecha_valor_bcv}</blockquote>\n"
-        f"{texto_variacion}"
+        f"<blockquote>{texto_tendencia}</blockquote>\n"
         f"🏛️ <b>Tasa BCV Oficial:</b> <code>{tasa_bcv:,.2f} Bs</code>\n"
         f"⚖️ <b>Tasa Intervención:</b> <code>{tasa_intervencion:,.2f} Bs</code> ({porcentaje_txt} Agregado)\n"
         f"--------------------------------------------------\n"

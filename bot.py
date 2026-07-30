@@ -340,9 +340,9 @@ def construir_monitor_texto_html():
     tasa_intervencion = tasa_bcv * 1.005
 
     texto = (
-        f"<blockquote>🖥️ <b>Monitor de Tasas Arbitraje P2P</b></blockquote>\n"
+        f"🖥️ <b>Monitor de Tasas Arbitraje P2P</b>\n"
         f"<blockquote>📅 <b>Vigencia BCV:</b> {fecha_valor_bcv}</blockquote>\n\n"
-        f"🪙 <b>BCV Oficial:</b> <code>{tasa_bcv:.2f}</code> Bs\n"
+        f"<blockquote>🏦 <b>BCV Oficial:</b> <code>{tasa_bcv:.2f}</code> Bs</blockquote>\n"
         f"⚖️ <b>BCV + 0.5%:</b> <code>{tasa_intervencion:.2f}</code> Bs\n"
         f"<i>🛡️ <b>Filtros activos:</b> Verificados | Comerciables 🟡 | Pago: Todos 🔻</i>\n"
         f"----------------------------------------\n\n"
@@ -360,7 +360,8 @@ def construir_monitor_texto_html():
             tasa_compra = datos["compra"]
             tasa_venta = datos["venta"]
 
-            filtro_bcv_bs = usd_ref * tasa_bcv
+            # Corrección aquí: se calcula usando tasa_intervencion (BCV + 0.5%)
+            filtro_bcv_bs = usd_ref * tasa_intervencion
             spread = tasa_venta - tasa_compra
             porcentaje_spread = (spread / tasa_compra) * 100 if tasa_compra > 0 else 0.0
 

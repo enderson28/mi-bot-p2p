@@ -477,7 +477,7 @@ def construir_intervencion_texto_html(user=None, porcentaje=None):
     # Rangos de 100 a 1000 USD alineados en una sola línea
     for monto_usd in range(100, 1100, 100):
         monto_bs = monto_usd * tasa_intervencion
-        texto += f"{EMOJI_DOLAR} <b>{monto_usd:,} USD</b> {EMOJI_FLECHA} <b>Bs. {monto_bs:,.2f}</b>\n"
+        texto += f"{EMOJI_DOLAR} <b>{monto_usd:} USD</b> {EMOJI_FLECHA} <b>Bs. {monto_bs:,.2f}</b>\n"
 
     return texto
     

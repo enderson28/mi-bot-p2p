@@ -360,6 +360,7 @@ def construir_intervencion_texto_html(user=None, porcentaje=None):
         texto_tendencia = f"🔻 BCV BAJÓ {abs(diferencia):.2f} BS PARA SU FECHA VALOR BCV 📅"
     else:
         texto_tendencia = f"🔹 BCV MANTIENE SU TASA PARA SU FECHA VALOR BCV 📅"
+        
 
     tasa_intervencion = tasa_bcv * (1 + (porcentaje / 100))
 

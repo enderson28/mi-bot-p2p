@@ -453,6 +453,13 @@ def construir_intervencion_texto_html(user=None, porcentaje=None):
 # ==========================================
 #     MANEJADORES DE COMANDOS Y BOTONES
 # ==========================================
+# INSPECTOR TEMPORAL DE EMOJIS PREMIUM
+@bot.message_handler(func=lambda m: m.entities is not None, content_types=['text'])
+def capturar_emojis_premium(message):
+    for entity in message.entities:
+        if entity.type == 'custom_emoji':
+            print(f"🔥 EMOJI ID DETECTADO: {entity.custom_emoji_id}")
+            
 @bot.message_handler(commands=['start'])
 def handle_start(message):
     if message.chat.type == "private":
@@ -1017,6 +1024,7 @@ def filtro_seguridad_chat(message):
     # 3. Si un usuario común pegó un reporte oficial, lo borra y se detiene
     if validar_copia_pega(bot, message, es_admin):
         return
+            
 # ==========================================
 # RECEPTOR WEBHOOK PARA EL CAZADOR
 # ==========================================

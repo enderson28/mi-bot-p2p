@@ -471,12 +471,6 @@ def construir_intervencion_texto_html(user=None, porcentaje=None):
 # ==========================================
 #     MANEJADORES DE COMANDOS Y BOTONES
 # ==========================================
-# INSPECTOR TEMPORAL DE EMOJIS PREMIUM
-@bot.message_handler(func=lambda m: m.entities is not None, content_types=['text'])
-def capturar_emojis_premium(message):
-    for entity in message.entities:
-        if entity.type == 'custom_emoji':
-            print(f"🔥 EMOJI ID DETECTADO: {entity.custom_emoji_id}")
             
 @bot.message_handler(commands=['start'])
 def handle_start(message):

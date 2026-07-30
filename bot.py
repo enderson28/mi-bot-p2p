@@ -227,7 +227,7 @@ def obtener_datos_bcv_validos():
         pass
 
     # 3. Respaldo manual si la red falla totalmente
-    return 744.23, "2026-07-29"
+    return 745.64, "2026-07-30"
     
 def obtener_tasa_binance_p2p(tipo_operacion, monto_bs):
     url = "https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search"
@@ -488,7 +488,7 @@ def construir_intervencion_texto_html(user=None, porcentaje=None):
     # Rangos de 100 a 1000 USD alineados en 1 sola línea (sin espacios sobrantes)
     for monto_usd in range(100, 1100, 100):
         monto_bs = monto_usd * tasa_intervencion
-        texto += f"💵 <b>{monto_usd} USD</b> ➡️ <code>Bs: {monto_bs:,.2f}</code>\n"
+        texto += f"💵 <b>{monto_usd} USD</b> ➡️ <code>Bs:{monto_bs:,.2f}</code>\n"
 
     return texto
                            

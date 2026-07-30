@@ -387,10 +387,10 @@ def construir_monitor_texto_html():
 
     # Encabezado estilizado con recuadro traslúcido
     texto = (
-        f"📊 <b>Monitor de Tasas Arbitraje P2P</b>\n"
+        f"🖥️ <b>Monitor de Tasas Arbitraje P2P</b>\n"
         f"<blockquote>{EMOJI_CALENDARIO} <b>Vigencia BCV:</b> {fecha_valor_bcv}</blockquote>\n\n"
         f"{EMOJI_BANCO} <b>BCV Oficial:</b> <code>{tasa_bcv_cruda:,.2f} Bs</code>\n"
-        f"🪙 <b>BCV + 0.5%:</b> <code>{tasa_bcv_ajustada:,.2f} Bs</code>\n"
+        f"⚖️ <b>BCV + 0.5%:</b> <code>{tasa_bcv_ajustada:,.2f} Bs</code>\n"
         f"🛡️ <i>Filtros activos: Verificados | Comerciables 🟡 | Pago: Todos 🔻</i>\n"
         f"--------------------------------------------------\n\n"
     )
@@ -456,7 +456,7 @@ def construir_intervencion_texto_html(user=None, porcentaje=None):
         f"🚨 <b>¿Cuántos bolívares necesitas para comprar en Intervención?</b>\n\n"
         f"<blockquote>{EMOJI_CALENDARIO} <b>Fecha Valor BCV:</b> {fecha_valor_bcv}</blockquote>\n\n"
         f"{EMOJI_BANCO} <b>Tasa BCV Oficial:</b> {tasa_bcv:,.2f} Bs\n"
-        f"🪙 <b>Tasa Intervención:</b> {tasa_intervencion:,.2f} Bs ({porcentaje_txt} Agregado)\n"
+        f"⚖️ <b>BCV + 0.5%:</b> {tasa_intervencion:,.2f} Bs ({porcentaje_txt} Agregado)\n"
         f"--------------------------------------------------\n"
     )
 

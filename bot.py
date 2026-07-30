@@ -347,9 +347,9 @@ def refrescar_tasas_en_vivo():
 
         tasa_bcv_ajustada = tasa_bcv * 1.005
         rangos_def = [
-            ("Rango Pequeño ($50 - $100)", 50.0),
-            ("Rango Mediano ($100 - $300)", 150.0),
-            ("Rango Mayor ($500+)", 500.0)
+            ("🥉Rango Pequeño ($50 - $100)", 50.0),
+            ("🥈Rango Mediano ($100 - $300)", 150.0),
+            ("🥇Rango Mayor ($500+)", 500.0)
         ]
 
         nuevos_rangos = {}
@@ -408,7 +408,7 @@ def construir_monitor_texto_html():
             spread = tasa_venta - tasa_compra
             porcentaje_spread = (spread / tasa_compra) * 100 if tasa_compra > 0 else 0.0
 
-            texto += f"💸 <b>{nombre_rango}</b>\n"
+            texto += f" <b>{nombre_rango}</b>\n"
             texto += f"🟢 <b>Compra USDT:</b> <code>{tasa_compra:,.2f} Bs</code>\n"
             texto += f"🔴 <b>Venta:</b> <code>{tasa_venta:,.2f} Bs</code>\n"
 

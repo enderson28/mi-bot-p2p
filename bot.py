@@ -427,11 +427,11 @@ def construir_intervencion_texto_html(user=None, porcentaje=None):
     diferencia = tasa_bcv - tasa_anterior
 
     if diferencia > 0:
-        texto_tendencia = f"✅ BCV AUMENTA {abs(diferencia):.2f}Bs PARA SU PRÓXIMA INTERVENCIÓN"
+        texto_tendencia = f"✅ BCV AUMENTÓ {abs(diferencia):.2f}Bs PARA SU 📆FECHA VALOR BCV"
     elif diferencia < 0:
-        texto_tendencia = f"🔻 BCV BAJA {abs(diferencia):.2f}Bs PARA SU PRÓXIMA INTERVENCIÓN"
+        texto_tendencia = f"🔻 BCV BAJA {abs(diferencia):.2f}Bs PARA SU 📆FECHA VALOR BCV"
     else:
-        texto_tendencia = "🔹 BCV MANTIENE SU TASA PARA SU PRÓXIMA INTERVENCIÓN"
+        texto_tendencia = "🔹 BCV MANTIENE SU TASA PARA SU 📆FECHA VALOR BCV"
     
     tasa_intervencion = tasa_bcv * (1 + (porcentaje / 100))
 

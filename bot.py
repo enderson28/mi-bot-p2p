@@ -185,49 +185,11 @@ def usuario_esta_unido(user_id):
     
     # Actualizacion de velocidad
 def obtener_datos_bcv_validos():
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-    }
-
-    # 1. Scraping Directo al BCV
-    try:
-        r = requests.get("https://www.bcv.org.ve", headers=headers, timeout=3.0, verify=False)
-        if r.status_code == 200:
-            soup = BeautifulSoup(r.content, 'html.parser')
-            div_dolar = soup.find("div", id="dolar")
-            if div_dolar:
-                # Extraer texto crudo del contenedor del dólar
-                raw_text = div_dolar.get_text()
-                # Buscar un patrón numérico tipo "742,81" o "742,81050000"
-                match = re.search(r'(\d{2,3}[\.,]\d+)', raw_text)
-                if match:
-                    val_str = match.group(1).replace('.', '').replace(',', '.')
-                    tasa = float(val_str)
-                    
-                    # Intentar capturar la Fecha Valor
-                    span_fecha = soup.find("span", class_="date-display-single")
-                    fecha = span_fecha.text.strip() if span_fecha else "2026-07-28"
-                    
-                    if tasa > 50: # Validación de seguridad básica
-                        return tasa, fecha
-    except Exception as e:
-        print(f"⚠️ Error en scraping directo BCV: {e}")
-
-    # 2. Respaldo por DolarAPI (por si la web del BCV se cae)
-    return 744.23, "2026-07-29"
-    try:
-        r = requests.get("https://ve.dolarapi.com/v1/dolares/oficial", headers=headers, timeout=2.0)
-        if r.status_code == 200:
-            datos = r.json()
-            tasa = float(datos.get("promedio", 0))
-            fecha = datos.get("fechaActualizacion", "")[:10]
-            if tasa > 0:
-                return tasa, fecha
-    except Exception:
-        pass
-
-    # 3. Respaldo manual si la red falla totalmente
-    return 745.64, "2026-07-30"
+    """Retorna la tasa y fecha actuales guardadas en memoria desde el Cazador BCV."""
+    tasa = CACHE_TASAS.get("bcv_tasa", 745.64)
+    fecha = CACHE_TASAS.get("bcv_fecha", "2026-07-30")
+    return tasa, fecha
+    
     
 def obtener_tasa_binance_p2p(tipo_operacion, monto_bs):
     url = "https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search"

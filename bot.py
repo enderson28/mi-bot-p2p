@@ -334,68 +334,6 @@ def refrescar_tasas_en_vivo():
 
     CACHE_TASAS["rangos"] = nuevos_rangos
 
-
-def construir_monitor_texto_html():
-    tasa_bcv = CACHE_TASAS.get("bcv_tasa", 745.64)
-    fecha_valor_bcv = CACHE_TASAS.get("bcv_fecha", "30 Julio 2026")
-    tasa_intervencion = tasa_bcv * 1.005  # BCV + 0.5%
-
-    EMOJI_CALENDARIO = '<tg-emoji emoji-id="5395695537687123235">📅</tg-emoji>'
-    EMOJI_MONEDA = "🪙"
-    EMOJI_BALANZA = "⚖️"
-    EMOJI_ESCUDO = "🛡️"
-
-    lineas = [
-        f"<b>🖥️ Monitor de Tasas Arbitraje P2P</b>\n\n",
-        f"<blockquote>{EMOJI_CALENDARIO} <b>Vigencia BCV:</b> {fecha_valor_bcv}</blockquote>\n\n",
-        f"{EMOJI_MONEDA} <b>BCV Oficial:</b> <code>{tasa_bcv:.2f}</code> Bs\n",
-        f"{EMOJI_BALANZA} <b>BCV + 0.5%:</b> <code>{tasa_intervencion:.2f}</code> Bs\n",
-        f"<i>{EMOJI_ESCUDO} <b>Filtros activos:</b> Verificados | Comerciables 🟡 | Pago: Todos 🔻</i>\n",
-        f"----------------------------------------\n\n"
-    ]
-    
-    texto = "".join(lineas)
-
-    rangos_cache = CACHE_TASAS.get("rangos", {})
-
-    emojis_rangos = {
-        50.0: "🥉",
-        150.0: "🥈",
-        500.0: "🥇"
-    }
-
-    for usd_ref in [50.0, 150.0, 500.0]:
-        emoji_rango = emojis_rangos.get(usd_ref, "🏷")
-        datos = rangos_cache.get(usd_ref) or rangos_cache.get(float(usd_ref)) or rangos_cache.get(str(usd_ref))
-
-        if datos and datos.get("compra", 0) > 0 and datos.get("venta", 0) > 0:
-            nombre_rango = datos["nombre"]
-            tasa_compra = datos["compra"]
-            tasa_venta = datos["venta"]
-
-            filtro_bcv_bs = usd_ref * tasa_bcv_ajustada
-            spread = tasa_venta - tasa_compra
-            porcentaje_spread = (spread / tasa_compra) * 100 if tasa_compra > 0 else 0.0
-
-            texto += f"{emoji_rango} <b>{nombre_rango}</b>\n"
-            texto += f"🟢 <b>Compra USDT:</b> <code>{tasa_compra:.2f}</code> Bs\n"
-            texto += f"🔴 <b>Venta:</b> <code>{tasa_venta:.2f}</code> Bs\n"
-
-            if usd_ref == 500.0:
-                texto += f"     └ 💡 <i>(Filtro base: ~{filtro_bcv_bs:,.0f} Bs)</i>\n"
-
-            texto += f"📈 <b>Spread:</b> <code>{spread:.2f}</code> Bs ({porcentaje_spread:.2f}%)\n"
-            texto += "--------------------------------------------------\n"
-        else:
-            nombre_def = "Rango Pequeño" if usd_ref == 50.0 else ("Rango Mediano" if usd_ref == 150.0 else "Rango Mayor")
-            texto += f"{emoji_rango} <b>{nombre_def}</b>\n⚠️ <i>Cargando tasas en segundo plano...</i>\n"
-            texto += "--------------------------------------------------\n"
-
-    hora_actual = (datetime.now() - timedelta(hours=4)).strftime("%I:%M:%S %p")
-    texto += f"\n🔄 <i>Última actualización: {hora_actual}</i>"
-
-    return texto
-
 def construir_intervencion_texto_html(user=None, porcentaje=None):
     if porcentaje is None:
         if user and es_admin_especial(user):
@@ -409,42 +347,92 @@ def construir_intervencion_texto_html(user=None, porcentaje=None):
     tasa_anterior = CACHE_TASAS.get("bcv_tasa_anterior", 744.23)
     fecha_valor_bcv = CACHE_TASAS.get("bcv_fecha", "30 Julio 2026")
 
-    # Emojis probados que funcionan (TG Animados)
     EMOJI_SIRENA = '<tg-emoji emoji-id="5422521873142589255">🚨</tg-emoji>'
     EMOJI_CALENDARIO = '<tg-emoji emoji-id="5395695537687123235">📅</tg-emoji>'
-    
-    # Emojis planos seguros
-    EMOJI_BANCO = "🪙"
+    EMOJI_BANCO = "🏦"
     EMOJI_BALANZA = "⚖️"
-    EMOJI_DOLAR = "💵"
-    EMOJI_FLECHA = "➡️"
 
     diferencia = tasa_bcv - tasa_anterior
 
     if diferencia > 0:
-        texto_tendencia = f"✅ BCV AUMENTÓ {abs(diferencia):.2f} BS PARA SU {EMOJI_CALENDARIO} FECHA VALOR BCV"
+        texto_tendencia = f"✅ BCV AUMENTÓ {abs(diferencia):.2f} BS PARA SU FECHA VALOR BCV 📅"
     elif diferencia < 0:
-        texto_tendencia = f"🔻 BCV BAJÓ {abs(diferencia):.2f} BS PARA SU {EMOJI_CALENDARIO} FECHA VALOR BCV"
+        texto_tendencia = f"🔻 BCV BAJÓ {abs(diferencia):.2f} BS PARA SU FECHA VALOR BCV 📅"
     else:
-        texto_tendencia = f"🔹 BCV MANTIENE SU TASA PARA SU {EMOJI_CALENDARIO} FECHA VALOR BCV"
+        texto_tendencia = f"🔹 BCV MANTIENE SU TASA PARA SU FECHA VALOR BCV 📅"
 
     tasa_intervencion = tasa_bcv * (1 + (porcentaje / 100))
 
-    lineas = [
-        f"{EMOJI_SIRENA} <b>¿Cuántos bolívares necesitas para comprar en Intervención?</b>\n\n",
-        f"<blockquote>{EMOJI_CALENDARIO} <b>Fecha Valor BCV:</b> {fecha_valor_bcv}</blockquote>\n",
-        f"<blockquote>{texto_tendencia}</blockquote>\n",
-        f"{EMOJI_BANCO} <b>Tasa BCV Oficial:</b> <code>{tasa_bcv:.2f}</code> Bs\n",
-        f"{EMOJI_BALANZA} <b>Tasa Intervención:</b> <code>{tasa_intervencion:.2f}</code> Bs ({porcentaje_txt} Agregado)\n",
+    texto = (
+        f"{EMOJI_SIRENA} <b>¿Cuántos bolívares necesitas para comprar en Intervención?</b>\n\n"
+        f"<blockquote>{EMOJI_CALENDARIO} <b>Fecha Valor BCV:</b> {fecha_valor_bcv}</blockquote>\n"
+        f"<blockquote>{texto_tendencia}</blockquote>\n"
+        f"{EMOJI_BANCO} <b>Tasa BCV Oficial:</b> <code>{tasa_bcv:.2f}</code> Bs\n"
+        f"{EMOJI_BALANZA} <b>Tasa Intervención:</b> <code>{tasa_intervencion:.2f}</code> Bs ({porcentaje_txt} Agregado)\n"
         f"----------------------------------------\n"
-    ]
-    texto = "".join(lineas)
+    )
 
     for monto_usd in range(100, 1100, 100):
         monto_bs = monto_usd * tasa_intervencion
-        texto += f"{EMOJI_DOLAR} <b>{monto_usd} USD</b> {EMOJI_FLECHA} Bs: <code>{monto_bs:.2f}</code>\n"
+        texto += f"💵 <b>{monto_usd} USD</b> ➡️ Bs: <code>{monto_bs:.2f}</code>\n"
 
     return texto
+
+
+def construir_monitor_texto_html():
+    tasa_bcv = CACHE_TASAS.get("bcv_tasa", 745.64)
+    fecha_valor_bcv = CACHE_TASAS.get("bcv_fecha", "30 Julio 2026")
+    tasa_intervencion = tasa_bcv * 1.005
+
+    EMOJI_CALENDARIO = '<tg-emoji emoji-id="5395695537687123235">📅</tg-emoji>'
+    EMOJI_SIRENA = '<tg-emoji emoji-id="5422521873142589255">🚨</tg-emoji>'
+    EMOJI_BALANZA = "⚖️"
+    EMOJI_ESCUDO = "🛡️"
+
+    texto = (
+        f"<b>🖥️ Monitor de Tasas Arbitraje P2P</b>\n\n"
+        f"<blockquote>{EMOJI_CALENDARIO} <b>Vigencia BCV:</b> {fecha_valor_bcv}</blockquote>\n\n"
+        f"{EMOJI_SIRENA} <b>BCV Oficial:</b> <code>{tasa_bcv:.2f}</code> Bs\n"
+        f"{EMOJI_BALANZA} <b>BCV + 0.5%:</b> <code>{tasa_intervencion:.2f}</code> Bs\n"
+        f"<i>{EMOJI_ESCUDO} <b>Filtros activos:</b> Verificados | Comerciables 🟡 | Pago: Todos 🔻</i>\n"
+        f"----------------------------------------\n\n"
+    )
+
+    rangos_cache = CACHE_TASAS.get("rangos", {})
+    emojis_rangos = {50.0: "🥉", 150.0: "🥈", 500.0: "🥇"}
+
+    for usd_ref in [50.0, 150.0, 500.0]:
+        emoji_rango = emojis_rangos.get(usd_ref, "📌")
+        datos = rangos_cache.get(usd_ref) or rangos_cache.get(float(usd_ref)) or rangos_cache.get(str(usd_ref))
+
+        if datos and datos.get("compra", 0) > 0 and datos.get("venta", 0) > 0:
+            nombre_rango = datos["nombre"]
+            tasa_compra = datos["compra"]
+            tasa_venta = datos["venta"]
+
+            filtro_bcv_bs = usd_ref * tasa_bcv
+            spread = tasa_venta - tasa_compra
+            porcentaje_spread = (spread / tasa_compra) * 100 if tasa_compra > 0 else 0.0
+
+            texto += f"{emoji_rango} <b>{nombre_rango}</b>\n"
+            texto += f"🟢 <b>Compra USDT:</b> <code>{tasa_compra:.2f}</code> Bs\n"
+            texto += f"🔴 <b>Venta:</b> <code>{tasa_venta:.2f}</code> Bs\n"
+
+            if usd_ref == 500.0:
+                texto += f"    💡 <i>(Filtro base: ~{filtro_bcv_bs:.0f} Bs)</i>\n"
+
+            texto += f"📈 <b>Spread:</b> <code>{spread:.2f}</code> Bs ({porcentaje_spread:.2f}%)\n"
+            texto += f"----------------------------------------\n"
+        else:
+            nombre_def = "Rango Pequeño" if usd_ref == 50.0 else ("Rango Mediano" if usd_ref == 150.0 else "Rango Grande")
+            texto += f"{emoji_rango} <b>{nombre_def}</b>\n⚠️ <i>Cargando tasas en segundo plano...</i>\n"
+            texto += f"----------------------------------------\n"
+
+    hora_actual = (datetime.now() - timedelta(hours=4)).strftime("%I:%M:%S %p")
+    texto += f"\n🕒 <i>Última actualización: {hora_actual}</i>"
+
+    return texto
+    
     
 # ==========================================
 #     MANEJADORES DE COMANDOS Y BOTONES

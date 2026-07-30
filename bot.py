@@ -437,7 +437,7 @@ def construir_intervencion_texto_html(user=None, porcentaje=None):
         f"<blockquote>{texto_tendencia}</blockquote>\n"
         f"{EMOJI_BANCO} <b>Tasa BCV Oficial:</b> <code>{tasa_bcv:.2f}</code> Bs\n"
         f"{EMOJI_BALANZA} <b>Tasa Intervención:</b> <code>{tasa_intervencion:.2f}</code> Bs ({porcentaje_txt} Agregado)\n"
-        f"--------------------------------------------------\n"
+        f"----------------------------------------\n"
     )
 
     for monto_usd in range(100, 1100, 100):
@@ -561,16 +561,28 @@ def enviar_o_reemplazar_privado(chat_id, user_id, texto, reply_markup=None):
             bot.delete_message(chat_id, ultimos_mensajes_privados[user_id])
         except Exception:
             pass
-            
-    nuevo_msg = bot.send_message(
-        chat_id, 
-        texto, 
-        parse_mode="HTML", 
-        reply_markup=reply_markup
-    )
-    
-    ultimos_mensajes_privados[user_id] = nuevo_msg.message_id
+
+    try:
+        # Intento 1: Enviar con formato HTML
+        nuevo_msg = bot.send_message(
+            chat_id,
+            texto,
+            parse_mode="HTML",
+            reply_markup=reply_markup
+        )
+    except Exception as e:
+        print(f"⚠️ Falló el envío HTML (Error 400), enviando texto plano: {e}")
+        # Intento 2 (Fallback): Si el HTML falla, envía el mensaje sin parse_mode para que no rompa
+        nuevo_msg = bot.send_message(
+            chat_id,
+            texto,
+            reply_markup=reply_markup
+        )
+
+    if nuevo_msg:
+        ultimos_mensajes_privados[user_id] = nuevo_msg.message_id
     return nuevo_msg
+            
 # ==========================================
 #  LÓGICA CON AUTODESTRUCCIÓN Y LIMPIEZA
 # ==========================================

@@ -397,8 +397,19 @@ def construir_monitor_texto_html():
 
     rangos_cache = CACHE_TASAS.get("rangos", {})
 
+    # Mapeo de medallas según el monto
+    emojis_rangos = {
+        50.0: "🥉",
+        150.0: "🥈",
+        500.0: "🥇"
+    }
+
     for usd_ref in [50.0, 150.0, 500.0]:
+        # Seleccionamos el emoji según la referencia (si no lo encuentra usa 💸 por defecto)
+        emoji_rango = emojis_rangos.get(usd_ref, "💸")
+
         datos = rangos_cache.get(usd_ref) or rangos_cache.get(float(usd_ref)) or rangos_cache.get(str(usd_ref))
+        
         if datos and datos.get("compra", 0) > 0 and datos.get("venta", 0) > 0:
             nombre_rango = datos["nombre"]
             tasa_compra = datos["compra"]
@@ -408,7 +419,8 @@ def construir_monitor_texto_html():
             spread = tasa_venta - tasa_compra
             porcentaje_spread = (spread / tasa_compra) * 100 if tasa_compra > 0 else 0.0
 
-            texto += f" <b>{nombre_rango}</b>\n"
+            # Usamos emoji_rango aquí ⬇️
+            texto += f"{emoji_rango} <b>{nombre_rango}</b>\n"
             texto += f"🟢 <b>Compra USDT:</b> <code>{tasa_compra:,.2f} Bs</code>\n"
             texto += f"🔴 <b>Venta:</b> <code>{tasa_venta:,.2f} Bs</code>\n"
 
@@ -418,9 +430,11 @@ def construir_monitor_texto_html():
             texto += f"📈 <b>Spread:</b> <code>{spread:,.2f} Bs</code> ({porcentaje_spread:.2f}%)\n"
             texto += "─────────────────────────────\n"
         else:
-            nombre_def = "🥉Rango Pequeño" if usd_ref == 50.0 else ("🥈Rango Mediano" if usd_ref == 150.0 else "🥇Rango Mayor")
-            texto += f"💸 <b>{nombre_def}</b>\n⚠️ <i>Cargando tasas en segundo plano...</i>\n"
+            nombre_def = "Rango Pequeño" if usd_ref == 50.0 else ("Rango Mediano" if usd_ref == 150.0 else "Rango Mayor")
+            # Usamos emoji_rango también en el estado de carga ⬇️
+            texto += f"{emoji_rango} <b>{nombre_def}</b>\n⚠️ <i>Cargando tasas en segundo plano...</i>\n"
             texto += "─────────────────────────────\n"
+                                                       
 
     # Hora actual Venezuela (-4 UTC)
     hora_actual = (datetime.now() - timedelta(hours=4)).strftime("%I:%M:%S %p")

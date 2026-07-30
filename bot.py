@@ -266,43 +266,34 @@ def actualizar_cache_segundo_plano():
     global CACHE_TASAS
     while True:
         try:
-            # 1. Obtener BCV
-            tasa_bcv, fecha_bcv = obtener_datos_bcv_validos()
-            if tasa_bcv:
-                tasa_actual = CACHE_TASAS.get("bcv_tasa", 745.64)
-                # Solo si la tasa que viene de la web/script es DISTINTA a la que tenemos en memoria
-                if tasa_bcv != tasa_actual:
-                    CACHE_TASAS["bcv_tasa_anterior"] = tasa_actual
-                    CACHE_TASAS["bcv_tasa"] = tasa_bcv
-            
-                CACHE_TASAS["bcv_fecha"] = fecha_bcv
-            
-                # Preparamos los datos por rango usando la tasa ajustada
-                tasa_bcv_ajustada = tasa_bcv * 1.005
-                rangos_def = [
-                    ("Rango Pequeño ($50 - $100)", 50.0),
-                    ("Rango Mediano ($100 - $300)", 150.0),
-                    ("Rango Mayor ($500+)", 500.0),
-                ]
-                
-                nuevos_rangos = {}
-                for nombre, usd_ref in rangos_def:
-                    monto_bs = usd_ref * tasa_bcv_ajustada
-                    compra = obtener_tasa_binance_p2p("BUY", monto_bs) or 0.0
-                    venta = obtener_tasa_binance_p2p("SELL", monto_bs) or 0.0
-                    nuevos_rangos[usd_ref] = {
-                        "nombre": nombre,
-                        "compra": compra,
-                        "venta": venta
-                    }
-                
-                CACHE_TASAS["rangos"] = nuevos_rangos
-            # AQUÍ VA EL PAUSA CUANDO TODO TIENE ÉXITO (Misma sangría/indentación del if)
-            time.sleep(60)
+            # Leemos la tasa BCV actual almacenada en memoria (la que envía el cazador)
+            tasa_bcv = CACHE_TASAS.get("bcv_tasa", 745.64)
+            tasa_bcv_ajustada = tasa_bcv * 1.005
+
+            ranges_def = [
+                ("Rango Pequeño ($50 - $100)", 50.0),
+                ("Rango Mediano ($100 - $300)", 150.0),
+                ("Rango Mayor ($500+)", 500.0),
+            ]
+
+            nuevos_rangos = {}
+            for nombre, usd_ref in ranges_def:
+                monto_bs = usd_ref * tasa_bcv_ajustada
+                compra = obtener_tasa_binance_p2p("BUY", monto_bs) or 0.0
+                venta = obtener_tasa_binance_p2p("SELL", monto_bs) or 0.0
+                nuevos_rangos[usd_ref] = {
+                    "nombre": nombre,
+                    "compra": compra,
+                    "venta": venta
+                }
+
+            CACHE_TASAS["rangos"] = nuevos_rangos
+
         except Exception as e:
             print(f"Error actualizando caché: {e}")
-            time.sleep(10) # pausa corta si ocurrió un erorr anres de reintentar
 
+        time.sleep(60)
+        
 threading.Thread(target=actualizar_cache_segundo_plano, daemon=True).start()
 
 def refrescar_tasas_en_vivo():
@@ -1041,6 +1032,22 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
 
                     CACHE_TASAS["bcv_tasa"] = tasa_nueva
                     CACHE_TASAS["bcv_fecha"] = str(fecha)
+
+                    # Agrega esto para recalcular rangos P2P inmediatamente al recibir la tasa del cazador:
+                    tasa_ajustada = tasa_nueva * 1.005
+                    ranges_def = [
+                        ("Rango Pequeño ($50 - $100)", 50.0),
+                        ("Rango Mediano ($100 - $300)", 150.0),
+                        ("Rango Mayor ($500+)", 500.0),
+                    ]
+                    nuevos_rangos = {}
+                    for nombre, usd_ref in ranges_def:
+                        monto_bs = usd_ref * tasa_ajustada
+                        compra = obtener_tasa_binance_p2p("BUY", monto_bs) or 0.0
+                        venta = obtener_tasa_binance_p2p("SELL", monto_bs) or 0.0
+                        nuevos_rangos[usd_ref] = {"nombre": nombre, "compra": compra, "venta": venta}
+                    CACHE_TASAS["rangos"] = nuevos_rangos
+
                     
                     print(f"🔥 [WEBHOOK] Tasa BCV actualizada por El Cazador: {tasa} Bs ({fecha})")
 

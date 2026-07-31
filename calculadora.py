@@ -103,12 +103,14 @@ def registrar_calculadora(bot, obtener_cache_func, obtener_teclado_func):
         markup_inline = InlineKeyboardMarkup()
         markup_inline.add(InlineKeyboardButton("🔄 Calcular otro monto", callback_data="recalcular_monto"))
 
-        bot.send_message(
+        msg_res = bot.send_message(
             message.chat.id,
             respuesta,
             parse_mode="Markdown",
             reply_markup=markup_inline
         )
+        
+        bot.register_next_step_handler(msg_res, procesar_calculo)
 
     # Manejador del callback del botón inline
     @bot.callback_query_handler(func=lambda call: call.data == "recalcular_monto")

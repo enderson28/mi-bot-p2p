@@ -16,6 +16,11 @@ import urllib3
 from bs4 import BeautifulSoup
 # Desactivar avisos de certificados SSL
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+import redis
+# Conexión a Redis
+redis_url = os.getenv("REDIS_URL")
+r = redis.from_url(redis_url) if redis_url else None
+
 
 # ==========================================
 # CONFIGURACIÓN Y VARIABLES GLOBALES
@@ -262,28 +267,27 @@ CACHE_TASAS = {
     "rangos": {} # Guardará las tasas calculadas por rango
 }
 
-# Crear la carpeta data si no existe
-os.makedirs("data", exist_ok=True)
-
-# Guardar el JSON dentro de /app/data/
-ARCHIVO_CACHE = "data/cache_tasas.json"
+# --- PERSISTENCIA EN REDIS ---
 
 def guardar_cache_en_disco():
     try:
-        with open(ARCHIVO_CACHE, "w", encoding="utf-8") as f:
-            json.dump(CACHE_TASAS, f, ensure_ascii=False, indent=4)
+        if r:
+            r.set("CACHE_TASAS_STORAGE", json.dumps(CACHE_TASAS))
+            print("💾 ¡Cache guardada exitosamente en Redis!")
     except Exception as e:
-        print(f"Error guardando caché en disco: {e}")
+        print(f"Error guardando caché en Redis: {e}")
+
 
 def cargar_cache_de_disco():
     global CACHE_TASAS
-    if os.path.exists(ARCHIVO_CACHE):
-        try:
-            with open(ARCHIVO_CACHE, "r", encoding="utf-8") as f:
-                CACHE_TASAS.update(json.load(f))
-                print("💾 ¡Tasas recuperadas con éxito desde el disco!")
-        except Exception as e:
-            print(f"Error leyendo caché de disco: {e}")
+    try:
+        if r:
+            data = r.get("CACHE_TASAS_STORAGE")
+            if data:
+                CACHE_TASAS.update(json.loads(data))
+                print("💾 ¡Tasas recuperadas con éxito desde Redis!")
+    except Exception as e:
+        print(f"Error leyendo caché desde Redis: {e}")
             
 def actualizar_cache_segundo_plano():
     global CACHE_TASAS

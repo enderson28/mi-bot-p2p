@@ -425,7 +425,7 @@ def handle_start(message):
         if es_admin_vip(bot, message.from_user):
             # Teclado ultralimpio para Administradores
             markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-            markup.add(KeyboardButton("🟢 P2P-USDT 🔴"), KeyboardButton("📊 Intervención 📊"))
+            markup.add(KeyboardButton("🟢 P2P-USDT 🔴"), KeyboardButton("📊 Intervencion 📊"))
             markup.add(KeyboardButton("⚙️ Soporte"))
             
             texto_vip = (
@@ -504,7 +504,7 @@ def handle_invitacion_comando(message):
         )
         borrar_mensaje_luego(message.chat.id, aviso.message_id, 5)
         
-@bot.message_handler(func=lambda message: message.text and any(x in message.text for x in ["P2P-USDT", "Intervencion", "Regla de Oro", "GPay", "BPay", "Soporte"]))
+@bot.message_handler(func=lambda message: message.text and any(x in message.text for x in ["P2P-USDT", "📊 Intervencion 📊", "Regla de Oro", "GPay", "BPay", "Soporte"]))
 def handle_botones_menu(message):
     if message.chat.type == "private":
         if message.text == "🟢 P2P~USDT 🔴":

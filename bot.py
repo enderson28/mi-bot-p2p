@@ -361,7 +361,7 @@ def construir_monitor_texto_html():
             texto += f"🔴 <b>Venta:</b> <code>{tasa_venta:.2f}</code> Bs\n"
 
             if usd_ref == 500.0:
-                texto += f"    💡 <i>(Filtro base: ~{filtro_bcv_bs:.2f} Bs)</i>\n"
+                texto += f"    💡 <i>(Filtro base: ~{filtro_bcv_bs:,.0f} Bs)</i>\n"
 
             texto += f"📈 <b>Spread:</b> <code>{spread:.2f}</code> Bs ({porcentaje_spread:.2f}%)\n"
             texto += f"----------------------------------------\n"

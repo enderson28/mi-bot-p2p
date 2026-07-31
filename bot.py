@@ -1123,7 +1123,6 @@ if __name__ == "__main__":
     threading.Thread(target=iniciar_servidor_receptor, daemon=True).start()
 
     # Arranca el polling limpio
-    bot.infinity_polling()
-    
+    bot.infinity_polling() 
     
     

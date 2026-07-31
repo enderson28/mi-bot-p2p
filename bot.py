@@ -262,8 +262,11 @@ CACHE_TASAS = {
     "rangos": {} # Guardará las tasas calculadas por rango
 }
 
-# --- PERSISTENCIA EN DISCO ---
-ARCHIVO_CACHE = "cache_tasas.json"
+# Crear la carpeta data si no existe
+os.makedirs("data", exist_ok=True)
+
+# Guardar el JSON dentro de /app/data/
+ARCHIVO_CACHE = "data/cache_tasas.json"
 
 def guardar_cache_en_disco():
     try:

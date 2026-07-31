@@ -410,7 +410,7 @@ def construir_intervencion_texto_html(user=None, porcentaje=None):
 
     for monto_usd in range(100, 1100, 100):
         monto_bs = monto_usd * tasa_intervencion
-        texto += f"💵 <b>{monto_usd} USD</b> ➡️Bs:<code>{monto_bs:,.2f}</code>\n"
+        texto += f"💵 <b>{monto_usd} USD</b> ➡️ Bs: <code>{monto_bs:,.0f}</code>\n"
 
     return texto
     

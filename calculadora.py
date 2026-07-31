@@ -1,24 +1,21 @@
-from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
+from telebot.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
 
-def registrar_calculadora(bot, obtener_cache_func, funcion_menu_principal=None):
+def registrar_calculadora(bot, obtener_cache_func, obtener_teclado_func):
     """
-    Registra los manejadores para la calculadora de divisas BCV + 0.5%.
+    Registra el módulo de calculadora interactiva de divisas BCV + 0.5%.
     """
 
-    def solicitar_monto(call):
-        """Paso 1: Se activa al presionar el botón de texto '📟 Calculadora'"""
-        chat_id = call.message.chat.id
-
-        # Garantizar que solo funcione en chat privado
-        if call.message.chat.type != 'private':
+    def solicitar_monto_mensaje(message):
+        """Entrada desde el teclado de texto '📟 Calculadora'"""
+        if message.chat.type != 'private':
             return
+        
+        # Teclado fijo inferior con un solo botón de escape
+        markup = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
+        markup.add(KeyboardButton("⬅️ Volver al menú"))
 
-        markup = InlineKeyboardMarkup()
-        markup.add(InlineKeyboardButton("⬅️ Volver al menú", callback_data="volver_menu_principal"))
-
-        # Usamos send_message porque proviene de un ReplyKeyboardMarkup (teclado de texto)
         msg = bot.send_message(
-            chat_id,
+            message.chat.id,
             "📟 *CALCULADORA AUTOMÁTICA BCV (+0.5% Intervención)*\n\n"
             "¿Cuántos USD deseas calcular?\n"
             "Escribe la cifra directamente en el chat (Ejemplo: `5`, `12.5`, `30`, `500`):\n\n"
@@ -26,45 +23,70 @@ def registrar_calculadora(bot, obtener_cache_func, funcion_menu_principal=None):
             parse_mode="Markdown",
             reply_markup=markup
         )
+        bot.register_next_step_handler(msg, procesar_calculo)
 
-        # Escuchar únicamente el siguiente mensaje de este usuario
+    def solicitar_monto_inline(call):
+        """Entrada desde el botón inline '🔄 Calcular otro monto'"""
+        chat_id = call.message.chat.id
+
+        # Responder al callback para quitar el estado de carga en Telegram
+        bot.answer_callback_query(call.id)
+
+        # Teclado fijo inferior por si el usuario decide volver desde aquí
+        markup_reply = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
+        markup_reply.add(KeyboardButton("⬅️ Volver al menú"))
+
+        msg = bot.send_message(
+            chat_id,
+            "📟 *CALCULADORA AUTOMÁTICA BCV (+0.5% Intervención)*\n\n"
+            "¿Cuántos USD deseas calcular?\n"
+            "Escribe la cifra directamente en el chat (Ejemplo: `5`, `12.5`, `30`, `500`):\n\n"
+            "_Esperando tu monto..._",
+            parse_mode="Markdown",
+            reply_markup=markup_reply
+        )
         bot.register_next_step_handler(msg, procesar_calculo)
 
     def procesar_calculo(message):
-        """Paso 2: Procesa la cifra introducida por el usuario"""
+        """Procesa la cifra o restablece el menú si decide volver"""
         if message.chat.type != 'private':
             return
 
         texto = message.text.strip() if message.text else ""
 
-        # Si el usuario presiona un comando o un botón del menú mientras esperaba el monto, no rompe el flujo
-        if texto.startswith("/") or texto in ["🟢 P2P-USDT 🔴", "📊 Intervencion 📊", "📟 Calculadora", "📜 Regla de Oro", "🔶 BPay 🔶", "🔵 GPay 🔵", "⚙️ Soporte"]:
+        # Opción de salida: presiona 'Volver al menú' o envía un comando
+        if texto == "⬅️ Volver al menú" or texto.startswith("/"):
+            teclado_restablecido = obtener_teclado_func(message.from_user)
+            bot.send_message(
+                message.chat.id,
+                "🏡 *Menú principal restablecido.*",
+                parse_mode="Markdown",
+                reply_markup=teclado_restablecido
+            )
             return
 
-        # Normalizar separadores decimales (ejemplo 12,5 a 12.5)
+        # Normalizar coma a punto decimal (ej: 12,5 -> 12.5)
         texto_limpio = texto.replace(",", ".")
         
         try:
             monto_usd = float(texto_limpio)
             if monto_usd <= 0:
-                raise ValueError("Monto debe ser positivo")
+                raise ValueError("Monto positivo requerido")
         except ValueError:
-            markup = InlineKeyboardMarkup()
-            markup.add(InlineKeyboardButton("🔄 Intentar de nuevo", callback_data="abrir_calculadora"))
-            markup.add(InlineKeyboardButton("⬅️ Volver al menú", callback_data="volver_menu_principal"))
-            
             bot.send_message(
                 message.chat.id,
-                "⚠️ *Monto inválido.* Por favor escribe solo números (Ejemplo: `15` o `20.5`).",
-                parse_mode="Markdown",
-                reply_markup=markup
+                "⚠️ *Monto inválido.* Por favor escribe solo números (Ejemplo: `15` o `20.5`) "
+                "o presiona *⬅️ Volver al menú* abajo.",
+                parse_mode="Markdown"
             )
+            # Reintentar escuchando el mensaje nuevamente
+            bot.register_next_step_handler(message, procesar_calculo)
             return
 
-        # Obtener la tasa BCV del cache global / Redis
+        # Tasa BCV desde el cache / Redis
         cache = obtener_cache_func()
         tasa_bcv = cache.get("bcv_tasa", 745.64)
-        tasa_con_intervencion = tasa_bcv * 1.005  # Tasa BCV + 0.5%
+        tasa_con_intervencion = tasa_bcv * 1.005  # Tasa + 0.5%
         monto_bolivares = monto_usd * tasa_con_intervencion
 
         respuesta = (
@@ -77,14 +99,21 @@ def registrar_calculadora(bot, obtener_cache_func, funcion_menu_principal=None):
             f"_Cálculo basado en la tasa oficial del día._"
         )
 
-        markup = InlineKeyboardMarkup()
-        markup.add(InlineKeyboardButton("🔄 Calcular otro monto", callback_data="abrir_calculadora"))
+        # Botón Inline para encadenar múltiples cálculos
+        markup_inline = InlineKeyboardMarkup()
+        markup_inline.add(InlineKeyboardButton("🔄 Calcular otro monto", callback_data="recalcular_monto"))
 
         bot.send_message(
             message.chat.id,
             respuesta,
             parse_mode="Markdown",
-            reply_markup=markup
+            reply_markup=markup_inline
         )
 
-    return solicitar_monto
+    # Manejador del callback del botón inline
+    @bot.callback_query_handler(func=lambda call: call.data == "recalcular_monto")
+    def callback_recalcular(call):
+        solicitar_monto_inline(call)
+
+    return solicitar_monto_mensaje
+    

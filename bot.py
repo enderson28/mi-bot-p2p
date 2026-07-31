@@ -61,7 +61,7 @@ def borrar_mensaje_luego(chat_id, message_id, segundos):
 def obtener_teclado_privado():
     markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
     btn_precio = KeyboardButton("🟢 P2P~USDT 🔴")
-    btn_intervencion = KeyboardButton("📊 Intervención 📊")
+    btn_intervencion = KeyboardButton("📊 Intervencion 📊")
     btn_regla = KeyboardButton("📜 Regla de Oro 📜")
     btn_bpay = KeyboardButton("🔶 BPay 🔶")
     btn_gpay = KeyboardButton("🔵 GPay 🔵")

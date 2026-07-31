@@ -361,7 +361,7 @@ def construir_monitor_texto_html():
             texto += f"🔴 <b>Venta:</b> <code>{tasa_venta:.2f}</code> Bs\n"
 
             if usd_ref == 500.0:
-                texto += f"    💡 <i>(Filtro base: ~{filtro_bcv_bs:.0f} Bs)</i>\n"
+                texto += f"    💡 <i>(Filtro base: ~{filtro_bcv_bs:,.2f} Bs)</i>\n"
 
             texto += f"📈 <b>Spread:</b> <code>{spread:.2f}</code> Bs ({porcentaje_spread:.2f}%)\n"
             texto += f"----------------------------------------\n"
@@ -410,7 +410,7 @@ def construir_intervencion_texto_html(user=None, porcentaje=None):
 
     for monto_usd in range(100, 1100, 100):
         monto_bs = monto_usd * tasa_intervencion
-        texto += f"💵 <b>{monto_usd} USD</b> ➡️ Bs: <code>{monto_bs:.2f}</code>\n"
+        texto += f"💵 <b>{monto_usd} USD</b> ➡️ Bs: <code>{monto_bs:,.2f}</code>\n"
 
     return texto
     
@@ -459,7 +459,7 @@ def handle_precio_comando(message):
 
 # Manejador para el botón de Intervención y el comando /intervencion
 @bot.message_handler(commands=['intervencion'])
-@bot.message_handler(func=lambda m: m.text and "Intervención" in m.text)
+@bot.message_handler(func=lambda m: m.text and m.text.strip() == "📊 Intervencion 📊")
 def handle_intervencion_comando(message):
     procesar_intervencion(message)
 
@@ -504,12 +504,12 @@ def handle_invitacion_comando(message):
         )
         borrar_mensaje_luego(message.chat.id, aviso.message_id, 5)
         
-@bot.message_handler(func=lambda message: message.text and any(x in message.text for x in ["P2P-USDT", "Intervención", "Regla de Oro", "GPay", "BPay", "Soporte"]))
+@bot.message_handler(func=lambda message: message.text and any(x in message.text for x in ["P2P-USDT", "Intervencion", "Regla de Oro", "GPay", "BPay", "Soporte"]))
 def handle_botones_menu(message):
     if message.chat.type == "private":
         if message.text == "🟢 P2P~USDT 🔴":
             procesar_precio(message)
-        elif "Intervención" in message.text:
+        elif message.text == "📊 Intervencion 📊":
             procesar_intervencion(message)
         elif message.text == "📜 Regla de Oro 📜":
             procesar_regla_oro(message) # <-- NUEVA LLAMADA

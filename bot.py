@@ -64,21 +64,28 @@ def borrar_mensaje_luego(chat_id, message_id, segundos):
 # ==========================================
 #  CREACIÓN DE INTERFACES (BOTONES)
 # ==========================================
-    def obtener_teclado_privado():
+def obtener_teclado_privado(user=None):
+    if user and es_admin_vip(bot, user):
         markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-        btn_precio = KeyboardButton("🟢 P2P-USDT 🔴")
-        btn_intervencion = KeyboardButton("📊 Intervencion 📊")
-        btn_regla = KeyboardButton("📜 Regla de Oro")
-        btn_bpay = KeyboardButton("🔶 BPay 🔶")
-        btn_gpay = KeyboardButton("🔵 GPay 🔵")
-        btn_calculadora = KeyboardButton("📟 Calculadora")  # Nuevo botón
-        btn_soporte = KeyboardButton("⚙️ Soporte")
-
-        markup.add(btn_precio, btn_intervencion)
-        markup.add(btn_regla, btn_calculadora)  # Fila combinada o como prefieras ordenarlo
-        markup.add(btn_bpay, btn_gpay)
-        markup.add(btn_soporte) 
+        markup.add(KeyboardButton("🟢 P2P-USDT 🔴"), KeyboardButton("📊 Intervencion 📊"))
+        markup.add(KeyboardButton("📟 Calculadora"), KeyboardButton("⚙️ Soporte"))
         return markup
+
+    markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+    btn_precio = KeyboardButton("🟢 P2P-USDT 🔴")
+    btn_intervencion = KeyboardButton("📊 Intervencion 📊")
+    btn_regla = KeyboardButton("📜 Regla de Oro")
+    btn_bpay = KeyboardButton("🔶 BPay 🔶")
+    btn_gpay = KeyboardButton("🔵 GPay 🔵")
+    btn_calculadora = KeyboardButton("📟 Calculadora")
+    btn_soporte = KeyboardButton("⚙️ Soporte")
+
+    markup.add(btn_precio, btn_intervencion)
+    markup.add(btn_regla, btn_calculadora)
+    markup.add(btn_bpay, btn_gpay)
+    markup.add(btn_soporte)
+    return markup
+    
 
 def obtener_boton_actualizar_inline():
     markup = InlineKeyboardMarkup()
@@ -270,7 +277,8 @@ CACHE_TASAS = {
 }
 
 # Registramos el módulo pasándole la instancia del bot y la función para leer CACHE_TASAS
-abrir_calculadora_func = registrar_calculadora(bot, lambda: CACHE_TASAS)
+solicitar_calculadora = registrar_calculadora(bot, lambda: CACHE_TASAS, obtener_teclado_privado)
+
 # --- PERSISTENCIA EN REDIS ---
 
 def guardar_cache_en_disco():
@@ -552,11 +560,7 @@ def handle_botones_menu(message):
         elif message.text == "📊 Intervencion 📊":
             procesar_intervencion(message)
         elif message.text == "📟 Calculadora":
-            class CallFake:
-                def __init__(self, msg):
-                    self.message = msg
-                    self.id = "0"
-            abrir_calculadora_func(CallFake(message))
+            solicitar_calculadora(message) 
         elif message.text == "📜 Regla de Oro":
             procesar_regla_oro(message)
         elif message.text in ["🔶 BPay 🔶", "🔵 GPay 🔵"]:

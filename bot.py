@@ -11,6 +11,7 @@ from telebot.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMar
 from anuncios import iniciar_modulo_anuncios
 from seguridad import validar_copia_pega, es_admin_vip, es_admin_especial, es_administrador, es_chat_permitido
 from seguridad import limpiar_comandos_chat
+from calculadora import registrar_calculadora
 import re
 import urllib3
 from bs4 import BeautifulSoup
@@ -63,20 +64,21 @@ def borrar_mensaje_luego(chat_id, message_id, segundos):
 # ==========================================
 #  CREACIÓN DE INTERFACES (BOTONES)
 # ==========================================
-def obtener_teclado_privado():
-    markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-    btn_precio = KeyboardButton("🟢 P2P~USDT 🔴")
-    btn_intervencion = KeyboardButton("📊 Intervencion 📊")
-    btn_regla = KeyboardButton("📜 Regla de Oro 📜")
-    btn_bpay = KeyboardButton("🔶 BPay 🔶")
-    btn_gpay = KeyboardButton("🔵 GPay 🔵")
-    btn_soporte = KeyboardButton("⚙️ Soporte")  # <-- Botón nuevo
+    def obtener_teclado_privado():
+        markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+        btn_precio = KeyboardButton("🟢 P2P-USDT 🔴")
+        btn_intervencion = KeyboardButton("📊 Intervencion 📊")
+        btn_regla = KeyboardButton("📜 Regla de Oro")
+        btn_bpay = KeyboardButton("🔶 BPay 🔶")
+        btn_gpay = KeyboardButton("🔵 GPay 🔵")
+        btn_calculadora = KeyboardButton("📟 Calculadora")  # Nuevo botón
+        btn_soporte = KeyboardButton("⚙️ Soporte")
 
-    markup.add(btn_precio, btn_intervencion)
-    markup.add(btn_regla)
-    markup.add(btn_bpay, btn_gpay)
-    markup.add(btn_soporte)  # <-- Ocupará la fila inferior completa
-    return markup
+        markup.add(btn_precio, btn_intervencion)
+        markup.add(btn_regla, btn_calculadora)  # Fila combinada o como prefieras ordenarlo
+        markup.add(btn_bpay, btn_gpay)
+        markup.add(btn_soporte) 
+        return markup
 
 def obtener_boton_actualizar_inline():
     markup = InlineKeyboardMarkup()
@@ -267,6 +269,8 @@ CACHE_TASAS = {
     "rangos": {} # Guardará las tasas calculadas por rango
 }
 
+# Registramos el módulo pasándole la instancia del bot y la función para leer CACHE_TASAS
+abrir_calculadora_func = registrar_calculadora(bot, lambda: CACHE_TASAS)
 # --- PERSISTENCIA EN REDIS ---
 
 def guardar_cache_en_disco():
@@ -451,11 +455,11 @@ def handle_start(message):
     if message.chat.type == "private":
         # 1. SI ES ADMINISTRADOR VIP
         if es_admin_vip(bot, message.from_user):
-            # Teclado ultralimpio para Administradores
-            markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-            markup.add(KeyboardButton("🟢 P2P-USDT 🔴"), KeyboardButton("📊 Intervencion 📊"))
-            markup.add(KeyboardButton("⚙️ Soporte"))
-            
+        # Teclado ultralimpio para Administradores
+        markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+        markup.add(KeyboardButton("🟢 P2P-USDT 🔴"), KeyboardButton("📊 Intervencion 📊"))
+        markup.add(KeyboardButton("📟 Calculadora"), KeyboardButton("⚙️ Soporte"))
+        
             texto_vip = (
                 f"👋 <b>¡Hola, {message.from_user.first_name}!</b>\n\n"
                 "Gracias por tu valiosa labor diaria manteniendo el orden en la comunidad - AntonyS4.\n"
@@ -532,19 +536,34 @@ def handle_invitacion_comando(message):
         )
         borrar_mensaje_luego(message.chat.id, aviso.message_id, 5)
         
-@bot.message_handler(func=lambda message: message.text and any(x in message.text for x in ["P2P-USDT", "📊 Intervencion 📊", "Regla de Oro", "GPay", "BPay", "Soporte"]))
+@bot.message_handler(func=lambda message: message.text in [
+    "🟢 P2P-USDT 🔴", 
+    "📊 Intervencion 📊", 
+    "📟 Calculadora", 
+    "📜 Regla de Oro 📜", 
+    "🔶 BPay 🔶", 
+    "🔵 GPay 🔵", 
+    "⚙️ Soporte"
+])
 def handle_botones_menu(message):
     if message.chat.type == "private":
-        if message.text == "🟢 P2P~USDT 🔴":
+        if message.text == "🟢 P2P-USDT 🔴":
             procesar_precio(message)
         elif message.text == "📊 Intervencion 📊":
             procesar_intervencion(message)
-        elif message.text == "📜 Regla de Oro 📜":
-            procesar_regla_oro(message) # <-- NUEVA LLAMADA
+        elif message.text == "📟 Calculadora":
+            class CallFake:
+                def __init__(self, msg):
+                    self.message = msg
+                    self.id = "0"
+            abrir_calculadora_func(CallFake(message))
+        elif message.text == "📜 Regla de Oro":
+            procesar_regla_oro(message)
         elif message.text in ["🔶 BPay 🔶", "🔵 GPay 🔵"]:
             procesar_guias(message)
         elif message.text == "⚙️ Soporte":
             procesar_soporte(message)
+                     
 # ==========================================
 # REEMPLAZO LIMPIO PARA CHAT PRIVADO
 # ==========================================

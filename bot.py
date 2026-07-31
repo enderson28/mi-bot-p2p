@@ -259,9 +259,29 @@ CACHE_TASAS = {
     "bcv_tasa": 745.64,
     "bcv_tasa_anterior": 744.23,
     "bcv_fecha": "2026-07-30",
-    "rangos": {}  # Guardará las tasas calculadas por rango
+    "rangos": {} # Guardará las tasas calculadas por rango
 }
 
+# --- PERSISTENCIA EN DISCO ---
+ARCHIVO_CACHE = "cache_tasas.json"
+
+def guardar_cache_en_disco():
+    try:
+        with open(ARCHIVO_CACHE, "w", encoding="utf-8") as f:
+            json.dump(CACHE_TASAS, f, ensure_ascii=False, indent=4)
+    except Exception as e:
+        print(f"Error guardando caché en disco: {e}")
+
+def cargar_cache_de_disco():
+    global CACHE_TASAS
+    if os.path.exists(ARCHIVO_CACHE):
+        try:
+            with open(ARCHIVO_CACHE, "r", encoding="utf-8") as f:
+                CACHE_TASAS.update(json.load(f))
+                print("💾 ¡Tasas recuperadas con éxito desde el disco!")
+        except Exception as e:
+            print(f"Error leyendo caché de disco: {e}")
+            
 def actualizar_cache_segundo_plano():
     global CACHE_TASAS
     while True:
@@ -288,6 +308,7 @@ def actualizar_cache_segundo_plano():
                 }
 
             CACHE_TASAS["rangos"] = nuevos_rangos
+            guardar_cache_en_disco()  # 👈 AGREGA ESTA LÍNEA AQUÍ (alrededor de la línea 311)
 
         except Exception as e:
             print(f"Error actualizando caché: {e}")
@@ -1002,14 +1023,14 @@ def filtro_seguridad_chat(message):
 # RECEPTOR WEBHOOK PARA EL CAZADOR
 # ==========================================
 
-CLAVE_SECRETA_BCV = os.getenv("CLAVE_SECRETA_BCV", "mi_clave_super_secreta_123")
+CLAVE_SECRETA_BCV = os.getenv("CLAVE_SECRETA_BCV")
 
 class WebhookHandler(http.server.BaseHTTPRequestHandler):
     def do_POST(self):
         if self.path == "/actualizar_bcv":
             content_length = int(self.headers.get('Content-Length', 0))
             post_data = self.rfile.read(content_length)
-            
+
             try:
                 datos = json.loads(post_data.decode('utf-8'))
                 clave = datos.get("clave")
@@ -1026,14 +1047,14 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
                     tasa_nueva = float(tasa)
                     tasa_actual = CACHE_TASAS.get("bcv_tasa", tasa_nueva)
 
-                    # Si la tasa recibida es distinta a la actual, la actual pasa a ser la 'anterior'
+                    # Si la tasa recibida es distinta a la actual, la actual pasa a ser la anterior
                     if tasa_nueva != tasa_actual:
                         CACHE_TASAS["bcv_tasa_anterior"] = tasa_actual
 
                     CACHE_TASAS["bcv_tasa"] = tasa_nueva
                     CACHE_TASAS["bcv_fecha"] = str(fecha)
 
-                    # Agrega esto para recalcular rangos P2P inmediatamente al recibir la tasa del cazador:
+                    # Agrega esto para recalcular rangos P2P inmediatamente al recibir
                     tasa_ajustada = tasa_nueva * 1.005
                     ranges_def = [
                         ("Rango Pequeño ($50 - $100)", 50.0),
@@ -1046,22 +1067,25 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
                         compra = obtener_tasa_binance_p2p("BUY", monto_bs) or 0.0
                         venta = obtener_tasa_binance_p2p("SELL", monto_bs) or 0.0
                         nuevos_rangos[usd_ref] = {"nombre": nombre, "compra": compra, "venta": venta}
+                    
                     CACHE_TASAS["rangos"] = nuevos_rangos
 
-                    
-                    print(f"🔥 [WEBHOOK] Tasa BCV actualizada por El Cazador: {tasa} Bs ({fecha})")
+                    # 💾 Guarda la copia física en el disco
+                    guardar_cache_en_disco()
+
+                    print(f"🔥 [WEBHOOK] Tasa BCV actualizada por El Cazador: {tasa_nueva} | Fecha: {fecha}")
 
                     self.send_response(200)
                     self.send_header('Content-Type', 'application/json')
                     self.end_headers()
-                    self.wfile.write(b'{"status":"success","message":"Tasa actualizada en RAM"}')
+                    self.wfile.write(b'{"status":"success","message":"Tasa actualizada en memoria y disco"}')
                     return
 
             except Exception as e:
                 print(f"Error procesando webhook: {e}")
 
-        self.send_response(400)
-        self.end_headers()
+            self.send_response(400)
+            self.end_headers()
 
 def iniciar_servidor_receptor():
     port = int(os.getenv("PORT", 8080))
@@ -1075,7 +1099,10 @@ def iniciar_servidor_receptor():
 # ==========================================
 
 if __name__ == "__main__":
-    # Limpia webhooks y descarta actualizaciones pendientes para evitar choques 409
+    # 💾 Carga la tasa guardada en disco antes de iniciar
+    cargar_cache_de_disco()
+
+    # Limpia webhooks y descarta actualizaciones pendientes
     try:
         bot.remove_webhook(drop_pending_updates=True)
         time.sleep(1)
@@ -1085,11 +1112,11 @@ if __name__ == "__main__":
     iniciar_modulo_anuncios(bot)
     print("🚀 Bot Maestro en línea con limpieza automática y temporizador de 5 min...")
 
-    # Inicia el receptor webhook en segundo plano sin congelar Telegram
+    # Inicia el receptor webhook en segundo plano
     threading.Thread(target=iniciar_servidor_receptor, daemon=True).start()
-    
-    
+
     # Arranca el polling limpio
     bot.infinity_polling()
+    
     
     

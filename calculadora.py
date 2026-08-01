@@ -95,7 +95,7 @@ def registrar_calculadora(bot, obtener_cache_func, obtener_teclado_func):
             f"🏛️ *Tasa BCV oficial:* `{tasa_bcv:,.2f}` Bs.\n"
             f"⚖️ *Tasa + 0.5% Intervención:* `{tasa_con_intervencion:,.4f}` Bs.\n\n"
             f"💰 *Total a pagar en Bolívares:*\n"
-            f"👉 *Bs:* `{monto_bolivares:,.2f}`\n\n"
+            f"👉 *`{monto_bolivares:,.2f}` Bs.\n"
             f"_Cálculo basado en la tasa oficial del día._"
         )
 

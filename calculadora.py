@@ -91,11 +91,11 @@ def registrar_calculadora(bot, obtener_cache_func, obtener_teclado_func):
 
         respuesta = (
             f"♻️ *RESULTADO DE CÁLCULO BCV*\n\n"
-            f"💵 *Monto en USD:* `${monto_usd:,.2f}`\n"
-            f"🏛️ *Tasa BCV oficial:* `{tasa_bcv:,.2f} Bs.`\n"
-            f"⚖️ *Tasa + 0.5% Intervención:* `{tasa_con_intervencion:,.4f} Bs.`\n\n"
+            f"💵 *Monto en USD:* $`{monto_usd:,.2f}`\n"
+            f"🏛️ *Tasa BCV oficial:* `{tasa_bcv:,.2f}` Bs.\n"
+            f"⚖️ *Tasa + 0.5% Intervención:* `{tasa_con_intervencion:,.4f}` Bs.\n\n"
             f"💰 *Total a pagar en Bolívares:*\n"
-            f"👉 *`<code>{monto_bolivares:,.2f}</code> Bs`*\n\n"
+            f"👉 *`{monto_bolivares:,.2f}` Bs.*\n\n"
             f"_Cálculo basado en la tasa oficial del día._"
         )
 

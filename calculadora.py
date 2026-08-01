@@ -16,10 +16,10 @@ def registrar_calculadora(bot, obtener_cache_func, obtener_teclado_func):
 
         msg = bot.send_message(
             message.chat.id,
-            "📟 *CALCULADORA AUTOMÁTICA BCV (+0.5% Intervención)*\n\n"
-            "¿Cuántos USD deseas calcular?\n"
+            "📟 *CALCULADORA AUTOMÁTICA 📆BCV (+0.5% Intervención)*\n\n"
+            "¿Cuántos 💸 USD deseas calcular?\n"
             "Escribe la cifra directamente en el chat (Ejemplo: `5`, `12.5`, `30`, `500`):\n\n"
-            "_Esperando tu monto..._",
+            "⏳ _Esperando tu monto..._",
             parse_mode="Markdown",
             reply_markup=markup
         )
@@ -38,7 +38,7 @@ def registrar_calculadora(bot, obtener_cache_func, obtener_teclado_func):
 
         msg = bot.send_message(
             chat_id,
-            "📟 *CALCULADORA AUTOMÁTICA BCV (+0.5% Intervención)*\n\n"
+            "📟 *CALCULADORA AUTOMÁTICA 📆BCV (+0.5% Intervención)*\n\n"
             "¿Cuántos 💸 USD deseas calcular?\n"
             "Escribe la cifra directamente en el chat (Ejemplo: `5`, `12.5`, `30`, `500`):\n\n"
             "⏳ _Esperando tu monto..._",
@@ -95,7 +95,7 @@ def registrar_calculadora(bot, obtener_cache_func, obtener_teclado_func):
             f"🏛️ *Tasa BCV oficial:* `{tasa_bcv:,.2f} Bs.`\n"
             f"⚖️ *Tasa + 0.5% Intervención:* `{tasa_con_intervencion:,.4f} Bs.`\n\n"
             f"💰 *Total a pagar en Bolívares:*\n"
-            f"👉 *`{monto_bolivares:,.2f} Bs.`*\n\n"
+            f"👉 *`<code>{monto_bolivares:,.2f}</code>` Bs *\n\n"
             f"_Cálculo basado en la tasa oficial del día._"
         )
 
@@ -106,7 +106,7 @@ def registrar_calculadora(bot, obtener_cache_func, obtener_teclado_func):
         msg_res = bot.send_message(
             message.chat.id,
             respuesta,
-            parse_mode="Markdown",
+            parse_mode="MarkdownV2",
             reply_markup=markup_inline
         )
         

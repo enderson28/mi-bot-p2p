@@ -39,9 +39,9 @@ def registrar_calculadora(bot, obtener_cache_func, obtener_teclado_func):
         msg = bot.send_message(
             chat_id,
             "📟 *CALCULADORA AUTOMÁTICA BCV (+0.5% Intervención)*\n\n"
-            "¿Cuántos USD deseas calcular?\n"
+            "¿Cuántos 💸 USD deseas calcular?\n"
             "Escribe la cifra directamente en el chat (Ejemplo: `5`, `12.5`, `30`, `500`):\n\n"
-            "_Esperando tu monto..._",
+            "⏳ _Esperando tu monto..._",
             parse_mode="Markdown",
             reply_markup=markup_reply
         )
@@ -90,11 +90,11 @@ def registrar_calculadora(bot, obtener_cache_func, obtener_teclado_func):
         monto_bolivares = monto_usd * tasa_con_intervencion
 
         respuesta = (
-            f"📊 *RESULTADO DE CÁLCULO BCV*\n\n"
+            f"♻️ *RESULTADO DE CÁLCULO BCV*\n\n"
             f"💵 *Monto en USD:* `${monto_usd:,.2f}`\n"
             f"🏛️ *Tasa BCV oficial:* `{tasa_bcv:,.2f} Bs.`\n"
-            f"➕ *Tasa + 0.5% Intervención:* `{tasa_con_intervencion:,.4f} Bs.`\n\n"
-            f"💳 *Total a pagar en Bolívares:*\n"
+            f"⚖️ *Tasa + 0.5% Intervención:* `{tasa_con_intervencion:,.4f} Bs.`\n\n"
+            f"💰 *Total a pagar en Bolívares:*\n"
             f"👉 *`{monto_bolivares:,.2f} Bs.`*\n\n"
             f"_Cálculo basado en la tasa oficial del día._"
         )

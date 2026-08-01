@@ -74,7 +74,7 @@ def obtener_teclado_privado(user=None):
     markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
     btn_precio = KeyboardButton("🟢 P2P-USDT 🔴")
     btn_intervencion = KeyboardButton("📊 Intervencion 📊")
-    btn_regla = KeyboardButton("📜 Regla de Oro")
+    btn_regla = KeyboardButton("📜 Regla de Oro 📜")
     btn_bpay = KeyboardButton("🔶 BPay 🔶")
     btn_gpay = KeyboardButton("🔵 GPay 🔵")
     btn_calculadora = KeyboardButton("📟 Calculadora")
@@ -372,7 +372,7 @@ def construir_monitor_texto_html():
 
     texto = (
         f"🖥️ <b>Monitor de Tasas Arbitraje P2P</b>\n"
-        f"<blockquote>📅 <b>Vigencia BCV:</b> {fecha_valor_bcv}</blockquote>\n\n"
+        f"<blockquote>📆 <b>Vigencia BCV:</b> {fecha_valor_bcv}</blockquote>\n\n"
         f"<blockquote>🏦 <b>BCV Oficial:</b> <code>{tasa_bcv:.2f}</code> Bs</blockquote>\n"
         f"⚖️ <b>BCV + 0.5%:</b> <code>{tasa_intervencion:.2f}</code> Bs\n"
         f"<i>🛡️ <b>Filtros activos:</b> Verificados | Comerciables 🟡 | Pago: Todos 🔻</i>\n"
@@ -431,17 +431,17 @@ def construir_intervencion_texto_html(user=None, porcentaje=None):
     diferencia = tasa_bcv - tasa_anterior
 
     if diferencia > 0:
-        texto_tendencia = f"✅ BCV AUMENTÓ {abs(diferencia):.2f} BS PARA SU FECHA VALOR BCV 📅"
+        texto_tendencia = f"📈 BCV AUMENTÓ {abs(diferencia):.2f} BS PARA SU FECHA VALOR BCV 📆"
     elif diferencia < 0:
-        texto_tendencia = f"🔻 BCV BAJÓ {abs(diferencia):.2f} BS PARA SU FECHA VALOR BCV 📅"
+        texto_tendencia = f"📉 BCV BAJÓ {abs(diferencia):.2f} BS PARA SU FECHA VALOR BCV 📆"
     else:
-        texto_tendencia = f"🔹 BCV MANTIENE SU TASA PARA SU FECHA VALOR BCV 📅"
+        texto_tendencia = f"📊 BCV MANTIENE SU TASA PARA SU FECHA VALOR BCV 📆"
 
     tasa_intervencion = tasa_bcv * (1 + (porcentaje / 100))
 
     texto = (
-        f"🚨 <b>¿Cuántos bolívares necesitas para comprar en Intervención?</b>\n\n"
-        f"<blockquote>📅 <b>Fecha Valor BCV:</b> {fecha_valor_bcv}</blockquote>\n"
+        f"🔎 <b>¿Cuántos bolívares necesitas para comprar en Intervención?</b>\n\n"
+        f"<blockquote>📆 <b>Fecha Valor BCV:</b> {fecha_valor_bcv}</blockquote>\n"
         f"<blockquote>{texto_tendencia}</blockquote>\n"
         f"🏦 <b>Tasa BCV Oficial:</b> <code>{tasa_bcv:.2f}</code> Bs\n"
         f"⚖️ <b>Tasa Intervención:</b> <code>{tasa_intervencion:.2f}</code> Bs ({porcentaje_txt} Agregado)\n"
@@ -450,7 +450,7 @@ def construir_intervencion_texto_html(user=None, porcentaje=None):
 
     for monto_usd in range(100, 1100, 100):
         monto_bs = monto_usd * tasa_intervencion
-        texto += f"💵 <b>{monto_usd} USD</b> ➡️ Bs: <code>{monto_bs:,.0f}</code>\n"
+        texto += f"💵 <b>{monto_usd} USD</b>  ➡️  Bs: <code>{monto_bs:,.0f}</code>\n"
 
     return texto
     
@@ -523,10 +523,10 @@ def handle_invitacion_comando(message):
     if user_identifier in USUARIOS_AUTORIZADOS or message.from_user.id in USUARIOS_AUTORIZADOS:
         
         texto_invitacion = (
-            "🤖 <b>¡Aprovecha al máximo las herramientas del Bot!</b>\n\n"
+            "🤖 <b>¡Aprovecha al máximo las herramientas del Bot~IDV!</b>\n\n"
             "Consulta en privado sin límites y sin esperar tiempos de enfriamiento:\n"
-            "📊 Monitor P2P / BCV en tiempo real\n"
-            "🧮 Calculadora de Intervención\n"
+            "🖥️ Monitor P2P /📆 BCV en tiempo real\n"
+            "📟 Calculadora e 📊 Intervención\n"
             "📜 Guías paso a paso\n\n"
             "👉 <b>Toca aquí para iniciar:</b> @BancoIDV_bot"
         )
@@ -561,7 +561,7 @@ def handle_botones_menu(message):
             procesar_intervencion(message)
         elif message.text == "📟 Calculadora":
             solicitar_calculadora(message) 
-        elif message.text == "📜 Regla de Oro":
+        elif message.text == "📜 Regla de Oro 📜":
             procesar_regla_oro(message)
         elif message.text in ["🔶 BPay 🔶", "🔵 GPay 🔵"]:
             procesar_guias(message)

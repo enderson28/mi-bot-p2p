@@ -34,7 +34,7 @@ BOT_USERNAME = "BancoIDV_bot" # Reemplaza con el alias de tu bot sin el @
 # CONFIGURACIÓN DE EXCLUSIVIDAD MULTI-CANAL
 CANAL_PRUEBA = "@COMUNIDV"       # Canal de prueba
 CANAL_CONGESTIONADO = "@COMUNIDADAS04" # Canal principal
-CANAL_ADMINS = "@IDVADMINS"  # Reemplaza con el @ de tu grupo de admins
+CANAL_ADMINS = -1003947562741 # Reemplaza con el @ de tu grupo de admins
 # USUARIOS AUTORIZADOS PARA EL COMANDO /bot
 USUARIOS_AUTORIZADOS = [5073264705, "@AntonyS4", "@papitamaster"]
 # Creador Supremo (Tu ID numérico real)

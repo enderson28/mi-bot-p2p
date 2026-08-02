@@ -104,29 +104,38 @@ ADMINS_VIP = [
 ADMIN_ESPECIAL_1_PORCIENTO = "@carloses783"
 
 
-def es_admin_vip(bot, user, chat_canal="@COMUNIDADES04"):
+CANAL_PRINCIPAL = "@COMUNIDADAS04"
+GRUPO_ADMINS_ID = -1003947562741
+
+def es_admin_vip(bot, user):
     if not user:
         return False
 
     user_id = user.id
     username = f"@{user.username.lower()}" if user.username else ""
 
-    # 1. VERIFICACIÓN INSTANTÁNEA (En memoria local, 0 milisegundos)
+    # 1. VERIFICACIÓN INSTANTÁNEA (Lista local en memoria)
     admins_vip_lower = [str(u).lower() for u in ADMINS_VIP]
-
     if str(user_id) in admins_vip_lower or username in admins_vip_lower:
         return True
-    
-    # 2. Solo si NO está en la lista VIP local, le consulta a Telegram
+
+    # 2. ES ADMINISTRADOR DEL CANAL PRINCIPAL (@COMUNIDADAS04)
     try:
-        miembro = bot.get_chat_member(chat_canal, user_id)
+        miembro = bot.get_chat_member(CANAL_PRINCIPAL, user_id)
         if miembro.status in ['administrator', 'creator']:
             return True
     except Exception:
         pass
 
-    return False
+    # 3. ES MIEMBRO DEL GRUPO CERRADO DE ADMINS (-1003947562741)
+    try:
+        miembro_grupo = bot.get_chat_member(GRUPO_ADMINS_ID, user_id)
+        if miembro_grupo.status in ['member', 'administrator', 'creator']:
+            return True
+    except Exception:
+        pass
 
+    return False
 
 def es_admin_especial(user):
     """Verifica si es el admin que requiere el 1%"""

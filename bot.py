@@ -566,7 +566,7 @@ def handle_botones_menu(message):
         elif message.text in ["🔶 BPay 🔶", "🔵 GPay 🔵"]:
             procesar_guias(message)
         elif message.text == "⚙️ Soporte":
-            procesar_soporte(message)
+            procesar_soporte(message)         
                      
 # ==========================================
 # REEMPLAZO LIMPIO PARA CHAT PRIVADO

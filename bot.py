@@ -573,15 +573,10 @@ def handle_botones_menu(message):
 ultimos_mensajes_privados = {}
 
 def enviar_o_reemplazar_privado(chat_id, user_id, texto, reply_markup=None):
-    if user_id in ultimos_mensajes_privados:
-        try:
-            bot.delete_message(chat_id, ultimos_mensajes_privados[user_id])
-        except Exception:
-            pass
-
+    """Envia un nuevo mensaje directo en chat privado de forma rapida y sin latencia."""
     try:
         # Intento 1: Enviar con formato HTML
-        nuevo_msg = bot.send_message(
+        return bot.send_message(
             chat_id,
             texto,
             parse_mode="HTML",
@@ -589,16 +584,12 @@ def enviar_o_reemplazar_privado(chat_id, user_id, texto, reply_markup=None):
         )
     except Exception as e:
         print(f"⚠️ Falló el envío HTML (Error 400), enviando texto plano: {e}")
-        # Intento 2 (Fallback): Si el HTML falla, envía el mensaje sin parse_mode para que no rompa
-        nuevo_msg = bot.send_message(
+        # Intento 2 (Fallback): Si el HTML falla, envia sin parse_mode para no romper
+        return bot.send_message(
             chat_id,
             texto,
             reply_markup=reply_markup
         )
-
-    if nuevo_msg:
-        ultimos_mensajes_privados[user_id] = nuevo_msg.message_id
-    return nuevo_msg
             
 # ==========================================
 #  LÓGICA CON AUTODESTRUCCIÓN Y LIMPIEZA

@@ -661,7 +661,7 @@ def procesar_precio(message):
             markup_precio = None
 
             # Si estamos en el grupo cerrado de admins, agregamos los botones de refrescar/borrar
-            if str(chat_id) == str(seguridad.CANAL_ADMINS):
+            if str(chat_id) == str("CANAL_ADMINS"):
                 markup_precio = InlineKeyboardMarkup()
                 markup_precio.row(
                     InlineKeyboardButton("🔄 Actualizar Tasas", callback_data="refrescar_tasas"),

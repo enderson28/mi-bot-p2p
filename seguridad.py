@@ -47,26 +47,24 @@ def validar_copia_pega(bot, message, es_admin):
     return False
     
 def es_administrador(bot, chat_id, user_id, user=None):
-    # 1. Si enviamos el objeto 'user', usamos la verificación VIP completa (ID o Username)
+    # 1. Si es CREADOR o Admin VIP directo por lista local (ID o Username)
     if user and es_admin_vip(bot, user):
         return True
 
-    # 2. Verificación manual por Username o ID por si no vino el objeto 'user'
     user_str = str(user_id).lower()
     admins_vip_lower = [str(u).lower() for u in ADMINS_VIP]
     if user_str in admins_vip_lower:
         return True
 
-    # 3. Verificar si es Administrador del CANAL PRINCIPAL (independientemente de si es chat privado o grupo)
+    # 2. Verificación en el CANAL PRINCIPAL (@COMUNIDADAS04)
     try:
-        canal_principal = "@COMUNIDADAS04"
-        member_canal = bot.get_chat_member(canal_principal, user_id)
+        member_canal = bot.get_chat_member(CANAL_PRINCIPAL, user_id)
         if member_canal.status in ['administrator', 'creator']:
             return True
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"Error consultando admin en canal principal: {e}")
 
-    # 4. Si es un GRUPO, consulta a Telegram si es Admin del grupo actual
+    # 3. Verificación si es Admin del GRUPO ACTUAL (Por si tienes admins locales en el grupo)
     try:
         if isinstance(chat_id, int) and chat_id < 0:
             member = bot.get_chat_member(chat_id, user_id)
@@ -75,8 +73,8 @@ def es_administrador(bot, chat_id, user_id, user=None):
     except Exception:
         pass
 
+    # Si no es admin de ningún lado, devuelve False
     return False
-    
     
 # ============================================
 # CONFIGURACIÓN DE ROLES Y EXCEPCIONES VIP

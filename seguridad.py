@@ -150,7 +150,7 @@ def es_admin_especial(user):
 # Lista de comandos autorizados para el bot de administración (Group Help)
 COMANDOS_GROUP_HELP = [
     "/reload", "/ban", "/mute", "/warn", 
-    "/unban", "/unmute", "/info", "/config"
+    "/unban", "/unmute", "/info", "/config", "/start"
 ]
 
 def limpiar_comandos_chat(bot, message):
@@ -185,28 +185,23 @@ def es_chat_permitido(bot, message, chats_permitidos, usuarios_autorizados, crea
     if not message or not message.chat:
         return False
 
-    user_id = str(message.from_user.id) if message.from_user else ""
+    chat_id = message.chat.id
+    chat_username = f"@{message.chat.username}".lower() if message.chat.username else ""
     creador_str = str(creador_id)
 
-    # 1. SI TU ID NUMÉRICO COINCIDE O ERES ADMIN VIP, ACCESO TOTAL EN CUALQUIER LUGAR
-    if user_id == creador_str or es_admin_vip(bot, message.from_user):
-        return True
-
-    # 2. CHAT PRIVADO
+    # 1. CHAT PRIVADO: Siempre permitido
     if message.chat.type == "private":
         return True
 
-    # 3. VERIFICACIÓN EN GRUPOS / CANALES PERMITIDOS
-    chat_id = message.chat.id
-    chat_username = f"@{message.chat.username}".lower() if message.chat.username else ""
-
-    # Convertimos los permitidos a minúsculas y strings para evitar fallos de tipo (str vs int)
+    # Convertimos los chats permitidos a strings/minúsculas para comparar con precisión
     permitidos_str = [str(c).lower() for c in chats_permitidos]
 
+    # 2. GRUPOS/CANALES OFICIALES DE LA LISTA (Incluye CANAL_ADMINS, @COMUNIDADAS04, etc.)
     if str(chat_id) in permitidos_str or (chat_username and chat_username in permitidos_str):
         return True
 
-    # 4. EXCEPCIÓN DINÁMICA EN OTROS GRUPOS
+    # 3. EXCEPCIÓN EN OTROS GRUPOS AJENOS:
+    # Exige ESTRICTAMENTE que el Creador Supremo esté dentro del grupo y sea Admin/Propietario
     try:
         miembro_creador = bot.get_chat_member(chat_id, int(creador_id))
         if miembro_creador.status in ['creator', 'administrator']:
@@ -214,7 +209,9 @@ def es_chat_permitido(bot, message, chats_permitidos, usuarios_autorizados, crea
     except Exception:
         pass
 
+    # Si no cumple ninguna de las anteriores, SILENCIO ABSOLUTO (Bloqueado)
     return False
+    
     
     
     

@@ -544,29 +544,28 @@ def handle_invitacion_comando(message):
         )
         borrar_mensaje_luego(message.chat.id, aviso.message_id, 5)
         
-@bot.message_handler(func=lambda message: message.text in [
-    "🟢 P2P-USDT 🔴", 
-    "📊 Intervencion 📊", 
-    "📟 Calculadora", 
-    "📜 Regla de Oro 📜", 
-    "🔶 BPay 🔶", 
-    "🔵 GPay 🔵", 
+@bot.message_handler(func=lambda message: message.chat.type == "private" and message.text in [
+    "🟢 P2P-USDT 🔴",
+    "📊 Intervencion 📊",
+    "📟 Calculadora",
+    "📜 Regla de Oro 📜",
+    "🔶 BPay 🔶",
+    "🔷 GPay 🔷",
     "⚙️ Soporte"
 ])
 def handle_botones_menu(message):
-    if message.chat.type == "private":
-        if message.text == "🟢 P2P-USDT 🔴":
-            procesar_precio(message)
-        elif message.text == "📊 Intervencion 📊":
-            procesar_intervencion(message)
-        elif message.text == "📟 Calculadora":
-            solicitar_calculadora(message) 
-        elif message.text == "📜 Regla de Oro 📜":
-            procesar_regla_oro(message)
-        elif message.text in ["🔶 BPay 🔶", "🔵 GPay 🔵"]:
-            procesar_guias(message)
-        elif message.text == "⚙️ Soporte":
-            procesar_soporte(message)         
+    if message.text == "🟢 P2P-USDT 🔴":
+        procesar_precio(message)
+    elif message.text == "📊 Intervencion 📊":
+        procesar_intervencion(message)
+    elif message.text == "📟 Calculadora":
+        solicitar_calculadora(message)
+    elif message.text == "📜 Regla de Oro 📜":
+        procesar_regla_oro(message)
+    elif message.text in ["🔶 BPay 🔶", "🔷 GPay 🔷"]:
+        procesar_guias(message)
+    elif message.text == "⚙️ Soporte":
+        procesar_soporte(message)
                      
 # ==========================================
 # REEMPLAZO LIMPIO PARA CHAT PRIVADO
@@ -705,17 +704,20 @@ def procesar_precio(message):
                 pass
 
 def procesar_intervencion(message):
-    # --- FILTRO DE SEGURIDAD GENERAL ---
-    if not es_chat_permitido(bot, message, CHATS_PERMITIDOS, USUARIOS_AUTORIZADOS, CREADOR_ID):
-        return  # Si el canal no está autorizado y el creador NO está adentro, no hace nada.
-
     user_id = message.from_user.id
     chat_id = message.chat.id
 
+    # --- FILTRO DE SEGURIDAD GENERAL ---
+    # Permite el paso si el chat está permitido O si quien envía es CREADOR / VIP / ADMIN
+    if not (es_chat_permitido(bot, message, CHATS_PERMITIDOS, USUARIOS_AUTORIZADOS, CREADOR_ID) or 
+            str(user_id) == str(CREADOR_ID) or 
+            es_admin_vip(bot, message.from_user) or 
+            es_administrador(bot, chat_id, user_id, message.from_user)):
+        return
 
     # --- 1. CHAT PRIVADO ---
     if message.chat.type == "private":
-        # 👑 ORDEN DE MANDO: Borra el comando enviado por el usuario si empieza con '/'
+        # ORDEN DE MANDO: Borra el comando enviado por el usuario si empieza con '/'
         if message.text and message.text.strip().startswith('/'):
             try:
                 bot.delete_message(chat_id, message.message_id)
@@ -730,8 +732,7 @@ def procesar_intervencion(message):
         markup_intervencion = InlineKeyboardMarkup()
         markup_intervencion.add(InlineKeyboardButton("🔄 Actualizar Cálculo", callback_data="refrescar_intervencion"))
 
-        # 🎯 EVALUACIÓN DE EXCEPCIÓN 1%:
-    
+        # EVALUACIÓN DE EXCEPCIÓN 1%:
         # Evaluamos si es el admin especial pasando el usuario correctamente como primer parámetro
         if es_admin_especial(message.from_user):
             # Para el admin especial calcula al 1.0%
@@ -748,7 +749,7 @@ def procesar_intervencion(message):
         )
         return
 
-      # --- 2. EN GRUPOS ---
+    # --- 2. EN GRUPOS ---
     try:
         bot.delete_message(chat_id, message.message_id)
     except Exception:
@@ -760,10 +761,17 @@ def procesar_intervencion(message):
     except Exception:
         es_admin_g = False
 
+    # Verificación de permisos para responder en grupo
     if str(user_id) == str(CREADOR_ID) or es_admin_vip(bot, message.from_user) or es_admin_g:
         try:
-            # 2. SOLO si estamos en el grupo de admins, creamos los 2 botones VIP
-            if chat_id == CANAL_ADMINS or (message.chat.username and f"@{message.chat.username.lower()}" == CANAL_ADMINS.lower()):
+            # EVALUACIÓN DE EXCEPCIÓN EN GRUPOS PARA PORCENTAJE (1.0% vs 0.5%)
+            if es_admin_especial(message.from_user):
+                texto_grupo = construir_intervencion_texto_html(user=message.from_user, porcentaje=1.0)
+            else:
+                texto_grupo = construir_intervencion_texto_html(user=message.from_user, porcentaje=0.5)
+
+            # SOLO si estamos en el grupo de admins, creamos los 2 botones VIP
+            if str(chat_id) == str(CANAL_ADMINS):
                 markup_intervencion = InlineKeyboardMarkup()
                 markup_intervencion.row(
                     InlineKeyboardButton("🔄 Actualizar Cálculo", callback_data="refrescar_intervencion"),
@@ -771,22 +779,23 @@ def procesar_intervencion(message):
                 )
             else:
                 markup_intervencion = None
-    
-            # 3. ENVIAMOS EL MENSAJE (Se envía en TODOS los grupos donde seas Admin/Propietario)
+
+            # ENVIAMOS EL MENSAJE (Se envía en TODOS los grupos donde seas Admin/Propietario)
             msg_enviado = bot.send_message(
                 chat_id,
-                construir_intervencion_texto_html(message.from_user),
+                texto_grupo,
                 parse_mode="HTML",
-                reply_markup=markup_intervencion  # Será None en los grupos normales, y con botones en Admin
+                reply_markup=markup_intervencion  # Será None en grupos normales, y con botones en Admin
             )
 
-              # 4. Autodestrucción del mensaje
+            # Autodestrucción del mensaje
             borrar_mensaje_luego(chat_id, msg_enviado.message_id, TIEMPO_VIDA_TABLA)
 
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"Error enviando intervencion en grupo: {e}")
+
     else:
-          # Si un usuario común intenta usarlo en el grupo, aplica el Rate Limit de aviso
+        # Si un usuario común intenta usarlo en el grupo, aplica el Rate Limit de aviso
         ahora = time.time()
         ultima_vez_aviso = grupos_tiempo_aviso.get(chat_id, 0)
 
@@ -795,7 +804,7 @@ def procesar_intervencion(message):
                 aviso = bot.send_message(
                     chat_id,
                     f"❌ <b>Comando exclusivo para Administradores.</b>\n\n"
-                    f"Hola @{message.from_user.username or message.from_user.first_name}. Para mantener el orden, este bot es de uso exclusivo de los administradores.\n"
+                    f"Hola @{message.from_user.username or message.from_user.first_name}. Para mantener el orden, este comando solo puede ser ejecutado por administradores.\n"
                     f"👉 Consulta todas las tasas libremente en mi chat privado: @{BOT_USERNAME}",
                     parse_mode="HTML"
                 )
@@ -803,6 +812,7 @@ def procesar_intervencion(message):
                 borrar_mensaje_luego(chat_id, aviso.message_id, 10)
             except Exception:
                 pass
+                
                 
 def procesar_guias(message):
     user_id = message.from_user.id

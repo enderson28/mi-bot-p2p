@@ -664,7 +664,7 @@ def procesar_precio(message):
                 markup_precio = InlineKeyboardMarkup()
                 markup_precio.row(
                     InlineKeyboardButton("🔄 Actualizar Tasas", callback_data="refrescar_tasas"),
-                    InlineKeyboardButton("🗑️ Borrar", callback_data="borrar_tabla_admin")
+                    InlineKeyboardButton("🗑️ Borrar", callback_data="borrar_mensaje")
                 )
 
             # Enviamos la tabla
@@ -775,7 +775,7 @@ def procesar_intervencion(message):
                 markup_intervencion = InlineKeyboardMarkup()
                 markup_intervencion.row(
                     InlineKeyboardButton("🔄 Actualizar Cálculo", callback_data="refrescar_intervencion"),
-                    InlineKeyboardButton("🗑️ Borrar", callback_data="borrar_tabla_admin")
+                    InlineKeyboardButton("🗑️ Borrar", callback_data="borrar_mensaje")
                 )
             else:
                 markup_intervencion = None

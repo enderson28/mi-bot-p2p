@@ -616,11 +616,37 @@ def procesar_precio(message):
             es_administrador(bot, chat_id, user_id, message.from_user)):
         return
 
-    # --- 1. CHAT PRIVADO ---
-    if message.chat.type == "private":
-        # ... Tu código actual de chat privado ...
-        return
+        if message.chat.type == "private":
+        if message.text and message.text.strip().startswith('/'):
+            try:
+                bot.delete_message(chat_id, message.message_id)
+            except Exception:
+                pass
 
+        if not usuario_esta_unido(user_id):
+            bot.reply_to(message, "❌ No tienes acceso. Debes unirte al canal oficial para usar el bot.")
+            return
+
+        try:
+            monitor_base = construir_monitor_texto_html()
+            
+            if es_admin_vip(bot, message.from_user):
+                texto_completo = monitor_base
+            else:
+                aviso_regla = "\n\n💡 <b>¿Quieres saber cómo calcular tus ganancias paso a paso?</b>\n Presiona el botón <b>📜 Regla de Oro 📜</b> en el menú de abajo. 👇👇"
+                texto_completo = monitor_base + aviso_regla
+
+            markup_tasas = InlineKeyboardMarkup()
+            markup_tasas.add(InlineKeyboardButton("🔄 Actualizar Tasas", callback_data="refrescar_tasas"))
+
+            enviar_o_reemplazar_privado(chat_id, user_id, texto_completo, reply_markup=markup_tasas)
+            return
+
+        except Exception as e:
+            print(f"Error en precio privado: {e}")
+            bot.send_message(chat_id, "❌ Error temporal al obtener tasas. Inténtalo de nuevo en unos segundos.")
+            return
+                
     # --- 2. EN GRUPOS ---
     # Borramos el comando ejecutado inmediatamente para mantener el chat limpio
     try:
@@ -634,7 +660,7 @@ def procesar_precio(message):
             markup_precio = None
 
             # Si estamos en el grupo cerrado de admins, agregamos los botones de refrescar/borrar
-            if str(chat_id) == str(GRUPO_ADMINS_ID):
+            if str(chat_id) == str(seguridad.GRUPO_ADMINS_ID):
                 markup_precio = InlineKeyboardMarkup()
                 markup_precio.row(
                     InlineKeyboardButton("🔄 Actualizar Tasas", callback_data="refrescar_tasas"),

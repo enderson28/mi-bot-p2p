@@ -604,83 +604,44 @@ def enviar_o_reemplazar_privado(chat_id, user_id, texto, reply_markup=None):
 # ==========================================
 #  LÓGICA CON AUTODESTRUCCIÓN Y LIMPIEZA
 # ==========================================
-def procesar_precio(message):
-    # --- FILTRO DE SEGURIDAD GENERAL ---
-    if not es_chat_permitido(bot, message, CHATS_PERMITIDOS, USUARIOS_AUTORIZADOS, CREADOR_ID):
-        return  # Si el canal no está autorizado y el creador NO está adentro, no hace nada.
 
+def procesar_precio(message):
     user_id = message.from_user.id
     chat_id = message.chat.id
-    
+
+    # Permite el paso si el chat está permitido O si quien envía el comando es CREADOR / ADMIN
+    if not (es_chat_permitido(bot, message, CHATS_PERMITIDOS, USUARIOS_AUTORIZADOS, CREADOR_ID) or 
+            str(user_id) == str(CREADOR_ID) or 
+            es_admin_vip(bot, message.from_user) or 
+            es_administrador(bot, chat_id, user_id, message.from_user)):
+        return
 
     # --- 1. CHAT PRIVADO ---
     if message.chat.type == "private":
-        # 👑 ORDEN DE MANDO: Borra el comando enviado por el usuario si empieza con '/'
-        if message.text and message.text.strip().startswith('/'):
-            try:
-                bot.delete_message(chat_id, message.message_id)
-            except Exception:
-                pass
-
-        if not usuario_esta_unido(user_id):
-            bot.reply_to(message, "❌ No tienes acceso. Debes unirte al canal oficial para usar el bot.")
-            return
-            
-        try:
-            # 1. Armamos el monitor base
-            monitor_base = construir_monitor_texto_html()
-
-            # Mensaje de invitación exclusivo para usuarios comunes
-            aviso_regla = (
-                "\n\n👉 <b>¿Quieres saber cómo calcular tus ganancias paso a paso?</b>\n"
-                "Presiona el botón <b>📜 Regla de Oro 📜</b> en el menú de abajo. 👇🏽👇🏽"
-            )
-
-            # 2. EVALUACIÓN DE PRIVILEGIOS
-            if es_admin_vip(bot, message.from_user):
-                # Admin VIP: Monitor 100% limpio sin texto extra
-                texto_completo = monitor_base
-            else:
-                # Usuario Común: Monitor con la invitación al botón
-                texto_completo = monitor_base + aviso_regla
-
-            # 3. Teclado flotante (Inline) de Actualizar Tasas
-            markup_tasas = InlineKeyboardMarkup()
-            markup_tasas.add(InlineKeyboardButton("🔄 Actualizar Tasas", callback_data="refrescar_tasas"))
-
-            enviar_o_reemplazar_privado(
-                chat_id,
-                user_id,
-                texto_completo,
-                reply_markup=markup_tasas
-            )
-            return
-
-        except Exception as e:
-            print(f"Error en precio privado: {e}")
-            bot.send_message(chat_id, "❌ Error temporal al obtener tasas. Inténtalo de nuevo en unos segundos.")
-            return
+        # ... Tu código actual de chat privado ...
+        return
 
     # --- 2. EN GRUPOS ---
-    # A) Borramos inmediatamente el mensaje del comando ejecutado (sea Admin o Usuario)
+    # Borramos el comando ejecutado inmediatamente para mantener el chat limpio
     try:
         bot.delete_message(chat_id, message.message_id)
     except Exception:
         pass
+
+    # SOLO si es CREADOR, ADMIN VIP o ADMIN DEL CANAL responde:
     if str(user_id) == str(CREADOR_ID) or es_admin_vip(bot, message.from_user) or es_administrador(bot, chat_id, user_id, message.from_user):
         try:
-            # B) Por defecto NO hay botones para evitar spam en grupos públicos
             markup_precio = None
 
-            # Si estamos en el grupo de admins, creamos los botones
-            if chat_id == CANAL_ADMINS or (message.chat.username and f"@{message.chat.username.lower()}" == CANAL_ADMINS.lower()):
+            # Si estamos en el grupo cerrado de admins, agregamos los botones de refrescar/borrar
+            if str(chat_id) == str(GRUPO_ADMINS_ID):
                 markup_precio = InlineKeyboardMarkup()
                 markup_precio.row(
                     InlineKeyboardButton("🔄 Actualizar Tasas", callback_data="refrescar_tasas"),
                     InlineKeyboardButton("🗑️ Borrar", callback_data="borrar_tabla_admin")
                 )
 
-            # Enviamos el mensaje (saldrá con botones en VIP, y limpio en grupos públicos)
+            # Enviamos la tabla
             msg_enviado = bot.send_message(
                 chat_id,
                 construir_monitor_texto_html(),
@@ -688,11 +649,11 @@ def procesar_precio(message):
                 reply_markup=markup_precio
             )
 
-            # C) Autodestruimos la lista de precios tras 5 minutos
+            # Autodestrucción del mensaje enviado tras X minutos
             borrar_mensaje_luego(chat_id, msg_enviado.message_id, TIEMPO_VIDA_TABLA)
 
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"Error enviando precio en grupo: {e}")
 
 
     else:

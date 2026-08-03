@@ -2,3 +2,4 @@ pyTelegramBotAPI
 requests
 beautifulsoup4
 redis
+APScheduler>=3.10.0

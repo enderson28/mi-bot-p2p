@@ -608,11 +608,8 @@ def procesar_precio(message):
     user_id = message.from_user.id
     chat_id = message.chat.id
 
-    # Permite el paso si el chat está permitido O si quien envía el comando es CREADOR / ADMIN
-    if not (es_chat_permitido(bot, message, CHATS_PERMITIDOS, USUARIOS_AUTORIZADOS, CREADOR_ID) or 
-            str(user_id) == str(CREADOR_ID) or 
-            es_admin_vip(bot, message.from_user) or 
-            es_administrador(bot, chat_id, user_id, message.from_user)):
+    # Permite el paso ÚNICAMENTE si el chat está permitido por las reglas de seguridad 
+    if not es_chat_permitido(bot, message, CHATS_PERMITIDOS, USUARIOS_AUTORIZADOS, CREADOR_ID):
         return
 
     # --- 1. CHAT PRIVADO ---
@@ -708,11 +705,8 @@ def procesar_intervencion(message):
     chat_id = message.chat.id
 
     # --- FILTRO DE SEGURIDAD GENERAL ---
-    # Permite el paso si el chat está permitido O si quien envía es CREADOR / VIP / ADMIN
-    if not (es_chat_permitido(bot, message, CHATS_PERMITIDOS, USUARIOS_AUTORIZADOS, CREADOR_ID) or 
-            str(user_id) == str(CREADOR_ID) or 
-            es_admin_vip(bot, message.from_user) or 
-            es_administrador(bot, chat_id, user_id, message.from_user)):
+    # Permite el paso ÚNICAMENTE si el chat está permitido en las reglas de seguridad 
+    if not es_chat_permitido(bot, message, CHATS_PERMITIDOS, USUARIOS_AUTORIZADOS, CREADOR_ID):
         return
 
     # --- 1. CHAT PRIVADO ---

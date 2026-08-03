@@ -616,7 +616,8 @@ def procesar_precio(message):
             es_administrador(bot, chat_id, user_id, message.from_user)):
         return
 
-        if message.chat.type == "private":
+    # --- 1. CHAT PRIVADO ---
+    if message.chat.type == "private":
         if message.text and message.text.strip().startswith('/'):
             try:
                 bot.delete_message(chat_id, message.message_id)
@@ -646,7 +647,7 @@ def procesar_precio(message):
             print(f"Error en precio privado: {e}")
             bot.send_message(chat_id, "❌ Error temporal al obtener tasas. Inténtalo de nuevo en unos segundos.")
             return
-                
+
     # --- 2. EN GRUPOS ---
     # Borramos el comando ejecutado inmediatamente para mantener el chat limpio
     try:

@@ -35,6 +35,7 @@ BOT_USERNAME = "BancoIDV_bot" # Reemplaza con el alias de tu bot sin el @
 CANAL_PRUEBA = "@COMUNIDV"       # Canal de prueba
 CANAL_CONGESTIONADO = "@COMUNIDADAS04" # Canal principal
 CANAL_ADMINS = -1003947562741 # Reemplaza con el @ de tu grupo de admins
+CANAL_SECUNDARIO = -1004378497075 # Grupo de pruebaidv2
 # USUARIOS AUTORIZADOS PARA EL COMANDO /bot
 USUARIOS_AUTORIZADOS = [5073264705, 1676933074, 6299629267]
 # Creador Supremo (Tu ID numérico real)
@@ -1096,7 +1097,7 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
                             try:
                                 # 1. Envió de Tabla de Intervención
                                 texto_intervencion = construir_intervencion_texto_html()
-                                bot.send_message(CANAL_CONGESTIONADO, texto_intervencion, parse_mode="HTML")
+                                bot.send_message(CANAL_SECUNDARIO, texto_intervencion, parse_mode="HTML")
                                 print("📢 [1/2] Tabla de Intervención enviada al canal vía Webhook.")
 
                                 # Pausa de 15 segundos entre avisos
@@ -1104,7 +1105,7 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
 
                                 # 2. Envió de Monitor P2P
                                 texto_monitor = construir_monitor_texto_html()
-                                bot.send_message(CANAL_CONGESTIONADO, texto_monitor, parse_mode="HTML")
+                                bot.send_message(CANAL_SECUNDARIO, texto_monitor, parse_mode="HTML")
                                 print("📢 [2/2] Monitor P2P enviado al canal vía Webhook.")
                             except Exception as e:
                                 print(f"⚠️ Error al publicar anuncios desde el webhook: {e}")

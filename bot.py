@@ -36,7 +36,7 @@ CANAL_PRUEBA = "@COMUNIDV"       # Canal de prueba
 CANAL_CONGESTIONADO = "@COMUNIDADAS04" # Canal principal
 CANAL_ADMINS = -1003947562741 # Reemplaza con el @ de tu grupo de admins
 # USUARIOS AUTORIZADOS PARA EL COMANDO /bot
-USUARIOS_AUTORIZADOS = [5073264705, "@AntonyS4", "@papitamaster"]
+USUARIOS_AUTORIZADOS = [5073264705, 1676933074, 6299629267]
 # Creador Supremo (Tu ID numérico real)
 CREADOR_ID = 5073264705  # Reemplaza por tu ID numérico
 

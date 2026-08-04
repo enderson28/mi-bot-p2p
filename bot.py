@@ -37,7 +37,7 @@ CANAL_CONGESTIONADO = "@COMUNIDADAS04" # Canal principal
 CANAL_ADMINS = -1003947562741 # Reemplaza con el @ de tu grupo de admins
 CANAL_SECUNDARIO = -1004378497075 # Grupo de pruebaidv2
 # USUARIOS AUTORIZADOS PARA EL COMANDO /bot
-USUARIOS_AUTORIZADOS = [5073264705, 1676933074, 6299629267]
+USUARIOS_AUTORIZADOS = [5073264705, 1676933074, 6299629267, 8166481937]
 # Creador Supremo (Tu ID numérico real)
 CREADOR_ID = 5073264705  # Reemplaza por tu ID numérico
 
@@ -543,7 +543,8 @@ def handle_invitacion_comando(message):
             f'⚠️ <b>Comando exclusivo de los administradores principales 🤓:</b>\n'
             f'• <a href="tg://user?id=5073264705">⚙️ Enderson</a>\n'
             f'• <a href="tg://user?id=1676933074">🐲 Antony</a>\n'
-            f'• <a href="tg://user?id=6299629267">🐻 Oswaldo</a>',
+            f'• <a href="tg://user?id=6299629267">🐻 Oswaldo</a>\n'
+            f'• <a href="tg://user?id=8166481937">👸🏼 CiIita</a>',
             parse_mode="HTML",
             disable_web_page_preview=True
         )

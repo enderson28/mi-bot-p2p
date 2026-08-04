@@ -15,7 +15,6 @@ from calculadora import registrar_calculadora
 import re
 import urllib3
 from bs4 import BeautifulSoup
-
 # Desactivar avisos de certificados SSL
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 import redis

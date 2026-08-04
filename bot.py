@@ -1060,45 +1060,73 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
                     tasa_nueva = float(tasa)
                     tasa_actual = CACHE_TASAS.get("bcv_tasa", tasa_nueva)
 
-                    # Si la tasa recibida es distinta a la actual, la actual pasa a ser la anterior
+                    # Solo procesamos si la tasa raspada es diferente a la actual
                     if tasa_nueva != tasa_actual:
                         CACHE_TASAS["bcv_tasa_anterior"] = tasa_actual
+                        CACHE_TASAS["bcv_tasa"] = tasa_nueva
+                        CACHE_TASAS["bcv_fecha"] = str(fecha)
 
-                    CACHE_TASAS["bcv_tasa"] = tasa_nueva
-                    CACHE_TASAS["bcv_fecha"] = str(fecha)
+                        # Recalculamos rangos P2P inmediatamente
+                        tasa_ajustada = tasa_nueva * 1.005
+                        ranges_def = [
+                            ("Rango Pequeño ($50 - $100)", 50.0),
+                            ("Rango Mediano ($100 - $300)", 150.0),
+                            ("Rango Mayor ($500+)", 500.0),
+                        ]
 
-                    # Agrega esto para recalcular rangos P2P inmediatamente al recibir
-                    tasa_ajustada = tasa_nueva * 1.005
-                    ranges_def = [
-                        ("Rango Pequeño ($50 - $100)", 50.0),
-                        ("Rango Mediano ($100 - $300)", 150.0),
-                        ("Rango Mayor ($500+)", 500.0),
-                    ]
-                    nuevos_rangos = {}
-                    for nombre, usd_ref in ranges_def:
-                        monto_bs = usd_ref * tasa_ajustada
-                        compra = obtener_tasa_binance_p2p("BUY", monto_bs) or 0.0
-                        venta = obtener_tasa_binance_p2p("SELL", monto_bs) or 0.0
-                        nuevos_rangos[usd_ref] = {"nombre": nombre, "compra": compra, "venta": venta}
-                    
-                    CACHE_TASAS["rangos"] = nuevos_rangos
+                        nuevos_rangos = {}
+                        for nombre, usd_ref in ranges_def:
+                            monto_bs = usd_ref * tasa_ajustada
+                            compra = obtener_tasa_binance_p2p("BUY", monto_bs) or 0.0
+                            venta = obtener_tasa_binance_p2p("SELL", monto_bs) or 0.0
+                            nuevos_rangos[usd_ref] = {"nombre": nombre, "compra": compra, "venta": venta}
 
-                    # 💾 Guarda la copia física en el disco
-                    guardar_cache_en_disco()
+                        CACHE_TASAS["rangos"] = nuevos_rangos
 
-                    print(f"🔥 [WEBHOOK] Tasa BCV actualizada por El Cazador: {tasa_nueva} | Fecha: {fecha}")
+                        # Guardamos copia física en Redis
+                        guardar_cache_en_disco()
+                        print(f"🔥 [WEBHOOK] Tasa BCV actualizada por El Cazador: {tasa_nueva} | Fecha: {fecha}")
 
-                    self.send_response(200)
-                    self.send_header('Content-Type', 'application/json')
-                    self.end_headers()
-                    self.wfile.write(b'{"status":"success","message":"Tasa actualizada en memoria y disco"}')
-                    return
+                        # 🚀 ANUNCIOS AUTOMÁTICOS SINCRONIZADOS AL CANAL
+                        def enviar_reportes_sincronizados():
+                            try:
+                                # 1. Envió de Tabla de Intervención
+                                texto_intervencion = construir_intervencion_texto_html()
+                                bot.send_message(CANAL_CONGESTIONADO, texto_intervencion, parse_mode="HTML")
+                                print("📢 [1/2] Tabla de Intervención enviada al canal vía Webhook.")
+
+                                # Pausa de 15 segundos entre avisos
+                                time.sleep(15)
+
+                                # 2. Envió de Monitor P2P
+                                texto_monitor = construir_monitor_texto_html()
+                                bot.send_message(CANAL_CONGESTIONADO, texto_monitor, parse_mode="HTML")
+                                print("📢 [2/2] Monitor P2P enviado al canal vía Webhook.")
+                            except Exception as e:
+                                print(f"⚠️ Error al publicar anuncios desde el webhook: {e}")
+
+                        # Se ejecuta en un hilo para responder rápido a GitHub Actions
+                        threading.Thread(target=enviar_reportes_sincronizados, daemon=True).start()
+
+                        self.send_response(200)
+                        self.send_header('Content-Type', 'application/json')
+                        self.end_headers()
+                        self.wfile.write(b'{"status":"success","message":"Tasa actualizada, guardada en Redis y anunciada"}')
+                        return
+                    else:
+                        print(f"😴 [WEBHOOK] Tasa recibida ({tasa_nueva}) es idéntica a la actual. Sin cambios.")
+                        self.send_response(200)
+                        self.send_header('Content-Type', 'application/json')
+                        self.end_headers()
+                        self.wfile.write(b'{"status":"ignored","message":"Sin cambios en la tasa"}')
+                        return
 
             except Exception as e:
                 print(f"Error procesando webhook: {e}")
 
             self.send_response(400)
             self.end_headers()
+                        
 
 def iniciar_servidor_receptor():
     port = int(os.getenv("PORT", 8080))

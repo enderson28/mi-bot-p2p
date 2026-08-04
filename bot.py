@@ -36,7 +36,7 @@ CANAL_PRUEBA = "@COMUNIDV"       # Canal de prueba
 CANAL_CONGESTIONADO = "@COMUNIDADAS04" # Canal principal
 CANAL_ADMINS = -1003947562741 # Reemplaza con el @ de tu grupo de admins
 # USUARIOS AUTORIZADOS PARA EL COMANDO /bot
-USUARIOS_AUTORIZADOS = [5073264705, "@AntonyS4", "@papitamaster"]
+USUARIOS_AUTORIZADOS = [5073264705, 1676933074, 6299629267]
 # Creador Supremo (Tu ID numérico real)
 CREADOR_ID = 5073264705  # Reemplaza por tu ID numérico
 
@@ -538,9 +538,13 @@ def handle_invitacion_comando(message):
     else:
         # 3. Si no es autorizado (usuario normal u otro admin), desintegra el aviso en 5 segundos
         aviso = bot.send_message(
-            message.chat.id, 
-            f"⚠️ <b>Comando exclusivo del creador del bot</b> (@enderson28) (@AntonyS4) (@papitamaster).", 
-            parse_mode="HTML"
+            message.chat.id,
+            f'⚠️ <b>Comando exclusivo de los administradores principales 🤓:</b>\n'
+            f'• <a href="tg://user?id=5073264705">Enderson</a>\n'
+            f'• <a href="tg://user?id=1676933074">Antony</a>\n'
+            f'• <a href="tg://user?id=6299629267">Papitamaster</a>',
+            parse_mode="HTML",
+            disable_web_page_preview=True
         )
         borrar_mensaje_luego(message.chat.id, aviso.message_id, 5)
         

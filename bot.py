@@ -538,9 +538,13 @@ def handle_invitacion_comando(message):
     else:
         # 3. Si no es autorizado (usuario normal u otro admin), desintegra el aviso en 5 segundos
         aviso = bot.send_message(
-            message.chat.id, 
-            f"⚠️ <b>Comando exclusivo del creador del bot</b> (@enderson28) (@AntonyS4) (@papitamaster).", 
-            parse_mode="HTML"
+            message.chat.id,
+            f'⚠️ <b>Comando exclusivo de los administradores principales 🤓:</b>\n'
+            f'• <a href="tg://user?id=5073264705">Enderson</a>\n'
+            f'• <a href="tg://user?id=1676933074">Antony</a>\n'
+            f'• <a href="tg://user?id=6299629267">Papitamaster</a>',
+            parse_mode="HTML",
+            disable_web_page_preview=True
         )
         borrar_mensaje_luego(message.chat.id, aviso.message_id, 5)
         

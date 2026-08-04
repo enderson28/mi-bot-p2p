@@ -540,9 +540,9 @@ def handle_invitacion_comando(message):
         aviso = bot.send_message(
             message.chat.id,
             f'⚠️ <b>Comando exclusivo de los administradores principales 🤓:</b>\n'
-            f'• <a href="tg://user?id=5073264705">Enderson</a>\n'
-            f'• <a href="tg://user?id=1676933074">Antony</a>\n'
-            f'• <a href="tg://user?id=6299629267">Papitamaster</a>',
+            f'• <a href="tg://user?id=5073264705">⚙️ Enderson</a>\n'
+            f'• <a href="tg://user?id=1676933074">🐲 Antony</a>\n'
+            f'• <a href="tg://user?id=6299629267">🐻 Oswaldo</a>',
             parse_mode="HTML",
             disable_web_page_preview=True
         )

@@ -3,7 +3,7 @@ import requests
 from telebot.types import ReplyKeyboardMarkup, KeyboardButton
 
 # Modelo en OpenRouter con mayor nivel de razonamiento y ultra económico
-MODELO_IA = "google/gemini-2.0-flash-001"
+MODELO_IA = "openai/gpt-4o-mini"
 
 # Diccionario global para mantener el historial de chat por usuario en memoria
 HISTORIAL_CHAT = {}
@@ -121,8 +121,11 @@ def registrar_ia_consulta(bot, redis_client, obtener_teclado_func):
                 # Guardamos la respuesta de la IA en el historial
                 HISTORIAL_CHAT[chat_id].append({"role": "assistant", "content": respuesta_ia})
             else:
+                # Imprime el motivo exacto en los Deploy Logs de Railway si falla:
+                print(f"⚠️ Error OpenRouter [{response.status_code}]: {data}")
                 respuesta_ia = "⚠️ Ocurrió un inconveniente al obtener la respuesta del modelo de IA."
-        except Exception:
+        except Exception as e:
+            print(f"⚠️ Excepción HTTP: {e}")
             respuesta_ia = "⚠️ Error de conexión con el servicio de IA."
 
         # Borrar mensaje de espera

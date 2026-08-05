@@ -67,12 +67,15 @@ def registrar_ia_consulta(bot, redis_client, obtener_teclado_func):
         tasa_bcv = "No disponible"
         if redis_client:
             try:
-                # Intenta obtener de 'bcv_tasa' o 'bcv'
-                val = redis_client.get("bcv_tasa") or redis_client.get("bcv") or redis_client.get("tasa_bcv")
+                # Intenta obtener según los nombres habituales en tus scripts
+                val = (redis_client.get("bcv_tasa") or 
+                       redis_client.get("tasa_bcv") or 
+                       redis_client.get("bcv") or 
+                       redis_client.get("precio_bcv"))
                 if val:
                     tasa_bcv = val.decode('utf-8') if isinstance(val, bytes) else str(val)
-            except Exception:
-                pass
+            except Exception as e:
+                print(f"Error leyendo Redis: {e}")
 
         api_key = os.getenv("OPENROUTER_API_KEY")
         if not api_key:
@@ -89,11 +92,12 @@ def registrar_ia_consulta(bot, redis_client, obtener_teclado_func):
         }
 
         system_prompt = (
-            "Eres un asistente financiero y analista experto en arbitraje de criptomonedas, mercado P2P (Binance, BPay, GPay) y financiero en Venezuela. "
-            f"DATOS EN TIEMPO REAL: La tasa oficial BCV actual registrada en la plataforma es: {tasa_bcv} VES/USD. "
-            "Responde con buen razonamiento, tono profesional, directo y explicativo. Si el usuario pregunta por la tasa BCV, dale directamente el dato registrado."
+            "Eres un asistente financiero y analista experto en arbitraje de criptomonedas y mercado P2P en Venezuela. "
+            f"DATOS EN TIEMPO REAL: La tasa oficial BCV registrada es: {tasa_bcv} VES/USD. "
+            "INSTRUCCIONES DE RESPUESTA: Se extremadamente conciso, directo y conversacional. "
+            "Responde en máximo 2 o 3 párrafos breves o puntos clave. Evita introducciones largas o explicaciones teóricas innecesarias."
         )
-
+        
         # Recuperar o inicializar historial
         if chat_id not in HISTORIAL_CHAT:
             HISTORIAL_CHAT[chat_id] = []
@@ -110,6 +114,8 @@ def registrar_ia_consulta(bot, redis_client, obtener_teclado_func):
         payload = {
             "model": MODELO_IA,
             "messages": messages_payload
+            "max_tokens": 300,
+            "temperature": 0.5
         }
 
         try:

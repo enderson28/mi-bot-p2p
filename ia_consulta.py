@@ -24,16 +24,16 @@ def registrar_ia_consulta(bot, redis_client, obtener_teclado_func):
     Registra el módulo interactivo de consulta Financiera con IA via OpenRouter.
     """
 
-    # 🔒 FUNCIÓN AUXILIAR DE VERIFICACIÓN
-    def usuario_esta_unido(user_id):
-        if user_id in ADMIN_IDS:
-            return True
-        try:
-            member = bot.get_chat_member(CANAL_CONGESTIONADO, user_id)
-            return member.status in ['creator', 'administrator', 'member']
-        except Exception as e:
-            print(f"Error verificando membresía para {user_id}: {e}")
-            return False
+# 🔒 FUNCIÓN AUXILIAR DE VERIFICACIÓN
+def usuario_esta_unido(user_id):
+    if user_id in ADMIN_IDS:
+        return True
+    try:
+        member = bot.get_chat_member(CANAL_CONGESTIONADO, user_id)
+        return member.status in ['creator', 'administrator', 'member']
+    except Exception as e:
+        print(f"Error verificando membresía para {user_id}: {e}")
+        return False
 
     # ---------------------------------------------------------
     # HANDLER PARA EL COMANDO /ia (EXCLUSIVO CREADOR / ADMINS)

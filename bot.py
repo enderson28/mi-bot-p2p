@@ -12,6 +12,7 @@ from anuncios import iniciar_modulo_anuncios
 from seguridad import validar_copia_pega, es_admin_vip, es_admin_especial, es_administrador, es_chat_permitido
 from seguridad import limpiar_comandos_chat
 from calculadora import registrar_calculadora
+from ia_consulta import registrar_ia_consulta
 import re
 import urllib3
 from bs4 import BeautifulSoup
@@ -80,13 +81,16 @@ def obtener_teclado_privado(user=None):
     btn_gpay = KeyboardButton("🔵 GPay 🔵")
     btn_calculadora = KeyboardButton("📟 Calculadora")
     btn_soporte = KeyboardButton("⚙️ Soporte")
+    btn_ia = KeyboardButton("🤖 IA Consulta")
 
     markup.add(btn_precio, btn_intervencion)
     markup.add(btn_regla, btn_calculadora)
     markup.add(btn_bpay, btn_gpay)
     markup.add(btn_soporte)
+    markup.add(btn_ia)
     return markup
-    
+
+    solicitar_ia_consulta = registrar_ia_consulta(bot, r, obtener_teclado_privado)
 
 def obtener_boton_actualizar_inline():
     markup = InlineKeyboardMarkup()
@@ -557,7 +561,8 @@ def handle_invitacion_comando(message):
     "📜 Regla de Oro 📜",
     "🔶 BPay 🔶",
     "🔷 GPay 🔷",
-    "⚙️ Soporte"
+    "⚙️ Soporte",
+    "🤖 IA Consulta"
 ])
 def handle_botones_menu(message):
     if message.text == "🟢 P2P-USDT 🔴":
@@ -572,6 +577,8 @@ def handle_botones_menu(message):
         procesar_guias(message)
     elif message.text == "⚙️ Soporte":
         procesar_soporte(message)
+    elif message.text == "🤖 IA Consulta":
+        solicitar_ia_consulta(message)
                      
 # ==========================================
 # REEMPLAZO LIMPIO PARA CHAT PRIVADO

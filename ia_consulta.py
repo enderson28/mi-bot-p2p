@@ -18,22 +18,34 @@ USO_DIARIO_USUARIOS = {}
 REGISTRO_CUPO_DIARIO = {"fecha": "", "usuarios_registrados": set()}
 
 CANAL_CONGESTIONADO = "@COMUNIDADAS04"
-
+CANAL_PRUEBA = "@COMUNIDV"
 def registrar_ia_consulta(bot, redis_client, obtener_teclado_func):
     """
     Registra el módulo interactivo de consulta Financiera con IA via OpenRouter.
     """
 
-# 🔒 FUNCIÓN AUXILIAR DE VERIFICACIÓN
+# 🔒 FUNCIÓN AUXILIAR DE VERIFICACIÓN (Línea 28 en adelante)
 def usuario_esta_unido(user_id):
     if user_id in ADMIN_IDS:
         return True
+        
+    # Probar si está en el canal de pruebas
     try:
-        member = bot.get_chat_member(CANAL_CONGESTIONADO, user_id)
-        return member.status in ['creator', 'administrator', 'member']
-    except Exception as e:
-        print(f"Error verificando membresía para {user_id}: {e}")
-        return False
+        m1 = bot.get_chat_member(CANAL_PRUEBA, user_id)
+        if m1.status in ['creator', 'administrator', 'member']:
+            return True
+    except Exception:
+        pass
+
+    # Probar si está en el canal principal/congestionado
+    try:
+        m2 = bot.get_chat_member(CANAL_CONGESTIONADO, user_id)
+        if m2.status in ['creator', 'administrator', 'member']:
+            return True
+    except Exception:
+        pass
+
+    return False
 
     # ---------------------------------------------------------
     # HANDLER PARA EL COMANDO /ia (EXCLUSIVO CREADOR / ADMINS)

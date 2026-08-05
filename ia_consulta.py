@@ -111,7 +111,7 @@ def registrar_ia_consulta(bot, redis_client, obtener_teclado_func):
 
         payload = {
             "model": MODELO_IA,
-            "messages": messages_payload
+            "messages": messages_payload,
             "max_tokens": 300,
             "temperature": 0.5
         }

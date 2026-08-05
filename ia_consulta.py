@@ -1,5 +1,6 @@
 import os
 import requests
+import json
 from telebot.types import ReplyKeyboardMarkup, KeyboardButton
 
 # Modelo en OpenRouter con mayor nivel de razonamiento y ultra económico
@@ -63,19 +64,16 @@ def registrar_ia_consulta(bot, redis_client, obtener_teclado_func):
         # Notificación visual
         msg_espera = bot.send_message(chat_id, "🧠 *Analizando respuesta...*", parse_mode="Markdown")
 
-        # Obtener valores de Redis comprobando posibles nombres de claves
+        # Obtener la tasa desde la memoria persistente en Redis
         tasa_bcv = "No disponible"
         if redis_client:
             try:
-                # Intenta obtener según los nombres habituales en tus scripts
-                val = (redis_client.get("bcv_tasa") or 
-                       redis_client.get("tasa_bcv") or 
-                       redis_client.get("bcv") or 
-                       redis_client.get("precio_bcv"))
-                if val:
-                    tasa_bcv = val.decode('utf-8') if isinstance(val, bytes) else str(val)
+                data_raw = redis_client.get("CACHE_TASAS_STORAGE")
+                if data_raw:
+                    data = json.loads(data_raw) if isinstance(data_raw, str) else json.loads(data_raw.decode('utf-8'))
+                    tasa_bcv = data.get("bcv_tasa", "No disponible")
             except Exception as e:
-                print(f"Error leyendo Redis: {e}")
+                print(f"Error extrayendo tasa de Redis: {e}")
 
         api_key = os.getenv("OPENROUTER_API_KEY")
         if not api_key:

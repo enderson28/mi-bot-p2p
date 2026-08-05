@@ -71,6 +71,7 @@ def obtener_teclado_privado(user=None):
         markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
         markup.add(KeyboardButton("🟢 P2P-USDT 🔴"), KeyboardButton("📊 Intervencion 📊"))
         markup.add(KeyboardButton("📟 Calculadora"), KeyboardButton("⚙️ Soporte"))
+        markup.add(KeyboardButton("🤖 IA Consulta"))
         return markup
 
     markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)

@@ -17,35 +17,34 @@ USO_DIARIO_USUARIOS = {}
 # Registro del cupo global: {"fecha": "YYYY-MM-DD", "usuarios_registrados": set(user_ids)}
 REGISTRO_CUPO_DIARIO = {"fecha": "", "usuarios_registrados": set()}
 
-CANAL_CONGESTIONADO = "@COMUNIDADAS04"
+# Definición de canales en la parte superior (Líneas 20-21)
 CANAL_PRUEBA = "@COMUNIDV"
+CANAL_CONGESTIONADO = "@COMUNIDADAS04"
+
 def registrar_ia_consulta(bot, redis_client, obtener_teclado_func):
-    """
-    Registra el módulo interactivo de consulta Financiera con IA via OpenRouter.
-    """
-
-# 🔒 FUNCIÓN AUXILIAR DE VERIFICACIÓN (Línea 28 en adelante)
-def usuario_esta_unido(user_id):
-    if user_id in ADMIN_IDS:
-        return True
-        
-    # Probar si está en el canal de pruebas
-    try:
-        m1 = bot.get_chat_member(CANAL_PRUEBA, user_id)
-        if m1.status in ['creator', 'administrator', 'member']:
+    
+    # 🔒 VERIFICACIÓN MULTI-CANAL
+    def usuario_esta_unido(user_id):
+        if user_id in ADMIN_IDS:
             return True
-    except Exception:
-        pass
+            
+        # 1. Probar en el canal de pruebas
+        try:
+            m1 = bot.get_chat_member(CANAL_PRUEBA, user_id)
+            if m1.status in ['creator', 'administrator', 'member']:
+                return True
+        except Exception:
+            pass # Si el bot no está en el canal o falla, pasa al siguiente
 
-    # Probar si está en el canal principal/congestionado
-    try:
-        m2 = bot.get_chat_member(CANAL_CONGESTIONADO, user_id)
-        if m2.status in ['creator', 'administrator', 'member']:
-            return True
-    except Exception:
-        pass
+        # 2. Probar en el canal principal / congestionado
+        try:
+            m2 = bot.get_chat_member(CANAL_CONGESTIONADO, user_id)
+            if m2.status in ['creator', 'administrator', 'member']:
+                return True
+        except Exception:
+            pass
 
-    return False
+        return False
 
     # ---------------------------------------------------------
     # HANDLER PARA EL COMANDO /ia (EXCLUSIVO CREADOR / ADMINS)

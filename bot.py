@@ -91,7 +91,7 @@ def obtener_teclado_privado(user=None):
     markup.add(btn_ia)
     return markup
 
-    solicitar_ia_consulta = registrar_ia_consulta(bot, r, obtener_teclado_privado)
+solicitar_ia_consulta = registrar_ia_consulta(bot, r, obtener_teclado_privado)
 
 def obtener_boton_actualizar_inline():
     markup = InlineKeyboardMarkup()

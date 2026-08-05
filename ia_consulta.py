@@ -17,12 +17,23 @@ USO_DIARIO_USUARIOS = {}
 # Registro del cupo global: {"fecha": "YYYY-MM-DD", "usuarios_registrados": set(user_ids)}
 REGISTRO_CUPO_DIARIO = {"fecha": "", "usuarios_registrados": set()}
 
+CANAL_OFICIAL = "@COMUNIDADAS04"
 
 def registrar_ia_consulta(bot, redis_client, obtener_teclado_func):
     """
     Registra el módulo interactivo de consulta Financiera con IA via OpenRouter.
-    Incluye rotación diaria, límite de 100 usuarios globales y comando /ia para el creador.
     """
+
+    # 🔒 FUNCIÓN AUXILIAR DE VERIFICACIÓN
+    def es_miembro_del_canal(user_id):
+        if user_id in ADMIN_IDS:
+            return True
+        try:
+            member = bot.get_chat_member(CANAL_OFICIAL, user_id)
+            return member.status in ['creator', 'administrator', 'member']
+        except Exception as e:
+            print(f"Error verificando membresía para {user_id}: {e}")
+            return False
 
     # ---------------------------------------------------------
     # HANDLER PARA EL COMANDO /ia (EXCLUSIVO CREADOR / ADMINS)
@@ -57,9 +68,21 @@ def registrar_ia_consulta(bot, redis_client, obtener_teclado_func):
     # FLUJO EN PRIVADO
     # ---------------------------------------------------------
     def solicitar_consulta_ia(message):
-        """Punto de entrada al presionar el botón del menú"""
         if message.chat.type != "private":
             return
+
+        user_id = message.from_user.id
+
+        if not es_miembro_del_canal(user_id):
+            bot.send_message(
+                message.chat.id,
+                "⚠️ **Acceso Restringido**\n\n"
+                "Para utilizar el módulo de IA Consulta debes ser miembro de nuestra comunidad oficial:\n"
+                f"👉 {CANAL_OFICIAL}\n\n"
+                "Una vez te hayas unido, vuelve a presionar el botón.",
+                parse_mode="Markdown"
+            )
+            return 
 
         chat_id = message.chat.id
         HISTORIAL_CHAT[chat_id] = []
@@ -78,8 +101,17 @@ def registrar_ia_consulta(bot, redis_client, obtener_teclado_func):
         bot.register_next_step_handler(msg, procesar_consulta_ia)
 
     def procesar_consulta_ia(message):
-        """Procesa las preguntas manteniendo el historial y control de límites estritos"""
         if message.chat.type != "private":
+            return
+
+        user_id = message.from_user.id
+
+        if not es_miembro_del_canal(user_id):
+            bot.send_message(
+                message.chat.id,
+                "❌ **No tienes acceso.** Debes unirte al canal oficial para continuar usando la IA.",
+                parse_mode="Markdown"
+            )
             return
 
         chat_id = message.chat.id
@@ -251,7 +283,7 @@ def registrar_ia_consulta(bot, redis_client, obtener_teclado_func):
         except Exception:
             pass
 
-        bot.send_message(chat_id, f"🤖 **Respuesta:**\n\n{respuesta_ia}", parse_mode="Markdown")
+        bot.send_message(chat_id, f"🤖 ✅ **Respuesta:**\n\n{respuesta_ia}", parse_mode="Markdown")
 
         # Seguir escuchando para mantener la conversación
         bot.register_next_step_handler_by_chat_id(chat_id, procesar_consulta_ia)

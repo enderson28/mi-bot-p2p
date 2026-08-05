@@ -73,7 +73,7 @@ def registrar_ia_consulta(bot, redis_client, obtener_teclado_func):
 
         user_id = message.from_user.id
 
-        if not usario_esta_unido(user_id):
+        if not usuario_esta_unido(user_id):
             bot.send_message(
                 message.chat.id,
                 "⚠️ **Acceso Restringido**\n\n"

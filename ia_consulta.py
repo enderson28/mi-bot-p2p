@@ -5,7 +5,7 @@ from telebot.types import ReplyKeyboardMarkup, KeyboardButton
 # Modelo por defecto en OpenRouter (puedes cambiarlo si deseas)
 MODELO_IA = "openai/gpt-3.5-turbo"
 
-def registrar_ia_consulta(bot, obtener_cache_func, obtener_teclado_func):
+def registrar_ia_consulta(bot, redis_client, obtener_teclado_func):
     """
     Registra el módulo interactivo de consulta financiera con IA vía OpenRouter.
     """
@@ -53,10 +53,14 @@ def registrar_ia_consulta(bot, obtener_cache_func, obtener_teclado_func):
         # Notificación visual de pensamiento
         msg_espera = bot.send_message(message.chat.id, "🧠 *Analizando respuesta...*", parse_mode="Markdown")
 
-        # Obtener contexto de tasas en tiempo real desde Redis / Cache
-        cache = obtener_cache_func()
-        tasa_bcv = cache.get("bcv_tasa", "No disponible")
-
+        # Si redis_client (r) existe, obtiene la tasa, si no, coloca "No disponible"
+        if redis_client:
+            tasa_bcv = redis_client.get("bcv_tasa")
+            if isinstance(tasa_bcv, bytes):
+                tasa_bcv = tasa_bcv.decode('utf-8')
+        else:
+            tasa_bcv = "No disponible"
+    
         # Llamada a la API de OpenRouter
         api_key = os.getenv("OPENROUTER_API_KEY")
         if not api_key:

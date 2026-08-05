@@ -2,12 +2,16 @@ import os
 import requests
 from telebot.types import ReplyKeyboardMarkup, KeyboardButton
 
-# Modelo por defecto en OpenRouter (puedes cambiarlo si deseas)
-MODELO_IA = "openai/gpt-3.5-turbo"
+# Modelo en OpenRouter con mayor nivel de razonamiento y ultra económico
+MODELO_IA = "google/gemini-2.0-flash-001"
+
+# Diccionario global para mantener el historial de chat por usuario en memoria
+HISTORIAL_CHAT = {}
 
 def registrar_ia_consulta(bot, redis_client, obtener_teclado_func):
     """
     Registra el módulo interactivo de consulta financiera con IA vía OpenRouter.
+    Mantiene el hilo conversacional e inyecta datos de Redis.
     """
 
     def solicitar_consulta_ia(message):
@@ -15,57 +19,68 @@ def registrar_ia_consulta(bot, redis_client, obtener_teclado_func):
         if message.chat.type != 'private':
             return
 
-        # Teclado aislado de escape exclusivo para este flujo
+        chat_id = message.chat.id
+        # Limpiamos historial previo al iniciar una nueva sesión
+        HISTORIAL_CHAT[chat_id] = []
+
         markup = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
         markup.add(KeyboardButton("⬅️ Salir al menú"))
 
         msg = bot.send_message(
-            message.chat.id,
+            chat_id,
             "🤖 **CONSULTA CON IA FINANCIERA**\n\n"
-            "Escribe tu duda o consulta en el chat (Ejemplo: *¿Cuál es el margen de arbitraje hoy?* o *¿Cómo impacta la tasa BCV en P2P?*):\n\n"
+            "Haz tus preguntas sobre el mercado P2P, arbitraje, tasas y estrategias.\n\n"
             "⏳ *Esperando tu consulta...*",
             parse_mode="Markdown",
             reply_markup=markup
         )
         
-        # Siguiente paso en la conversación
         bot.register_next_step_handler(msg, procesar_consulta_ia)
 
 
     def procesar_consulta_ia(message):
-        """Procesa la pregunta del usuario con la API de OpenRouter o sale al menú"""
+        """Procesa las preguntas manteniendo el historial de conversación"""
         if message.chat.type != 'private':
             return
 
+        chat_id = message.chat.id
         texto = message.text.strip() if message.text else ""
 
-        # Opción de salida al presionar el botón dedicado
+        # Opción de salida
         if texto == "⬅️ Salir al menú" or texto.startswith("/"):
+            if chat_id in HISTORIAL_CHAT:
+                del HISTORIAL_CHAT[chat_id]
+
             teclado_restablecido = obtener_teclado_func(message.from_user)
             bot.send_message(
-                message.chat.id,
+                chat_id,
                 "💡 *Menú principal restablecido.*",
                 parse_mode="Markdown",
                 reply_markup=teclado_restablecido
             )
             return
 
-        # Notificación visual de pensamiento
-        msg_espera = bot.send_message(message.chat.id, "🧠 *Analizando respuesta...*", parse_mode="Markdown")
+        # Notificación visual
+        msg_espera = bot.send_message(chat_id, "🧠 *Analizando respuesta...*", parse_mode="Markdown")
 
-        # Si redis_client (r) existe, obtiene la tasa, si no, coloca "No disponible"
+        # Obtener valores de Redis comprobando posibles nombres de claves
+        tasa_bcv = "No disponible"
         if redis_client:
-            tasa_bcv = redis_client.get("bcv_tasa")
-            if isinstance(tasa_bcv, bytes):
-                tasa_bcv = tasa_bcv.decode('utf-8')
-        else:
-            tasa_bcv = "No disponible"
-    
-        # Llamada a la API de OpenRouter
+            try:
+                # Intenta obtener de 'bcv_tasa' o 'bcv'
+                val = redis_client.get("bcv_tasa") or redis_client.get("bcv") or redis_client.get("tasa_bcv")
+                if val:
+                    tasa_bcv = val.decode('utf-8') if isinstance(val, bytes) else str(val)
+            except Exception:
+                pass
+
         api_key = os.getenv("OPENROUTER_API_KEY")
         if not api_key:
-            bot.delete_message(message.chat.id, msg_espera.message_id)
-            bot.send_message(message.chat.id, "❌ Error: La API Key de OpenRouter no está configurada en el servidor.")
+            try:
+                bot.delete_message(chat_id, msg_espera.message_id)
+            except Exception:
+                pass
+            bot.send_message(chat_id, "❌ Error: La API Key de OpenRouter no está configurada en el servidor.")
             return
 
         headers = {
@@ -73,51 +88,61 @@ def registrar_ia_consulta(bot, redis_client, obtener_teclado_func):
             "Content-Type": "application/json"
         }
 
-        # Prompt del sistema para contextuar a la IA
         system_prompt = (
-            "Eres un asistente virtual experto en arbitraje de criptomonedas, mercado P2P y tasas BCV en Venezuela. "
-            f"Contexto actual: La tasa oficial del BCV es {tasa_bcv} VES/USD. "
-            "Responde de forma breve, concisa, profesional y fácil de leer para Telegram."
+            "Eres un asistente financiero y analista experto en arbitraje de criptomonedas, mercado P2P (Binance, BPay, GPay) y financiero en Venezuela. "
+            f"DATOS EN TIEMPO REAL: La tasa oficial BCV actual registrada en la plataforma es: {tasa_bcv} VES/USD. "
+            "Responde con buen razonamiento, tono profesional, directo y explicativo. Si el usuario pregunta por la tasa BCV, dale directamente el dato registrado."
         )
+
+        # Recuperar o inicializar historial
+        if chat_id not in HISTORIAL_CHAT:
+            HISTORIAL_CHAT[chat_id] = []
+
+        # Agregar el mensaje actual del usuario al historial
+        HISTORIAL_CHAT[chat_id].append({"role": "user", "content": texto})
+
+        # Limitar el historial a los últimos 10 mensajes para ahorrar tokens y mantener relevancia
+        if len(HISTORIAL_CHAT[chat_id]) > 10:
+            HISTORIAL_CHAT[chat_id] = HISTORIAL_CHAT[chat_id][-10:]
+
+        messages_payload = [{"role": "system", "content": system_prompt}] + HISTORIAL_CHAT[chat_id]
 
         payload = {
             "model": MODELO_IA,
-            "messages": [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": texto}
-            ]
+            "messages": messages_payload
         }
 
         try:
-            response = requests.post("https://openrouter.ai/api/v1/chat/completions", json=payload, headers=headers, timeout=15)
+            response = requests.post("https://openrouter.ai/api/v1/chat/completions", json=payload, headers=headers, timeout=20)
             data = response.json()
 
             if response.status_code == 200 and "choices" in data:
                 respuesta_ia = data["choices"][0]["message"]["content"]
+                # Guardamos la respuesta de la IA en el historial
+                HISTORIAL_CHAT[chat_id].append({"role": "assistant", "content": respuesta_ia})
             else:
-                respuesta_ia = "⚠️ Ocurrió un inconveniente al procesar la respuesta con la IA. Intenta de nuevo."
-        except Exception as e:
+                respuesta_ia = "⚠️ Ocurrió un inconveniente al obtener la respuesta del modelo de IA."
+        except Exception:
             respuesta_ia = "⚠️ Error de conexión con el servicio de IA."
 
-        # Borramos el mensaje de "Analizando..."
+        # Borrar mensaje de espera
         try:
-            bot.delete_message(message.chat.id, msg_espera.message_id)
+            bot.delete_message(chat_id, msg_espera.message_id)
         except Exception:
             pass
 
-        # Mostramos la respuesta y mantenemos el botón para seguir consultando
         markup_continuar = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
         markup_continuar.add(KeyboardButton("⬅️ Salir al menú"))
 
         msg_res = bot.send_message(
-            message.chat.id,
+            chat_id,
             f"🤖 **Respuesta:**\n\n{respuesta_ia}",
             parse_mode="Markdown",
             reply_markup=markup_continuar
         )
 
-        # Mantiene la conversación abierta escuchando el siguiente mensaje
+        # Permite continuar la conversación en bucle
         bot.register_next_step_handler(msg_res, procesar_consulta_ia)
 
     return solicitar_consulta_ia
-      
+        

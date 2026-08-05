@@ -17,7 +17,7 @@ USO_DIARIO_USUARIOS = {}
 # Registro del cupo global: {"fecha": "YYYY-MM-DD", "usuarios_registrados": set(user_ids)}
 REGISTRO_CUPO_DIARIO = {"fecha": "", "usuarios_registrados": set()}
 
-CANAL_OFICIAL = "@COMUNIDADAS04"
+CANAL_CONGESTIONADO = "@COMUNIDADAS04"
 
 def registrar_ia_consulta(bot, redis_client, obtener_teclado_func):
     """
@@ -25,11 +25,11 @@ def registrar_ia_consulta(bot, redis_client, obtener_teclado_func):
     """
 
     # 🔒 FUNCIÓN AUXILIAR DE VERIFICACIÓN
-    def es_miembro_del_canal(user_id):
+    def usuario_esta_unido(user_id):
         if user_id in ADMIN_IDS:
             return True
         try:
-            member = bot.get_chat_member(CANAL_OFICIAL, user_id)
+            member = bot.get_chat_member(CANAL_CONGESTIONADO, user_id)
             return member.status in ['creator', 'administrator', 'member']
         except Exception as e:
             print(f"Error verificando membresía para {user_id}: {e}")
@@ -73,12 +73,12 @@ def registrar_ia_consulta(bot, redis_client, obtener_teclado_func):
 
         user_id = message.from_user.id
 
-        if not es_miembro_del_canal(user_id):
+        if not usario_esta_unido(user_id):
             bot.send_message(
                 message.chat.id,
                 "⚠️ **Acceso Restringido**\n\n"
                 "Para utilizar el módulo de IA Consulta debes ser miembro de nuestra comunidad oficial:\n"
-                f"👉 {CANAL_OFICIAL}\n\n"
+                f"👉 {CANAL_CONGESTIONADO}\n\n"
                 "Una vez te hayas unido, vuelve a presionar el botón.",
                 parse_mode="Markdown"
             )
@@ -106,7 +106,7 @@ def registrar_ia_consulta(bot, redis_client, obtener_teclado_func):
 
         user_id = message.from_user.id
 
-        if not es_miembro_del_canal(user_id):
+        if not usuario_esta_unido(user_id):
             bot.send_message(
                 message.chat.id,
                 "❌ **No tienes acceso.** Debes unirte al canal oficial para continuar usando la IA.",

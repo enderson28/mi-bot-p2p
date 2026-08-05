@@ -237,7 +237,8 @@ def registrar_ia_consulta(bot, redis_client, obtener_teclado_func):
             f"DATOS EN TIEMPO REAL: La tasa oficial BCV actual registrada en el sistema es: {tasa_bcv} Bs/USD. "
             f"INSTRUCCIONES DE RESPUESTA: Sé extremadamente directo, conciso y natural. "
             f"REGLA MATEMÁTICA OBLIGATORIA: Si realizas cálculos numéricos o porcentuales, verifica la precisión matemática paso a paso antes de escribir el resultado final. "
-            f"Responde en máximo 30 líneas o puntos breves. Evita explicaciones teóricas innecesarias."
+            f"REGLA DE BREVEDAD: Responde en máximo 2 o 3 párrafos cortos (alrededor de 8 a 10 líneas en total). "
+            f"REGLA PARA PREGUNTAS GENERALES: Si la duda del usuario es muy vaga o corta (por ejemplo: 'binance p2p'), da un resumen ultrasintético y sugiérele de inmediato replantear o especificar mejor su consulta."
         )
 
         if chat_id not in HISTORIAL_CHAT:

@@ -115,7 +115,7 @@ def registrar_ia_consulta(bot, redis_client, obtener_teclado_func):
         if not usuario_esta_unido(user_id):
             bot.send_message(
                 chat_id,
-                f"{e('ESCUDO', '⚠️')} <b>Acceso Restringido</b>\n\n"
+                f"{e('ESCUDO', '🛡️')} <b>Acceso Restringido</b>\n\n"
                 f"Para utilizar el módulo de IA Consulta debes ser miembro de nuestra comunidad oficial:\n"
                 f"👉 <b>{CANAL_CONGESTIONADO}</b>\n\n"
                 f"<i>Una vez te hayas unido, vuelve a presionar el botón.</i>",
@@ -126,7 +126,7 @@ def registrar_ia_consulta(bot, redis_client, obtener_teclado_func):
         HISTORIAL_CHAT[chat_id] = []
 
         markup = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
-        markup.add(KeyboardButton("🚪 Salir al menú"))
+        markup.add(KeyboardButton("⬅️ Salir al menú"))
 
         msg = bot.send_message(
             chat_id,
@@ -157,7 +157,7 @@ def registrar_ia_consulta(bot, redis_client, obtener_teclado_func):
         texto = message.text.strip() if message.text else ""
 
         # Opción de salida
-        if texto == "🚪 Salir al menú" or texto.startswith("/"):
+        if texto == "⬅️ Salir al menú" or texto.startswith("/"):
             if chat_id in HISTORIAL_CHAT:
                 del HISTORIAL_CHAT[chat_id]
 

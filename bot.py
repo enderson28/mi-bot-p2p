@@ -420,9 +420,9 @@ def construir_monitor_texto_html():
     # Asignación de rangos según la imagen:
     # 50.0 = Rango Menor (🥉), 150.0 = Rango Mediano (🥈), 500.0 = Rango Mayor (🥇)
     emojis_rangos = {
-        50.0: (e("RANGO_3", "🥉"), "Rango pequeño (50-100)"),
-        150.0: (e("RANGO_2", "🥈"), "Rango Mediano (100-300)"),
-        500.0: (e("RANGO_1", "🥇"), "Rango Mayor (500+)")
+        50.0: (e("RANGO_3", "🥉"), "Rango Menor (50 - 100)"),
+        150.0: (e("RANGO_2", "🥈"), "Rango Medio (100 - 300)"),
+        500.0: (e("RANGO_1", "🥇"), "Rango Mayor (500)")
     }
 
     for usd_ref in [50.0, 150.0, 500.0]:

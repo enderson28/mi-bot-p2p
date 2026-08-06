@@ -47,27 +47,28 @@ def registrar_ia_consulta(bot, redis_client, obtener_teclado_func):
 
         return False
 
-# DICCIONARIO DE EMOJIS (Unicode estándar para garantizar 100% de compatibilidad)
-TG_EMOJIS = {
-    "BANCO": "🏦",
-    "PROHIBIDO": "⛔",
-    "RELOJ_ARENA": "⏳",
-    "SIRENA": "🚨",
-    "ESTADISTICA": "📊",
-    "ESCUDO": "🛡️",
-    "VISTO": "✔️",
-    "MEGAFONO": "📣",
-    "BOMBILLA": "💡",
-    "ROBOT": "🤖",
-    "FLECHA_ABAJO": "⬇️",
-    "RAYO": "⚡",
-    "CONSULTAR": "💭"
-}
+    # DICCIONARIO DE EMOJIS ANIMADOS DE TELEGRAM (IDs)
+    TG_EMOJIS = {
+        "BANCO": "5183805009766123191",       # 🏦 (BCV)
+        "PROHIBIDO": "5240241223632954241",   # ⛔
+        "RELOJ_ARENA": "5447644880824181073", # ⏳
+        "SIRENA": "5395695537687123235",      # 🚨
+        "ESTADISTICA": "5231200819986047254", # 📊
+        "ESCUDO": "5416117059207572332",      # 🛡️
+        "VISTO": "5206607081334906820",       # ✔️
+        "MEGAFONO": "5424818078833715060",    # 📣
+        "BOMBILLA": "5422439311196683431",    # 💡
+        "ROBOT": "5323772371830588991",       # 🤖
+        "FLECHA_ABAJO": "5406745015365943482",# ⬇️
+        "RAYO": "5456140674028019466",        # ⚡
+        "CONSULTAR": "5303130782004924588"    # 💭
+    }
 
-def e(key, fallback=""):
-    # Retorna directamente el emoji estándar para evitar errores DOCUMENT_INVALID de Telegram
-    return TG_EMOJIS.get(key, fallback)
-
+    def e(key, fallback=""):
+        emoji_id = TG_EMOJIS.get(key, "")
+        if emoji_id:
+            return f'<tg-emoji emoji-id="{emoji_id}">{fallback}</tg-emoji>'
+        return fallback
 
     # ------------------------------------------------------------------
     # HANDLER PARA EL COMANDO /ia (EXCLUSIVO CREADOR / ADMINS)
@@ -78,19 +79,18 @@ def e(key, fallback=""):
         if user_id not in ADMIN_IDS:
             return
 
-        # Obtenemos el username del bot dinámicamente para el link
         bot_info = bot.get_me()
         bot_link = f"https://t.me/{bot_info.username}"
 
         anuncio = (
-            f"{e('ROBOT', '🫡')} <blockquote><b>SERVICIO DE CONSULTA IA FINANCIERA</b></blockquote> {e('ROBOT', '🤖')}\n\n"
+            f"{e('ROBOT', '🤖')} <blockquote><b>SERVICIO DE CONSULTA IA FINANCIERA</b></blockquote> {e('ROBOT', '🤖')}\n\n"
             f"{e('MEGAFONO', '📣')} <i>Estimada comunidad, para mantener este servicio gratuito, rápido y sostenible, "
             f"el módulo de IA opera bajo los siguientes parámetros en privado:</i>\n\n"
             f"{e('VISTO', '✔️')} <b>Cupo Global:</b> 100 usuarios diarios.\n"
             f"{e('PROHIBIDO', '⛔')} <b>Límite Individual:</b> 30 consultas por usuario en su día de acceso.\n"
             f"{e('FLECHA_ABAJO', '⬇️')} <b>Rotación Equitativa:</b> Si usas la IA hoy, se activará un día de descanso para ti mañana, "
             f"permitiendo que otros miembros del canal puedan consultar.\n"
-            f"{e('BANCO', '🤝')} <b>Actualización:</b> Datos en tiempo real de la tasa oficial del BCV.\n\n"
+            f"{e('BANCO', '🏦')} <b>Actualización:</b> Datos en tiempo real de la tasa oficial del BCV.\n\n"
             f"{e('RAYO', '⚡')} <i>¡Ingresa al bot en privado en <a href='{bot_link}'>@{bot_info.username}</a> y presiona el botón 🤖 <b>IA Consulta</b> para iniciar!</i>"
         )
 
@@ -100,7 +100,7 @@ def e(key, fallback=""):
             parse_mode="HTML",
             disable_web_page_preview=True
         )
-        
+
     # ------------------------------------------------------------------
     # FLUJO EN PRIVADO
     # ------------------------------------------------------------------
@@ -115,7 +115,7 @@ def e(key, fallback=""):
         if not usuario_esta_unido(user_id):
             bot.send_message(
                 chat_id,
-                f"{e('RELOJ_ARENA', '⚠️')} <b>Acceso Restringido</b>\n\n"
+                f"{e('ESCUDO', '⚠️')} <b>Acceso Restringido</b>\n\n"
                 f"Para utilizar el módulo de IA Consulta debes ser miembro de nuestra comunidad oficial:\n"
                 f"👉 <b>{CANAL_CONGESTIONADO}</b>\n\n"
                 f"<i>Una vez te hayas unido, vuelve a presionar el botón.</i>",
@@ -130,10 +130,10 @@ def e(key, fallback=""):
 
         msg = bot.send_message(
             chat_id,
-            "🤖 **CONSULTA CON IA FINANCIERA**\n\n"
+            f"{e('ROBOT', '🤖')} <b>CONSULTA CON IA FINANCIERA</b>\n\n"
             "Haz tus preguntas sobre el mercado P2P, arbitraje, tasas y estrategias.\n\n"
-            "⏳ *Esperando tu consulta...*",
-            parse_mode="Markdown",
+            f"{e('RELOJ_ARENA', '⏳')} <i>Esperando tu consulta...</i>",
+            parse_mode="HTML",
             reply_markup=markup
         )
         bot.register_next_step_handler(msg, procesar_consulta_ia)
@@ -154,7 +154,6 @@ def e(key, fallback=""):
             return
 
         chat_id = message.chat.id
-        user_id = message.from_user.id
         texto = message.text.strip() if message.text else ""
 
         # Opción de salida
@@ -165,7 +164,7 @@ def e(key, fallback=""):
             teclado_restablecido = obtener_teclado_func(message.from_user)
             bot.send_message(
                 chat_id,
-                f"🏠 <b>Menú principal restablecido.</b>",
+                f"{e('BOMBILLA', '💡')} <b>Menú principal restablecido.</b>",
                 parse_mode="HTML",
                 reply_markup=teclado_restablecido
             )
@@ -190,7 +189,7 @@ def e(key, fallback=""):
                         chat_id,
                         f"{e('FLECHA_ABAJO', '⬇️')} <b>Día de rotación activo</b>\n\n"
                         f"Ayer utilizaste el módulo de IA. Para permitir que otros miembros de la comunidad puedan consultar, hoy es tu día de descanso.\n\n"
-                        f"{e('CONSULTAR', '💬')} <i>Podrás volver a consultar mañana.</i>",
+                        f"{e('CONSULTAR', '💭')} <i>Podrás volver a consultar mañana.</i>",
                         parse_mode="HTML"
                     )
                     bot.register_next_step_handler(message, procesar_consulta_ia)
@@ -235,8 +234,8 @@ def e(key, fallback=""):
         # Notificación visual
         msg_espera = bot.send_message(
             chat_id,
-            "🧠 *Analizando respuesta...*",
-            parse_mode="Markdown"
+            f"{e('ROBOT', '🧠')} <b>Analizando respuesta...</b>",
+            parse_mode="HTML"
         )
 
         # OBTENER BCV TASA DESDE REDIS
@@ -247,8 +246,8 @@ def e(key, fallback=""):
                 if data_raw:
                     dato = json.loads(data_raw) if isinstance(data_raw, str) else json.loads(data_raw.decode('utf-8'))
                     tasa_bcv = dato.get("bcv_tasa", "No disponible")
-            except Exception as e:
-                print(f"Error extrayendo tasa de Redis: {e}")
+            except Exception as err:
+                print(f"Error extrayendo tasa de Redis: {err}")
 
         # CONFIGURACIÓN DE PROMPT Y OPTIMIZACIÓN
         system_prompt = (
@@ -265,7 +264,7 @@ def e(key, fallback=""):
 
         HISTORIAL_CHAT[chat_id].append({"role": "user", "content": texto})
 
-        # OPTIMIZACIÓN: Enviamos solo los últimos 8 mensajes (4 preguntas + 4 respuestas)
+        # OPTIMIZACIÓN: Enviamos solo los últimos 8 mensajes
         historial_reciente = HISTORIAL_CHAT[chat_id][-8:]
         messages_payload = [{"role": "system", "content": system_prompt}] + historial_reciente
 
@@ -301,7 +300,7 @@ def e(key, fallback=""):
                     pie_pagina = (
                         f"\n\n---\n"
                         f"{e('ESTADISTICA', '📊')} <b>Uso diario:</b> <code>{preguntas_usadas}/30</code> consultas | "
-                        "⚡ <b>Restantes hoy:</b> <code>{restantes}</code>"
+                        f"{e('RAYO', '⚡')} <b>Restantes hoy:</b> <code>{restantes}</code>"
                     )
                     respuesta_ia += pie_pagina
             else:
@@ -320,14 +319,12 @@ def e(key, fallback=""):
 
         bot.send_message(
             chat_id,
-            f"✅ <b>Respuesta:</b>\n\n{respuesta_ia}",
+            f"{e('ROBOT', '🤖')} <b>Respuesta:</b>\n\n{respuesta_ia}",
             parse_mode="HTML"
         )
-        
 
         # Seguir escuchando para mantener la conversación
         bot.register_next_step_handler_by_chat_id(chat_id, procesar_consulta_ia)
 
     return solicitar_consulta_ia
-        
-    
+                    

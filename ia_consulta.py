@@ -57,7 +57,6 @@ def registrar_ia_consulta(bot, redis_client, obtener_teclado_func):
         "ESCUDO": "5416117059207572332",      # 🛡️
         "VISTO": "5206607081334906820",       # ✔️
         "MEGAFONO": "5424818078833715060",    # 📣
-        "BOMBILLA": "54224393111966834318",   # 💡
         "ROBOT": "5323772371830588991",       # 🫡
         "FLECHA_ABAJO": "5406745015365943482",# ⬇️
         "RAYO": "5456140674028019466",        # ⚡

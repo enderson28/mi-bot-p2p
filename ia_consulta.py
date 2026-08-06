@@ -47,24 +47,7 @@ def registrar_ia_consulta(bot, redis_client, obtener_teclado_func):
 
         return False
 
-    # DICCIONARIO DE EMOJIS TG ANIMADOS
-    TG_EMOJIS = {
-        "BANCO": "5183805009766123191",       # 🤝 (Logo/Banco para BCV)
-        "PROHIBIDO": "5240241223632954241",   # ⛔
-        "RELOJ_ARENA": "5447644880824181073", # ⚠️
-        "SIRENA": "5395695537687123235",      # 🚨
-        "ESTADISTICA": "5231200819986047254", # 📊
-        "VISTO": "5206607081334906820",       # ✔️
-        "MEGAFONO": "5424818078833715060",    # 📣
-        "ROBOT": "5323772371830588991",       # 🫡
-        "FLECHA_ABAJO": "5406745015365943482",# ⬇️
-        "RAYO": "5456140674028019466",        # ⚡
-        "CONSULTAR": "5303130782004924588"    # 💬
-    }
-
-    def e(key, fallback=""):
-        emoji_id = TG_EMOJIS.get(key, "")
-        return f'<tg-emoji emoji-id="{emoji_id}">{fallback}</tg-emoji>' if emoji_id else fallback
+    
 
     # ------------------------------------------------------------------
     # HANDLER PARA EL COMANDO /ia (EXCLUSIVO CREADOR / ADMINS)
@@ -97,7 +80,25 @@ def registrar_ia_consulta(bot, redis_client, obtener_teclado_func):
             parse_mode="HTML",
             disable_web_page_preview=True
         )
+        
+# DICCIONARIO DE EMOJIS TG ANIMADOS
+TG_EMOJIS = {
+    "BANCO": "5183805009766123191",       # 🤝 (Logo/Banco para BCV)
+    "PROHIBIDO": "5240241223632954241",   # ⛔
+    "RELOJ_ARENA": "5447644880824181073", # ⚠️
+    "SIRENA": "5395695537687123235",      # 🚨
+    "ESTADISTICA": "5231200819986047254", # 📊
+    "VISTO": "5206607081334906820",       # ✔️
+    "MEGAFONO": "5424818078833715060",    # 📣
+    "ROBOT": "5323772371830588991",       # 🫡
+    "FLECHA_ABAJO": "5406745015365943482",# ⬇️
+    "RAYO": "5456140674028019466",        # ⚡
+    "CONSULTAR": "5303130782004924588"    # 💬
+}
 
+def e(key, fallback=""):
+    emoji_id = TG_EMOJIS.get(key, "")
+    return f'<tg-emoji emoji-id="{emoji_id}">{fallback}</tg-emoji>' if emoji_id else fallback
     # ------------------------------------------------------------------
     # FLUJO EN PRIVADO
     # ------------------------------------------------------------------

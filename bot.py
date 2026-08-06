@@ -316,8 +316,8 @@ def actualizar_cache_segundo_plano():
             tasa_bcv_ajustada = tasa_bcv * 1.005
 
             ranges_def = [
-                ("Rango Pequeño ($50 - $100)", 50.0),
-                ("Rango Mediano ($100 - $300)", 150.0),
+                ("Rango Menor ($50 - $100)", 50.0),
+                ("Rango Medio ($100 - $300)", 150.0),
                 ("Rango Mayor ($500+)", 500.0),
             ]
 
@@ -349,8 +349,8 @@ def refrescar_tasas_en_vivo():
 
     tasa_bcv_ajustada = tasa_bcv * 1.005
     rangos_def = [
-        ("Rango Pequeño ($50 - $100)", 50.0),
-        ("Rango Mediano ($100 - $300)", 150.0),
+        ("Rango Menor ($50 - $100)", 50.0),
+        ("Rango Medio ($100 - $300)", 150.0),
         ("Rango Mayor ($500+)", 500.0)
     ]
 
@@ -422,7 +422,7 @@ def construir_monitor_texto_html():
     emojis_rangos = {
         50.0: (e("RANGO_3", "🥉"), "Rango Menor (50 - 100)"),
         150.0: (e("RANGO_2", "🥈"), "Rango Medio (100 - 300)"),
-        500.0: (e("RANGO_1", "🥇"), "Rango Mayor (500)")
+        500.0: (e("RANGO_1", "🥇"), "Rango Mayor (500+)")
     }
 
     for usd_ref in [50.0, 150.0, 500.0]:
@@ -1123,8 +1123,8 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
                         # Recalculamos rangos P2P inmediatamente
                         tasa_ajustada = tasa_nueva * 1.005
                         ranges_def = [
-                            ("Rango Pequeño ($50 - $100)", 50.0),
-                            ("Rango Mediano ($100 - $300)", 150.0),
+                            ("Rango Menor ($50 - $100)", 50.0),
+                            ("Rango Medio ($100 - $300)", 150.0),
                             ("Rango Mayor ($500+)", 500.0),
                         ]
 

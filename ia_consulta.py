@@ -48,15 +48,19 @@ def registrar_ia_consulta(bot, redis_client, obtener_teclado_func):
 
 # DICCIONARIO DE EMOJIS TG ANIMADOS
 TG_EMOJIS = {
-    "BANCO": "5422439311196834318",       # 🏦 (Logo/Banco para BCV)
+    "BANCO": "5183805009766123191",       # 🤝 (Logo/Banco para BCV)
     "PROHIBIDO": "5240241223632954241",   # ⛔
-    "RELOJ_ARENA": "5447644880824181073", # ⏳
-    "SIRENA": "5251203410396458957",      # 🚨
-    "ESTADISTICA": "5181472829639498220", # 📊
+    "RELOJ_ARENA": "5447644880824181073", # ⚠️
+    "SIRENA": "5395695537687123235",      # 🚨
+    "ESTADISTICA": "5231200819986047254", # 📊
     "ESCUDO": "5416117059207572332",      # 🛡️
-    "ROBOT": "5206607081334906820",       # 🤖
-    "MEGAFONO": "5440539497383087970",    # 📣
-    "BOMBILLA": "5413879192267805083"     # 💡
+    "VISTO": "5206607081334906820",       # ✔️
+    "MEGAFONO": "5424818078833715060",    # 📣
+    "BOMBILLA": "5422439311196834318",    # 💡
+    "ROBOT": "5323772371830588991",       # 🫡
+    "FLECHA_ABAJO": "5406745015365943482", # ⬇️
+    "RAYO": "5456140674028019486",        # ⚡
+    "CONSULTAR": "5303138782004924588"    # 💬
 }
 
 def e(key, fallback=""):
@@ -77,88 +81,15 @@ def e(key, fallback=""):
         bot_link = f"https://t.me/{bot_info.username}"
 
         anuncio = (
-            f"{e('ROBOT', '🤖')} <b>SERVICIO DE CONSULTA IA FINANCIERA</b> {e('ROBOT', '🤖')}\n\n"
-            f"📌 <i>Estimada comunidad, para mantener este servicio gratuito, rápido y sostenible, "
+            f"{e('ROBOT', '🫡')} <blockquote> <b>SERVICIO DE CONSULTA IA FINANCIERA</b> </blockquote> {e('ROBOT', '🫡')}\n\n"
+            f"{e('MEGAFONO', '📣')} <i>Estimada comunidad, para mantener este servicio gratuito, rápido y sostenible, "
             f"el módulo de IA opera bajo los siguientes parámetros en privado:</i>\n\n"
-            f"✅ <b>Cupo Global:</b> 100 usuarios diarios.\n"
+            f"{e('VISTO', '✔️')} <b>Cupo Global:</b> 100 usuarios diarios.\n"
             f"{e('PROHIBIDO', '⛔')} <b>Límite Individual:</b> 30 consultas por usuario en su día de acceso.\n"
-            f"{e('RELOJ_ARENA', '⏳')} <b>Rotación Equitativa:</b> Si usas la IA hoy, se activará un día de descanso para ti mañana, "
+            f"{e('FLECHA_ABAJO', '⬇️')} <b>Rotación Equitativa:</b> Si usas la IA hoy, se activará un día de descanso para ti mañana, "
             f"permitiendo que otros miembros del canal puedan consultar.\n"
-            f"{e('BANCO', '🏦')} <b>Actualización:</b> Datos en tiempo real de la tasa oficial del BCV.\n\n"
-            f"⚡ <i>¡Ingresa al bot en privado en <a href='{bot_link}'>@{bot_info.username}</a> y presiona el botón 🤖 <b>IA Consulta</b> para iniciar!</i>"
-        )
-
-        bot.send_message(
-            message.chat.id,
-            anuncio,
-            parse_mode="HTML",
-            disable_web_page_preview=True
-        )
-def registrar_ia_consulta(bot, redis_client, obtener_teclado_func):
-
-    # 🔒 VERIFICACIÓN MULTI-CANAL
-    def usuario_esta_unido(user_id):
-        if user_id in ADMIN_IDS:
-            return True
-
-        # 1. Probar en el canal de pruebas
-        try:
-            m1 = bot.get_chat_member(CANAL_PRUEBA, user_id)
-            if m1.status in ['creator', 'administrator', 'member']:
-                return True
-        except Exception:
-            pass # Si el bot no está en el canal o falla, pasa al siguiente
-
-        # 2. Probar en el canal principal / congestionado
-        try:
-            m2 = bot.get_chat_member(CANAL_CONGESTIONADO, user_id)
-            if m2.status in ['creator', 'administrator', 'member']:
-                return True
-        except Exception:
-            pass
-
-        return False
-
-    # DICCIONARIO DE EMOJIS TG ANIMADOS
-    TG_EMOJIS = {
-        "BANCO": "5422439311196834318",       # 🏦 (Logo/Banco para BCV)
-        "PROHIBIDO": "5240241223632954241",   # ⛔
-        "RELOJ_ARENA": "5447644880824181073", # ⏳
-        "SIRENA": "5251203410396458957",      # 🚨
-        "ESTADISTICA": "5181472829639498220", # 📊
-        "ESCUDO": "5416117059207572332",      # 🛡️
-        "ROBOT": "5206607081334906820",       # 🤖
-        "MEGAFONO": "5440539497383087970",    # 📣
-        "BOMBILLA": "5413879192267805083"     # 💡
-    }
-
-    def e(key, fallback=""):
-        emoji_id = TG_EMOJIS.get(key, "")
-        return f'<tg-emoji emoji-id="{emoji_id}">{fallback}</tg-emoji>' if emoji_id else fallback
-
-    # ------------------------------------------------------------------
-    # HANDLER PARA EL COMANDO /ia (EXCLUSIVO CREADOR / ADMINS)
-    # ------------------------------------------------------------------
-    @bot.message_handler(commands=['ia'])
-    def publicar_anuncio_ia(message):
-        user_id = message.from_user.id
-        if user_id not in ADMIN_IDS:
-            return
-
-        # Obtenemos el username del bot dinámicamente para el link
-        bot_info = bot.get_me()
-        bot_link = f"https://t.me/{bot_info.username}"
-
-        anuncio = (
-            f"{e('ROBOT', '🤖')} <b>SERVICIO DE CONSULTA IA FINANCIERA</b> {e('ROBOT', '🤖')}\n\n"
-            f"📌 <i>Estimada comunidad, para mantener este servicio gratuito, rápido y sostenible, "
-            f"el módulo de IA opera bajo los siguientes parámetros en privado:</i>\n\n"
-            f"✅ <b>Cupo Global:</b> 100 usuarios diarios.\n"
-            f"{e('PROHIBIDO', '⛔')} <b>Límite Individual:</b> 30 consultas por usuario en su día de acceso.\n"
-            f"{e('RELOJ_ARENA', '⏳')} <b>Rotación Equitativa:</b> Si usas la IA hoy, se activará un día de descanso para ti mañana, "
-            f"permitiendo que otros miembros del canal puedan consultar.\n"
-            f"{e('BANCO', '🏦')} <b>Actualización:</b> Datos en tiempo real de la tasa oficial del BCV.\n\n"
-            f"⚡ <i>¡Ingresa al bot en privado en <a href='{bot_link}'>@{bot_info.username}</a> y presiona el botón 🤖 <b>IA Consulta</b> para iniciar!</i>"
+            f"{e('BANCO', '🤝')} <b>Actualización:</b> Datos en tiempo real de la tasa oficial del BCV.\n\n"
+            f"{e('RAYO', '⚡')} <i>¡Ingresa al bot en privado en <a href='{bot_link}'>@{bot_info.username}</a> y presiona el botón 🤖 <b>IA Consulta</b> para iniciar!</i>"
         )
 
         bot.send_message(
@@ -193,7 +124,7 @@ def registrar_ia_consulta(bot, redis_client, obtener_teclado_func):
         HISTORIAL_CHAT[chat_id] = []
 
         markup = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
-        markup.add(KeyboardButton("🚪 Salir al menú"))
+        markup.add(KeyboardButton("⬅️ Salir al menú"))
 
         msg = bot.send_message(
             chat_id,
@@ -225,15 +156,15 @@ def registrar_ia_consulta(bot, redis_client, obtener_teclado_func):
         texto = message.text.strip() if message.text else ""
 
         # Opción de salida
-        if texto == "🚪 Salir al menú" or texto.startswith("/"):
+        if texto == "⬅️ Salir al menú" or texto.startswith("/"):
             if chat_id in HISTORIAL_CHAT:
                 del HISTORIAL_CHAT[chat_id]
 
             teclado_restablecido = obtener_teclado_func(message.from_user)
             bot.send_message(
                 chat_id,
-                "💡 *Menú principal restablecido.*",
-                parse_mode="Markdown",
+                f"{e('BOMBILLA', '💡')} *Menú principal restablecido.*",
+                parse_mode="HTML",
                 reply_markup=teclado_restablecido
             )
             return
@@ -258,10 +189,10 @@ def registrar_ia_consulta(bot, redis_client, obtener_teclado_func):
                 if ultima_fecha_uso == fecha_ayer:
                     bot.send_message(
                         chat_id,
-                        f"{e('RELOJ_ARENA', '⏳')} <b>Día de rotación activo</b>\n\n"
+                        f"{e('FLECHA_ABAJO', '⬇️')} <b>Día de rotación activo</b>\n\n"
                         f"Ayer utilizaste el módulo de IA. Para permitir que otros miembros de la comunidad "
                         f"puedan consultar, hoy es tu día de descanso.\n\n"
-                        f"📅 <i>Podrás volver a consultar mañana.</i>",
+                        f"{e('CONSULTAR', '💬')} <i>Podrás volver a consultar mañana.</i>",
                         parse_mode="HTML"
                     )
                     bot.register_next_step_handler(message, procesar_consulta_ia)
@@ -377,18 +308,18 @@ def registrar_ia_consulta(bot, redis_client, obtener_teclado_func):
                     pie_pagina = (
                         f"\n\n───\n"
                         f"{e('ESTADISTICA', '📊')} <b>Uso diario:</b> <code>{preguntas_usadas}/30</code> consultas | "
-                        f"⚡ <b>Restantes hoy:</b> <code>{restantes}</code>"
+                        f"{e('RAYO', '⚡')} <b>Restantes hoy:</b> <code>{restantes}</code>"
                     )
                     respuesta_ia += pie_pagina
             else:
                 # Logs en consola para depurar si OpenRouter devuelve algún error HTTP
                 print(f"⚠️ Error OpenRouter [{response.status_code}]: {data}")
-                respuesta_ia = f"{e('SIRENA', '⚠️')} <b>Ocurrió un inconveniente al obtener la respuesta del modelo de IA.</b>"
+                respuesta_ia = f"{e('RELOJ_ARENA', '⚠️')} <b>Ocurrió un inconveniente al obtener la respuesta del modelo de IA.</b>"
 
         except Exception as e:
             # Logs en consola si hay un timeout o fallo de red
             print(f"⚠️ Excepción HTTP: {e}")
-            respuesta_ia = f"{e('SIRENA', '⚠️')} <b>Error de conexión con el servicio de IA.</b>"
+            respuesta_ia = f"{e('RElOJ_ARENA', '⚠️')} <b>Error de conexión con el servicio de IA.</b>"
 
         # Borrar mensaje "Analizando..." y enviar respuesta final
         try:
@@ -398,7 +329,7 @@ def registrar_ia_consulta(bot, redis_client, obtener_teclado_func):
 
         bot.send_message(
             chat_id, 
-            f"{e('ROBOT', '🤖')} ✅ <b>Respuesta:</b>\n\n{respuesta_ia}", 
+            f"{e('ROBOT', '🫡')} ✅ <b>Respuesta:</b>\n\n{respuesta_ia}", 
             parse_mode="HTML"
         )
 

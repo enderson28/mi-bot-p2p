@@ -1115,7 +1115,7 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
                     tasa_actual = CACHE_TASAS.get("bcv_tasa", tasa_nueva)
 
                     # Solo procesamos si la tasa raspada es diferente a la actual
-                    if tasa_nueva == tasa_actual:
+                    if tasa_nueva != tasa_actual:
                         CACHE_TASAS["bcv_tasa_anterior"] = tasa_actual
                         CACHE_TASAS["bcv_tasa"] = tasa_nueva
                         CACHE_TASAS["bcv_fecha"] = str(fecha)

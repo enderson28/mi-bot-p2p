@@ -420,8 +420,8 @@ def construir_monitor_texto_html():
     # Asignación de rangos según la imagen:
     # 50.0 = Rango Menor (🥉), 150.0 = Rango Mediano (🥈), 500.0 = Rango Mayor (🥇)
     emojis_rangos = {
-        50.0: (e("RANGO_3", "🥉"), "Rango pequeño (50 - 100)"),
-        150.0: (e("RANGO_2", "🥈"), "Rango Mediano (100 - 300)"),
+        50.0: (e("RANGO_3", "🥉"), "Rango pequeño (50-100)"),
+        150.0: (e("RANGO_2", "🥈"), "Rango Mediano (100-300)"),
         500.0: (e("RANGO_1", "🥇"), "Rango Mayor (500+)")
     }
 
@@ -442,7 +442,7 @@ def construir_monitor_texto_html():
             emoji_spread = e("SUBIDA", "📈") if spread >= 0 else e("BAJADA", "📉")
 
             texto += f"{emoji_rango}<b>{nombre_rango}</b>\n"
-            texto += f"{e('USDT', '🪙')}{e('VERDE', '🟢')}<b>Compra USDT:</b> <code>{tasa_compra:.2f}</code> Bs\n"
+            texto += f"{e('USDT', '🪙')}{e('VERDE', '🟢')}<b>Compra USDT:</b> <code>{tasa_compra:.2f}</code>Bs\n"
             texto += f"{e('USDT', '🪙')}{e('ROJO', '🔴')}<b>Venta:</b> <code>{tasa_venta:.2f}</code> Bs\n\n"
 
             if usd_ref == 500.0:

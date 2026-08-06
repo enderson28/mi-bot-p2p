@@ -60,8 +60,8 @@ def registrar_ia_consulta(bot, redis_client, obtener_teclado_func):
         "BOMBILLA": "5422439311196834318",    # 💡
         "ROBOT": "5323772371830588991",       # 🤖
         "FLECHA_ABAJO": "5406745015365943482",# ⬇️
-        "RAYO": "5456140674028019466",        # ⚡
-        "CONSULTAR": "5303130782004924588"    # 💭
+        "RAYO": "5456140674028019486",        # ⚡
+        "CONSULTAR": "5303130782004924588"    # 💬
     }
 
     def e(key, fallback=""):
@@ -189,7 +189,7 @@ def registrar_ia_consulta(bot, redis_client, obtener_teclado_func):
                         chat_id,
                         f"{e('FLECHA_ABAJO', '⬇️')} <b>Día de rotación activo</b>\n\n"
                         f"Ayer utilizaste el módulo de IA. Para permitir que otros miembros de la comunidad puedan consultar, hoy es tu día de descanso.\n\n"
-                        f"{e('CONSULTAR', '💭')} <i>Podrás volver a consultar mañana.</i>",
+                        f"{e('CONSULTAR', '💬')} <i>Podrás volver a consultar mañana.</i>",
                         parse_mode="HTML"
                     )
                     bot.register_next_step_handler(message, procesar_consulta_ia)

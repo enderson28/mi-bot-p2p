@@ -1141,24 +1141,42 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
                         guardar_cache_en_disco()
                         print(f"🔥 [WEBHOOK] Tasa BCV actualizada por El Cazador: {tasa_nueva} | Fecha: {fecha}")
 
-                        # 🚀 ANUNCIOS AUTOMÁTICOS SINCRONIZADOS AL CANAL
+                        # Anuncios automáticos sincronizados
                         def enviar_reportes_sincronizados():
                             try:
-                                # 1. Envió de Tabla de Intervención
+                                # Lista de canales a los que quieres enviar la notificación
+                                canales_destino = [CANAL_CONGESTIONADO, CANAL_ADMINS, CANAL_SECUNDARIO]
+
+                                # 1. Envío de Tabla de Intervención
                                 texto_intervencion = construir_intervencion_texto_html()
-                                bot.send_message(CANAL_CONGESTIONADO, CANAL_ADMINS, CANAL_SECUNDARIO, texto_intervencion, parse_mode="HTML")
-                                print("📢 [1/2] Tabla de Intervención enviada al canal vía Webhook.")
+                                for canal in canales_destino:
+                                    if canal:
+                                        try:
+                                            bot.send_message(canal, texto_intervencion, parse_mode="HTML")
+                                        except Exception as e_canal:
+                                            print(f"⚠️ No se pudo enviar Intervención a {canal}: {e_canal}")
+                
+                                print("📢 [1/2] Tabla de Intervención enviada a los canales vía Webhook.")
 
                                 # Pausa de 15 segundos entre avisos
                                 time.sleep(15)
 
-                                # 2. Envió de Monitor P2P
+                                # 2. Envío de Monitor P2P
                                 texto_monitor = construir_monitor_texto_html()
-                                bot.send_message(CANAL_CONGESTIONADO, CANAL_ADMINS, CANAL_SECUNDARIO, texto_monitor, parse_mode="HTML")
-                                print("📢 [2/2] Monitor P2P enviado al canal vía Webhook.")
-                            except Exception as e:
-                                print(f"⚠️ Error al publicar anuncios desde el webhook: {e}")
+                                for canal in canales_destino:
+                                    if canal:
+                                        try:
+                                            bot.send_message(canal, texto_monitor, parse_mode="HTML")
+                                        except Exception as e_canal:
+                                            print(f"⚠️ No se pudo enviar Monitor P2P a {canal}: {e_canal}")
 
+                                print("📢 [2/2] Monitor P2P enviado a los canales vía Webhook.")
+
+                            except Exception as e:
+                                print(f"⚠️ Error general al publicar anuncios desde el webhook: {e}")
+                
+
+                        
                         # Se ejecuta en un hilo para responder rápido a GitHub Actions
                         threading.Thread(target=enviar_reportes_sincronizados, daemon=True).start()
 

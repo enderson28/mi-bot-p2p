@@ -103,7 +103,7 @@ def e(key, fallback=""):
             return
 
         user_id = message.from_user.id
-		chat_id = message.chat.id
+		
         # --- Acceso Restringido (No unido al canal) ---
         if not usuario_esta_unido(user_id):
             bot.send_message(
@@ -115,7 +115,7 @@ def e(key, fallback=""):
                 parse_mode="HTML"
             )
             return
-			
+		chat_id = message.chat.id
         HISTORIAL_CHAT[chat_id] = []
 
         markup = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
@@ -136,7 +136,7 @@ def e(key, fallback=""):
             return
 
         user_id = message.from_user.id
-        chat_id = message.chat.id
+        
         if not usuario_esta_unido(user_id):
             bot.send_message(
                 message.chat.id,

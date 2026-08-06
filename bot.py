@@ -594,6 +594,25 @@ def handle_invitacion_comando(message):
             disable_web_page_preview=True
         )
         borrar_mensaje_luego(message.chat.id, aviso.message_id, 15)
+
+# 🚨 COMANDO DE EMERGENCIA PARA CORREGIR TASA ANTERIOR
+@bot.message_handler(commands=['fix_tasa'])
+def fix_tasa_handler(message):
+    user_id = message.from_user.id
+    user_name = f"@{message.from_user.username}" if message.from_user.username else user_id
+    
+    if user_id in USUARIOS_AUTORIZADOS or user_name in USUARIOS_AUTORIZADOS:
+        try:
+            partes = message.text.split()
+            if len(partes) > 1:
+                tasa_fix = float(partes[1])
+                CACHE_TASAS["bcv_tasa_anterior"] = tasa_fix
+                guardar_cacho_en_disco()
+                bot.reply_to(message, f"✅ <b>¡Tasa anterior corregida a {tasa_fix}!</b>\nRAM y Redis sincronizados.", parse_mode="HTML")
+            else:
+                bot.reply_to(message, "⚠️ Uso: <code>/fix_tasa 744.23</code>", parse_mode="HTML")
+        except Exception as e:
+            bot.reply_to(message, f"❌ Error: {e}")
         
 @bot.message_handler(func=lambda message: message.chat.type == "private" and message.text in [
     "🟢 P2P-USDT 🔴",

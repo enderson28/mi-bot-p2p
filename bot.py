@@ -426,7 +426,7 @@ def construir_monitor_texto_html():
     }
 
     for usd_ref in [50.0, 150.0, 500.0]:
-        emoji_rango, nombre_def = emojis_rangos.get(usd_ref, (e("RANGO_3", "🥉"), "Rango"))
+        emoji_rango, nombre_def = emojis_rangos.get(usd_ref, (e("RANGO_3", "🥉")
         datos = rangos_cache.get(usd_ref) or rangos_cache.get(float(usd_ref)) or rangos_cache.get(str(usd_ref))
 
         if datos and datos.get("compra", 0) > 0 and datos.get("venta", 0) > 0:
@@ -442,8 +442,8 @@ def construir_monitor_texto_html():
             emoji_spread = e("SUBIDA", "📈") if spread >= 0 else e("BAJADA", "📉")
 
             texto += f"{emoji_rango} <b>{nombre_rango}</b> ({usd_ref:.0f}\n"
-            texto += f"  {e('USDT', '🪙')}{e('VERDE', '🟢')}<b>Compra USDT:</b> <code>{tasa_compra:.2f}</code> Bs\n"
-            texto += f"  {e('USDT', '🪙')}{e('ROJO', '🔴')}<b>Venta:</b> <code>{tasa_venta:.2f}</code> Bs\n\n"
+            texto += f" {e('USDT', '🪙')}{e('VERDE', '🟢')}<b>Compra USDT:</b> <code>{tasa_compra:.2f}</code> Bs\n"
+            texto += f" {e('USDT', '🪙')}{e('ROJO', '🔴')}<b>Venta:</b> <code>{tasa_venta:.2f}</code> Bs\n\n"
 
             if usd_ref == 500.0:
                 texto += f"  {e('BOMBILLA', '💡')} <i>Filtro base: ({filtro_bcv_bs:,.0f} Bs)</i>\n"

@@ -307,8 +307,8 @@ def registrar_ia_consulta(bot, redis_client, obtener_teclado_func):
                 print(f"⚠️ Error OpenRouter [{response.status_code}]: {data}")
                 respuesta_ia = f"{e('RELOJ_ARENA', '⚠️')} <b>Ocurrió un inconveniente al obtener la respuesta del modelo de IA.</b>"
 
-        except Exception as e:
-            print(f"⚠️ Excepción HTTP: {e}")
+        except Exception as err:
+            print(f"⚠️ Excepción HTTP: {err}")
             respuesta_ia = f"{e('RELOJ_ARENA', '⚠️')} <b>Error de conexión con el servicio de IA.</b>"
 
         # Borrar mensaje "Analizando..." y enviar respuesta final
@@ -322,6 +322,7 @@ def registrar_ia_consulta(bot, redis_client, obtener_teclado_func):
             f"{e('ROBOT', '🤖')} <b>Respuesta:</b>\n\n{respuesta_ia}",
             parse_mode="HTML"
         )
+        
 
         # Seguir escuchando para mantener la conversación
         bot.register_next_step_handler_by_chat_id(chat_id, procesar_consulta_ia)

@@ -35,6 +35,7 @@ BOT_USERNAME = "BancoIDV_bot" # Reemplaza con el alias de tu bot sin el @
 CANAL_PRUEBA = "@COMUNIDV"       # Canal de prueba
 CANAL_CONGESTIONADO = "@COMUNIDADAS04" # Canal principal
 CANAL_ADMINS = -1003947562741 # Reemplaza con el @ de tu grupo de admins
+CANAL_SECUNDARIO = -1004378497075 # Grupo prueba
 # USUARIOS AUTORIZADOS PARA EL COMANDO /bot
 USUARIOS_AUTORIZADOS = [5073264705, 1676933074, 6299629267, 8166481937]
 # Creador Supremo (Tu ID numérico real)
@@ -310,8 +311,8 @@ def actualizar_cache_segundo_plano():
             tasa_bcv_ajustada = tasa_bcv * 1.005
 
             ranges_def = [
-                ("Rango Pequeño ($50 - $100)", 50.0),
-                ("Rango Mediano ($100 - $300)", 150.0),
+                ("Rango Menor ($50 - $100)", 50.0),
+                ("Rango Medio ($100 - $300)", 150.0),
                 ("Rango Mayor ($500+)", 500.0),
             ]
 
@@ -343,8 +344,8 @@ def refrescar_tasas_en_vivo():
 
     tasa_bcv_ajustada = tasa_bcv * 1.005
     rangos_def = [
-        ("Rango Pequeño ($50 - $100)", 50.0),
-        ("Rango Mediano ($100 - $300)", 150.0),
+        ("Rango Menor ($50 - $100)", 50.0),
+        ("Rango Medio ($100 - $300)", 150.0),
         ("Rango Mayor ($500+)", 500.0)
     ]
 
@@ -406,7 +407,7 @@ def construir_monitor_texto_html():
             texto += f"📈 <b>Spread:</b> <code>{spread:.2f}</code> Bs ({porcentaje_spread:.2f}%)\n"
             texto += f"----------------------------------------\n"
         else:
-            nombre_def = "Rango Pequeño" if usd_ref == 50.0 else ("Rango Mediano" if usd_ref == 150.0 else "Rango Grande")
+            nombre_def = "Rango Menor" if usd_ref == 50.0 else ("Rango Medio" if usd_ref == 150.0 else "Rango Mayor")
             texto += f"{emoji_rango} <b>{nombre_def}</b>\n⚠️ <i>Cargando tasas en segundo plano...</i>\n"
             texto += f"----------------------------------------\n"
 
@@ -1074,8 +1075,8 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
                         # Recalculamos rangos P2P inmediatamente
                         tasa_ajustada = tasa_nueva * 1.005
                         ranges_def = [
-                            ("Rango Pequeño ($50 - $100)", 50.0),
-                            ("Rango Mediano ($100 - $300)", 150.0),
+                            ("Rango Menor ($50 - $100)", 50.0),
+                            ("Rango Medio ($100 - $300)", 150.0),
                             ("Rango Mayor ($500+)", 500.0),
                         ]
 

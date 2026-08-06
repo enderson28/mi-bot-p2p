@@ -499,13 +499,13 @@ def handle_start(message):
 
 # Manejador para /precio y el botón P2P
 @bot.message_handler(commands=['p', 'p2p'])
-@bot.message_handler(func=lambda m: m.text and m.text.strip() == "🟢 P2P-USDT 🔴")
+@bot.message_handler(func=lambda m: m.text and m.text.strip() == "🟢🟢 P2P-USDT 🔴🔴")
 def handle_precio_comando(message):
     procesar_precio(message)
 
 # Manejador para el botón de Intervención y el comando /intervencion
 @bot.message_handler(commands=['i'])
-@bot.message_handler(func=lambda m: m.text and m.text.strip() == "📊 Intervencion 📊")
+@bot.message_handler(func=lambda m: m.text and m.text.strip() == "📊📊 Intervencion 📊📊")
 def handle_intervencion_comando(message):
     procesar_intervencion(message)
 
@@ -556,7 +556,7 @@ def handle_invitacion_comando(message):
         borrar_mensaje_luego(message.chat.id, aviso.message_id, 5)
         
 @bot.message_handler(func=lambda message: message.chat.type == "private" and message.text in [
-    "🟢 P2P-USDT 🔴🔴",
+    "🟢 P2P-USDT 🔴",
     "📊 Intervencion 📊",
     "📟 Calculadora",
     "📜 Regla de Oro 📜",
@@ -566,7 +566,7 @@ def handle_invitacion_comando(message):
     "🤖 IA Consulta"
 ])
 def handle_botones_menu(message):
-    if message.text == "🟢 P2P-USDT 🔴🔴":
+    if message.text == "🟢 P2P-USDT 🔴":
         procesar_precio(message)
     elif message.text == "📊 Intervencion 📊":
         procesar_intervencion(message)

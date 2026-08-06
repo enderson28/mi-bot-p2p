@@ -441,17 +441,17 @@ def construir_monitor_texto_html():
             # Emoji dinámico de Spread (Subida/Bajada)
             emoji_spread = e("SUBIDA", "📈") if spread >= 0 else e("BAJADA", "📉")
 
-            texto += f"{emoji_rango} <b>{nombre_rango}</b> ({usd_ref:.0f} $)\n"
-            texto += f"  {e('USDT', '🪙')} {e('VERDE', '🟢')} <b>Compra USDT:</b> <code>{tasa_compra:.2f}</code> Bs\n"
-            texto += f"  {e('USDT', '🪙')} {e('ROJO', '🔴')} <b>Venta:</b> <code>{tasa_venta:.2f}</code> Bs\n\n"
+            texto += f"{emoji_rango} <b>{nombre_rango}</b> ({usd_ref:.0f}\n"
+            texto += f"  {e('USDT', '🪙')}{e('VERDE', '🟢')}<b>Compra USDT:</b> <code>{tasa_compra:.2f}</code> Bs\n"
+            texto += f"  {e('USDT', '🪙')}{e('ROJO', '🔴')}<b>Venta:</b> <code>{tasa_venta:.2f}</code> Bs\n\n"
 
             if usd_ref == 500.0:
-                texto += f"  {e('BOMBILLA', '💡')} <i>Filtro base: ({filtro_bcv_bs:.0f} Bs)</i>\n"
+                texto += f"  {e('BOMBILLA', '💡')} <i>Filtro base: ({filtro_bcv_bs:,.0f} Bs)</i>\n"
 
             texto += f"  {emoji_spread} <b>Spread:</b> <code>{spread:.2f}</code> Bs (<code>{porcentaje_spread:.2f}%</code>)\n"
             texto += f"-----------------------------------------\n\n"
         else:
-            texto += f"{emoji_rango} <b>{nombre_def}</b> ({usd_ref:.0f} $)\n"
+            texto += f"{emoji_rango} <b>{nombre_def}</b> ({usd_ref:.0f}\n"
             texto += f"<i>{e('BOMBILLA', '💡')} Cargando tasas en segundo plano...</i>\n"
             texto += f"-----------------------------------------\n\n"
 

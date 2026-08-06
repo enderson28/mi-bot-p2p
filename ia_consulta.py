@@ -46,33 +46,53 @@ def registrar_ia_consulta(bot, redis_client, obtener_teclado_func):
 
         return False
 
+# DICCIONARIO DE EMOJIS TG ANIMADOS
+TG_EMOJIS = {
+    "BANCO": "5422439311196834318",       # 🏦 (Logo/Banco para BCV)
+    "PROHIBIDO": "5240241223632954241",   # ⛔
+    "RELOJ_ARENA": "5447644880824181073", # ⏳
+    "SIRENA": "5251203410396458957",      # 🚨
+    "ESTADISTICA": "5181472829639498220", # 📊
+    "ESCUDO": "5416117059207572332",      # 🛡️
+    "ROBOT": "5206607081334906820",       # 🤖
+    "MEGAFONO": "5440539497383087970",    # 📣
+    "BOMBILLA": "5413879192267805083"     # 💡
+}
+
+def e(key, fallback=""):
+    emoji_id = TG_EMOJIS.get(key, "")
+    return f'<tg-emoji emoji-id="{emoji_id}">{fallback}</tg-emoji>' if emoji_id else fallback
+    
     # ---------------------------------------------------------
     # HANDLER PARA EL COMANDO /ia (EXCLUSIVO CREADOR / ADMINS)
     # ---------------------------------------------------------
     @bot.message_handler(commands=['ia'])
     def publicar_anuncio_ia(message):
         user_id = message.from_user.id
-        
-        # Validación: Solo el Creador / Admins pueden ejecutar este comando
         if user_id not in ADMIN_IDS:
-            return  # Ignorar silenciosamente si es un usuario común
+            return
+
+        # Obtenemos el username del bot dinámicamente para el link
+        bot_info = bot.get_me()
+        bot_link = f"https://t.me/{bot_info.username}"
 
         anuncio = (
-            "🤖 **SERVICIO DE CONSULTA IA FINANCIERA** 🤖\n\n"
-            "📢 *Estimada comunidad,* para mantener este servicio gratuito, rápido y sostenible, "
-            "el módulo de IA opera bajo los siguientes parámetros en privado:\n\n"
-            "✅ **Cupo Global:** 100 usuarios diarios.\n"
-            "⛔ **Límite Individual:** 30 consultas por usuario en su día de acceso.\n"
-            "🔁 **Rotación Equitativa:** Si usas la IA hoy, se activará un día de descanso para ti mañana, "
-            "permitiendo que otros miembros del canal puedan consultar.\n"
-            "♻️ **Actualización:** Datos en tiempo real de la tasa oficial del BCV.\n\n"
-            "⚡ *¡Ingresa al bot en privado y presiona el botón **🤖 IA Consulta** para iniciar!*"
+            f"{e('ROBOT', '🤖')} <b>SERVICIO DE CONSULTA IA FINANCIERA</b> {e('ROBOT', '🤖')}\n\n"
+            f"📌 <i>Estimada comunidad, para mantener este servicio gratuito, rápido y sostenible, "
+            f"el módulo de IA opera bajo los siguientes parámetros en privado:</i>\n\n"
+            f"✅ <b>Cupo Global:</b> 100 usuarios diarios.\n"
+            f"{e('PROHIBIDO', '⛔')} <b>Límite Individual:</b> 30 consultas por usuario en su día de acceso.\n"
+            f"{e('RELOJ_ARENA', '⏳')} <b>Rotación Equitativa:</b> Si usas la IA hoy, se activará un día de descanso para ti mañana, "
+            f"permitiendo que otros miembros del canal puedan consultar.\n"
+            f"{e('BANCO', '🏦')} <b>Actualización:</b> Datos en tiempo real de la tasa oficial del BCV.\n\n"
+            f"⚡ <i>¡Ingresa al bot en privado en <a href='{bot_link}'>@{bot_info.username}</a> y presiona el botón 🤖 <b>IA Consulta</b> para iniciar!</i>"
         )
 
         bot.send_message(
             message.chat.id,
             anuncio,
-            parse_mode="Markdown"
+            parse_mode="HTML",
+            disable_web_page_preview=True
         )
 
     # ---------------------------------------------------------
@@ -83,19 +103,19 @@ def registrar_ia_consulta(bot, redis_client, obtener_teclado_func):
             return
 
         user_id = message.from_user.id
-
+		chat_id = message.chat.id
+        # --- Acceso Restringido (No unido al canal) ---
         if not usuario_esta_unido(user_id):
             bot.send_message(
-                message.chat.id,
-                "⚠️ **Acceso Restringido**\n\n"
-                "Para utilizar el módulo de IA Consulta debes ser miembro de nuestra comunidad oficial:\n"
-                f"👉 {CANAL_CONGESTIONADO}\n\n"
-                "Una vez te hayas unido, vuelve a presionar el botón.",
-                parse_mode="Markdown"
+                chat_id,
+                f"{e('ESCUDO', '⚠️')} <b>Acceso Restringido</b>\n\n"
+                f"Para utilizar el módulo de IA Consulta debes ser miembro de nuestra comunidad oficial:\n"
+                f"👉 <b>{CANAL_CONGESTIONADO}</b>\n\n"
+                f"<i>Una vez te hayas unido, vuelve a presionar el botón.</i>",
+                parse_mode="HTML"
             )
-            return 
-
-        chat_id = message.chat.id
+            return
+			
         HISTORIAL_CHAT[chat_id] = []
 
         markup = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
@@ -116,12 +136,13 @@ def registrar_ia_consulta(bot, redis_client, obtener_teclado_func):
             return
 
         user_id = message.from_user.id
-
+        chat_id = message.chat.id
         if not usuario_esta_unido(user_id):
             bot.send_message(
                 message.chat.id,
-                "❌ **No tienes acceso.** Debes unirte al canal oficial para continuar usando la IA.",
-                parse_mode="Markdown"
+                f"{e('PROHIBIDO', '⛔')} <b>Acceso Denegado</b>\n\n"
+                f"Debes unirte a nuestra comunidad oficial <b>{CANAL_CONGESTIONADO}</b> para continuar utilizando la IA.",
+                parse_mode="HTML"
             )
             return
 
@@ -163,11 +184,11 @@ def registrar_ia_consulta(bot, redis_client, obtener_teclado_func):
                 if ultima_fecha_uso == fecha_ayer:
                     bot.send_message(
                         chat_id,
-                        "⏳ **Día de rotación activo**\n\n"
-                        "Ayer utilizaste el módulo de IA. Para permitir que otros miembros de la comunidad "
-                        "puedan consultar, hoy es tu día de 😴 descanso.\n\n"
-                        "🔄 *Podrás volver a consultar 👏🏽 mañana.*",
-                        parse_mode="Markdown"
+                        f"{e('RELOJ_ARENA', '⏳')} <b>Día de rotación activo</b>\n\n"
+                        f"Ayer utilizaste el módulo de IA. Para permitir que otros miembros de la comunidad "
+                        f"puedan consultar, hoy es tu día de descanso.\n\n"
+                        f"📅 <i>Podrás volver a consultar mañana.</i>",
+                        parse_mode="HTML"
                     )
                     bot.register_next_step_handler(message, procesar_consulta_ia)
                     return
@@ -177,10 +198,10 @@ def registrar_ia_consulta(bot, redis_client, obtener_teclado_func):
                 if len(REGISTRO_CUPO_DIARIO["usuarios_registrados"]) >= 100:
                     bot.send_message(
                         chat_id,
-                        "🚫 **Cupo diario alcanzado**\n\n"
-                        "Los 100 cupos diarios para consultas de IA ya han sido tomados hoy por otros usuarios.\n\n"
-                        "⏰ *Por favor, intenta nuevamente mañana a primera hora.*",
-                        parse_mode="Markdown"
+                        f"{e('PROHIBIDO', '⛔')} <b>Cupo diario alcanzado</b>\n\n"
+                        f"Los 100 cupos diarios para consultas de IA ya han sido tomados hoy por otros usuarios.\n\n"
+                        f"🌅 <i>Por favor, intenta nuevamente mañana a primera hora.</i>",
+                        parse_mode="HTML"
                     )
                     bot.register_next_step_handler(message, procesar_consulta_ia)
                     return
@@ -196,9 +217,9 @@ def registrar_ia_consulta(bot, redis_client, obtener_teclado_func):
             if USO_DIARIO_USUARIOS[user_id]["preguntas"] >= 30:
                 bot.send_message(
                     chat_id,
-                    "⚠️ **Has alcanzado el límite diario de 30 consultas con la IA.**\n\n"
-                    "Por favor, regresa pasado mañana para continuar o utiliza las herramientas del menú.",
-                    parse_mode="Markdown"
+                    f"{e('SIRENA', '🚨')} <b>Has alcanzado el límite diario de 30 consultas</b>\n\n"
+                    f"Por favor, regresa pasado mañana para continuar o utiliza las herramientas del menú.",
+                    parse_mode="HTML"
                 )
                 bot.register_next_step_handler(message, procesar_consulta_ia)
                 return
@@ -276,26 +297,36 @@ def registrar_ia_consulta(bot, redis_client, obtener_teclado_func):
                 respuesta_ia = data["choices"][0]["message"]["content"]
                 HISTORIAL_CHAT[chat_id].append({"role": "assistant", "content": respuesta_ia})
 
-                # Pie de página dinámico con emojis
+                # Pie de página dinámico con emojis (solo si la consulta fue exitosa)
                 if user_id not in ADMIN_IDS:
                     restantes = 30 - preguntas_usadas
-                    pie_pagina = f"\n\n───\n📊 *Uso diario:* `{preguntas_usadas}/30` consultas | ⚡ *Restantes hoy:* `{restantes}`"
+                    pie_pagina = (
+                        f"\n\n───\n"
+                        f"{e('ESTADISTICA', '📊')} <b>Uso diario:</b> <code>{preguntas_usadas}/30</code> consultas | "
+                        f"⚡ <b>Restantes hoy:</b> <code>{restantes}</code>"
+                    )
                     respuesta_ia += pie_pagina
             else:
+                # Logs en consola para depurar si OpenRouter devuelve algún error HTTP
                 print(f"⚠️ Error OpenRouter [{response.status_code}]: {data}")
-                respuesta_ia = "⚠️ Ocurrió un inconveniente al obtener la respuesta del modelo de IA."
+                respuesta_ia = f"{e('SIRENA', '⚠️')} <b>Ocurrió un inconveniente al obtener la respuesta del modelo de IA.</b>"
 
         except Exception as e:
+            # Logs en consola si hay un timeout o fallo de red
             print(f"⚠️ Excepción HTTP: {e}")
-            respuesta_ia = "⚠️ Error de conexión con el servicio de IA."
+            respuesta_ia = f"{e('SIRENA', '⚠️')} <b>Error de conexión con el servicio de IA.</b>"
 
-        # Borrar mensaje "Analizando..." y enviar respuesta
+        # Borrar mensaje "Analizando..." y enviar respuesta final
         try:
             bot.delete_message(chat_id, msg_espera.message_id)
         except Exception:
             pass
 
-        bot.send_message(chat_id, f"🤖 ✅ **Respuesta:**\n\n{respuesta_ia}", parse_mode="Markdown")
+        bot.send_message(
+            chat_id, 
+            f"{e('ROBOT', '🤖')} ✅ <b>Respuesta:</b>\n\n{respuesta_ia}", 
+            parse_mode="HTML"
+        )
 
         # Seguir escuchando para mantener la conversación
         bot.register_next_step_handler_by_chat_id(chat_id, procesar_consulta_ia)

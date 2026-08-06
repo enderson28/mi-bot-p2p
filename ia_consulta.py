@@ -51,14 +51,14 @@ def registrar_ia_consulta(bot, redis_client, obtener_teclado_func):
     TG_EMOJIS = {
         "BANCO": "5183805009766123191",       # 🏦 (Logo/Banco para BCV)
         "PROHIBIDO": "5240241223632954241",   # ⛔
-        "RELOJ_ARENA": "5447644880824181073", # ⏳
+        "RELOJ_ARENA": "5447644880824181073", # ⚠️
         "SIRENA": "5395695537687123235",      # 🚨
         "ESTADISTICA": "5231200819986047254", # 📊
         "ESCUDO": "5416117059207572332",      # 🛡️
         "VISTO": "5206607081334906820",       # ✔️
         "MEGAFONO": "5424818078833715060",    # 📣
         "BOMBILLA": "54224393111966834318",   # 💡
-        "ROBOT": "5323772371830588991",       # 🤖
+        "ROBOT": "5323772371830588991",       # 🫡
         "FLECHA_ABAJO": "5406745015365943482",# ⬇️
         "RAYO": "5456140674028019466",        # ⚡
         "CONSULTAR": "5303130782004924588"    # 💭
@@ -82,7 +82,7 @@ def registrar_ia_consulta(bot, redis_client, obtener_teclado_func):
         bot_link = f"https://t.me/{bot_info.username}"
 
         anuncio = (
-            f"{e('ROBOT', '🤖')} <blockquote><b>SERVICIO DE CONSULTA IA FINANCIERA</b></blockquote> {e('ROBOT', '🤖')}\n\n"
+            f"{e('ROBOT', '🫡')} <blockquote><b>SERVICIO DE CONSULTA IA FINANCIERA</b></blockquote> {e('ROBOT', '🤖')}\n\n"
             f"{e('MEGAFONO', '📣')} <i>Estimada comunidad, para mantener este servicio gratuito, rápido y sostenible, "
             f"el módulo de IA opera bajo los siguientes parámetros en privado:</i>\n\n"
             f"{e('VISTO', '✔️')} <b>Cupo Global:</b> 100 usuarios diarios.\n"
@@ -114,7 +114,7 @@ def registrar_ia_consulta(bot, redis_client, obtener_teclado_func):
         if not usuario_esta_unido(user_id):
             bot.send_message(
                 chat_id,
-                f"{e('ESCUDO', '⚠️')} <b>Acceso Restringido</b>\n\n"
+                f"{e('RELOJ_ARENA', '⚠️')} <b>Acceso Restringido</b>\n\n"
                 f"Para utilizar el módulo de IA Consulta debes ser miembro de nuestra comunidad oficial:\n"
                 f"👉 <b>{CANAL_CONGESTIONADO}</b>\n\n"
                 f"<i>Una vez te hayas unido, vuelve a presionar el botón.</i>",
@@ -319,7 +319,7 @@ def registrar_ia_consulta(bot, redis_client, obtener_teclado_func):
 
         bot.send_message(
             chat_id,
-            f"{e('ROBOT', '🤖')} <b>Respuesta:</b>\n\n{respuesta_ia}",
+            f"{e('ROBOT', '🫡')} <b>Respuesta:</b>\n\n{respuesta_ia}",
             parse_mode="HTML"
         )
         

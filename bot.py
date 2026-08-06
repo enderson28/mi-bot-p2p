@@ -593,7 +593,7 @@ def handle_invitacion_comando(message):
             parse_mode="HTML",
             disable_web_page_preview=True
         )
-        borrar_mensaje_luego(message.chat.id, aviso.message_id, 5)
+        borrar_mensaje_luego(message.chat.id, aviso.message_id, 15)
         
 @bot.message_handler(func=lambda message: message.chat.type == "private" and message.text in [
     "🟢 P2P-USDT 🔴",
@@ -1180,6 +1180,7 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
 
             self.send_response(400)
             self.end_headers()
+                        
 
 
 def iniciar_servidor_receptor():

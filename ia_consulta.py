@@ -319,7 +319,7 @@ def registrar_ia_consulta(bot, redis_client, obtener_teclado_func):
 
         bot.send_message(
             chat_id,
-            f"{e('ROBOT', '🫡')} <b>Respuesta:</b>\n\n{respuesta_ia}",
+            f"🫡 <b>Respuesta:</b>\n\n{respuesta_ia}",
             parse_mode="HTML"
         )
         

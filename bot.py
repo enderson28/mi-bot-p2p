@@ -499,7 +499,7 @@ def handle_start(message):
 
 # Manejador para /precio y el botón P2P
 @bot.message_handler(commands=['p', 'p2p'])
-@bot.message_handler(func=lambda m: m.text and m.text.strip() == "🟢🟢 P2P-USDT 🔴🔴")
+@bot.message_handler(func=lambda m: m.text and m.text.strip() == "🟢☠️ Precio-Usdt ☠️🔴")
 def handle_precio_comando(message):
     procesar_precio(message)
 

@@ -371,53 +371,92 @@ def refrescar_tasas_en_vivo():
 
     CACHE_TASAS["rangos"] = nuevos_rangos
 
+
+# DICCIONARIO DE EMOJIS ANIMADOS DE TELEGRAM (IDs)
+TG_EMOJIS = {
+    "MONITOR": "5193177581888755275",      # 💻 / 😀
+    "CALENDARIO": "5413879192267805083",   # 🗓
+    "BCV": "5183805009766123191",          # 🏦 (Logo BCV)
+    "BALANZA": "5400250414929041085",      # ⚖️
+    "ETIQUETA": "5222444124698853913",     # 🔖
+    "BOMBILLA": "5262844652964303985",     # 💡
+    "CHINCHE": "5397782960512444700",      # 📌
+    "RANGO_1": "5440539497383087970",      # 🥇 (Oro)
+    "RANGO_2": "5447203607294265305",      # 🥈 (Plata)
+    "RANGO_3": "5453902265922376865",      # 🥉 (Bronce)
+    "USDT": "5814556334829343625",         # 🪙 (Logo USDT)
+    "VERDE": "5416081784641168838",        # 🟢 (Compra)
+    "ROJO": "5411225014148014586",         # 🔴 (Venta)
+    "SUBIDA": "5244837092042750681",       # 📈
+    "BAJADA": "5246762912428603768",       # 📉
+    "MUNDO": "5224450179368767019",        # 🌎
+    "FLECHA_DERECHA": "5416117059207572332",# ➡️
+    "DINERO": "5197434882321567830"        # 💵
+}
+
+def e(key, fallback=""):
+    emoji_id = TG_EMOJIS.get(key, "")
+    if emoji_id:
+        return f'<tg-emoji emoji-id="{emoji_id}">{fallback}</tg-emoji>'
+    return fallback
+    
+
 def construir_monitor_texto_html():
     tasa_bcv = CACHE_TASAS.get("bcv_tasa", 745.64)
     fecha_valor_bcv = CACHE_TASAS.get("bcv_fecha", "30 Julio 2026")
     tasa_intervencion = tasa_bcv * 1.005
 
     texto = (
-        f"🖥️ <b>Monitor de Tasas Arbitraje P2P</b>\n"
-        f"<blockquote>📆 <b>Vigencia BCV:</b> {fecha_valor_bcv}</blockquote>\n\n"
-        f"<blockquote>🏦 <b>BCV Oficial:</b> <code>{tasa_bcv:.2f}</code> Bs</blockquote>\n"
-        f"⚖️ <b>BCV + 0.5%:</b> <code>{tasa_intervencion:.2f}</code> Bs\n"
-        f"<i>🛡️ <b>Filtros activos:</b> Verificados | Comerciables 🟡 | Pago: Todos 🔻</i>\n"
-        f"----------------------------------------\n\n"
+        f"{e('MONITOR', '💻')} <b>Monitor de Tasas Arbitraje P2P</b>\n\n"
+        f"<blockquote>{e('CALENDARIO', '🗓')} <b>Vigencia BCV :</b> {fecha_valor_bcv}</blockquote>\n"
+        f"<blockquote>{e('BCV', '🏦')} <b>BCV Oficial :</b> <code>{tasa_bcv:.2f}</code> Bs</blockquote>\n"
+        f"<blockquote>{e('BALANZA', '⚖️')} <b>BCV + 0.5% :</b> <code>{tasa_intervencion:.2f}</code> Bs</blockquote>\n\n"
+        f"{e('ETIQUETA', '🔖')} <b>Filtros Activos:</b> Verificados | Comerciables {e('BOMBILLA', '💡')} | Pago : Todos {e('CHINCHE', '📌')}\n"
+        f"-----------------------------------------\n\n"
     )
 
     rangos_cache = CACHE_TASAS.get("rangos", {})
-    emojis_rangos = {50.0: "🥉", 150.0: "🥈", 500.0: "🥇"}
+    
+    # Asignación de rangos según la imagen:
+    # 50.0 = Rango Menor (🥉), 150.0 = Rango Mediano (🥈), 500.0 = Rango Mayor (🥇)
+    emojis_rangos = {
+        50.0: (e("RANGO_3", "🥉"), "Rango menor"),
+        150.0: (e("RANGO_2", "🥈"), "Rango Mediano"),
+        500.0: (e("RANGO_1", "🥇"), "Rango Mayor")
+    }
 
     for usd_ref in [50.0, 150.0, 500.0]:
-        emoji_rango = emojis_rangos.get(usd_ref, "📌")
+        emoji_rango, nombre_def = emojis_rangos.get(usd_ref, (e("RANGO_3", "🥉"), "Rango"))
         datos = rangos_cache.get(usd_ref) or rangos_cache.get(float(usd_ref)) or rangos_cache.get(str(usd_ref))
 
         if datos and datos.get("compra", 0) > 0 and datos.get("venta", 0) > 0:
-            nombre_rango = datos["nombre"]
+            nombre_rango = datos.get("nombre", nombre_def)
             tasa_compra = datos["compra"]
             tasa_venta = datos["venta"]
 
-            # Corrección aquí: se calcula usando tasa_intervencion (BCV + 0.5%)
             filtro_bcv_bs = usd_ref * tasa_intervencion
             spread = tasa_venta - tasa_compra
             porcentaje_spread = (spread / tasa_compra) * 100 if tasa_compra > 0 else 0.0
 
-            texto += f"{emoji_rango} <b>{nombre_rango}</b>\n"
-            texto += f"🟢 <b>Compra USDT:</b> <code>{tasa_compra:.2f}</code> Bs\n"
-            texto += f"🔴 <b>Venta:</b> <code>{tasa_venta:.2f}</code> Bs\n"
+            # Emoji dinámico de Spread (Subida/Bajada)
+            emoji_spread = e("SUBIDA", "📈") if spread >= 0 else e("BAJADA", "📉")
+
+            texto += f"{emoji_rango} <b>{nombre_rango}</b> ({usd_ref:.0f} $)\n"
+            texto += f"  {e('USDT', '🪙')} {e('VERDE', '🟢')} <b>Compra USDT:</b> <code>{tasa_compra:.2f}</code> Bs\n"
+            texto += f"  {e('USDT', '🪙')} {e('ROJO', '🔴')} <b>Venta:</b> <code>{tasa_venta:.2f}</code> Bs\n\n"
 
             if usd_ref == 500.0:
-                texto += f"    💡 <i>(Filtro base: ~{filtro_bcv_bs:,.0f} Bs)</i>\n"
+                texto += f"  {e('BOMBILLA', '💡')} <i>Filtro base: ({filtro_bcv_bs:.0f} Bs)</i>\n"
 
-            texto += f"📈 <b>Spread:</b> <code>{spread:.2f}</code> Bs ({porcentaje_spread:.2f}%)\n"
-            texto += f"----------------------------------------\n"
+            texto += f"  {emoji_spread} <b>Spread:</b> <code>{spread:.2f}</code> Bs (<code>{porcentaje_spread:.2f}%</code>)\n"
+            texto += f"-----------------------------------------\n\n"
         else:
-            nombre_def = "Rango Pequeño" if usd_ref == 50.0 else ("Rango Mediano" if usd_ref == 150.0 else "Rango Grande")
-            texto += f"{emoji_rango} <b>{nombre_def}</b>\n⚠️ <i>Cargando tasas en segundo plano...</i>\n"
-            texto += f"----------------------------------------\n"
+            texto += f"{emoji_rango} <b>{nombre_def}</b> ({usd_ref:.0f} $)\n"
+            texto += f"<i>{e('BOMBILLA', '💡')} Cargando tasas en segundo plano...</i>\n"
+            texto += f"-----------------------------------------\n\n"
 
     hora_actual = (datetime.now() - timedelta(hours=4)).strftime("%I:%M:%S %p")
-    texto += f"\n🕒 <i>Última actualización: {hora_actual}</i>"
+    texto += f"{e('MUNDO', '🌎')} <i>Última actualización: {hora_actual}</i>"
 
     return texto
 
@@ -437,28 +476,29 @@ def construir_intervencion_texto_html(user=None, porcentaje=None):
     diferencia = tasa_bcv - tasa_anterior
 
     if diferencia > 0:
-        texto_tendencia = f"📈 BCV AUMENTÓ {abs(diferencia):.2f} BS PARA SU FECHA VALOR BCV 📆"
+        texto_tendencia = f"{e('SUBIDA', '📈')} BCV AUMENTÓ {abs(diferencia):.2f} BS PARA SU FECHA VALOR BCV {e('CALENDARIO', '🗓')}"
     elif diferencia < 0:
-        texto_tendencia = f"📉 BCV BAJÓ {abs(diferencia):.2f} BS PARA SU FECHA VALOR BCV 📆"
+        texto_tendencia = f"{e('BAJADA', '📉')} BCV BAJÓ {abs(diferencia):.2f} BS PARA SU FECHA VALOR BCV {e('CALENDARIO', '🗓')}"
     else:
-        texto_tendencia = f"📊 BCV MANTIENE SU TASA PARA SU FECHA VALOR BCV 📆"
+        texto_tendencia = f"{e('BALANZA', '⚖️')} BCV MANTIENE SU TASA PARA SU FECHA VALOR BCV {e('CALENDARIO', '🗓')}"
 
     tasa_intervencion = tasa_bcv * (1 + (porcentaje / 100))
 
     texto = (
-        f"🔎 <b>¿Cuántos bolívares necesitas para comprar en Intervención?</b>\n\n"
-        f"<blockquote>📆 <b>Fecha Valor BCV:</b> {fecha_valor_bcv}</blockquote>\n"
+        f"{e('MONITOR', '💻')} <b>¿Cuántos bolívares necesitas para comprar en Intervención?</b>\n\n"
+        f"<blockquote>{e('CALENDARIO', '🗓')} <b>Fecha Valor BCV:</b> {fecha_valor_bcv}</blockquote>\n"
         f"<blockquote>{texto_tendencia}</blockquote>\n"
-        f"🏦 <b>Tasa BCV Oficial:</b> <code>{tasa_bcv:.2f}</code> Bs\n"
-        f"⚖️ <b>Tasa Intervención:</b> <code>{tasa_intervencion:.2f}</code> Bs ({porcentaje_txt} Agregado)\n"
-        f"----------------------------------------\n"
+        f"<blockquote>{e('BCV', '🏦')} <b>Tasa BCV Oficial:</b> <code>{tasa_bcv:.2f}</code> Bs</blockquote>\n"
+        f"<blockquote>{e('BALANZA', '⚖️')} <b>Tasa Intervención:</b> <code>{tasa_intervencion:.2f}</code> Bs ({porcentaje_txt} Agregado)</blockquote>\n"
+        f"-----------------------------------------\n\n"
     )
 
     for monto_usd in range(100, 1100, 100):
         monto_bs = monto_usd * tasa_intervencion
-        texto += f"💵 <b>{monto_usd} USD</b>  ➡️  Bs: <code>{monto_bs:,.0f}</code>\n"
+        texto += f"{e('DINERO', '💵')} <b>{monto_usd} USD</b> {e('FLECHA_DERECHA', '➡️')} Bs: <code>{monto_bs:,.0f}</code>\n"
 
     return texto
+    
     
 # ==========================================
 #     MANEJADORES DE COMANDOS Y BOTONES

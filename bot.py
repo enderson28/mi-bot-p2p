@@ -1231,5 +1231,5 @@ if __name__ == "__main__":
 
     # Arranca el polling limpio
     bot.infinity_polling() 
-    
+
     

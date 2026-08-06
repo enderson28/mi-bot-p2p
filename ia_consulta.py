@@ -49,18 +49,17 @@ def registrar_ia_consulta(bot, redis_client, obtener_teclado_func):
 
     # DICCIONARIO DE EMOJIS TG ANIMADOS
     TG_EMOJIS = {
-        "BANCO": "5183805009766123191",       # 🏦 (Logo/Banco para BCV)
+        "BANCO": "5183805009766123191",       # 🤝 (Logo/Banco para BCV)
         "PROHIBIDO": "5240241223632954241",   # ⛔
         "RELOJ_ARENA": "5447644880824181073", # ⚠️
         "SIRENA": "5395695537687123235",      # 🚨
         "ESTADISTICA": "5231200819986047254", # 📊
-        "ESCUDO": "5416117059207572332",      # 🛡️
         "VISTO": "5206607081334906820",       # ✔️
         "MEGAFONO": "5424818078833715060",    # 📣
         "ROBOT": "5323772371830588991",       # 🫡
         "FLECHA_ABAJO": "5406745015365943482",# ⬇️
         "RAYO": "5456140674028019466",        # ⚡
-        "CONSULTAR": "5303130782004924588"    # 💭
+        "CONSULTAR": "5303130782004924588"    # 💬
     }
 
     def e(key, fallback=""):
@@ -88,7 +87,7 @@ def registrar_ia_consulta(bot, redis_client, obtener_teclado_func):
             f"{e('PROHIBIDO', '⛔')} <b>Límite Individual:</b> 30 consultas por usuario en su día de acceso.\n"
             f"{e('FLECHA_ABAJO', '⬇️')} <b>Rotación Equitativa:</b> Si usas la IA hoy, se activará un día de descanso para ti mañana, "
             f"permitiendo que otros miembros del canal puedan consultar.\n"
-            f"{e('BANCO', '🏦')} <b>Actualización:</b> Datos en tiempo real de la tasa oficial del BCV.\n\n"
+            f"{e('BANCO', '🤝')} <b>Actualización:</b> Datos en tiempo real de la tasa oficial del BCV.\n\n"
             f"{e('RAYO', '⚡')} <i>¡Ingresa al bot en privado en <a href='{bot_link}'>@{bot_info.username}</a> y presiona el botón 🤖 <b>IA Consulta</b> para iniciar!</i>"
         )
 
@@ -188,7 +187,7 @@ def registrar_ia_consulta(bot, redis_client, obtener_teclado_func):
                         chat_id,
                         f"{e('FLECHA_ABAJO', '⬇️')} <b>Día de rotación activo</b>\n\n"
                         f"Ayer utilizaste el módulo de IA. Para permitir que otros miembros de la comunidad puedan consultar, hoy es tu día de descanso.\n\n"
-                        f"{e('CONSULTAR', '💭')} <i>Podrás volver a consultar mañana.</i>",
+                        f"{e('CONSULTAR', '💬')} <i>Podrás volver a consultar mañana.</i>",
                         parse_mode="HTML"
                     )
                     bot.register_next_step_handler(message, procesar_consulta_ia)
@@ -299,7 +298,7 @@ def registrar_ia_consulta(bot, redis_client, obtener_teclado_func):
                     pie_pagina = (
                         f"\n\n---\n"
                         f"{e('ESTADISTICA', '📊')} <b>Uso diario:</b> <code>{preguntas_usadas}/30</code> consultas | "
-                        f"{e('RAYO', '⚡')} <b>Restantes hoy:</b> <code>{restantes}</code>"
+                        "⚡ <b>Restantes hoy:</b> <code>{restantes}</code>"
                     )
                     respuesta_ia += pie_pagina
             else:

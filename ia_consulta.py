@@ -94,16 +94,90 @@ def e(key, fallback=""):
             parse_mode="HTML",
             disable_web_page_preview=True
         )
+def registrar_ia_consulta(bot, redis_client, obtener_teclado_func):
 
-    # ---------------------------------------------------------
+    # 🔒 VERIFICACIÓN MULTI-CANAL
+    def usuario_esta_unido(user_id):
+        if user_id in ADMIN_IDS:
+            return True
+
+        # 1. Probar en el canal de pruebas
+        try:
+            m1 = bot.get_chat_member(CANAL_PRUEBA, user_id)
+            if m1.status in ['creator', 'administrator', 'member']:
+                return True
+        except Exception:
+            pass # Si el bot no está en el canal o falla, pasa al siguiente
+
+        # 2. Probar en el canal principal / congestionado
+        try:
+            m2 = bot.get_chat_member(CANAL_CONGESTIONADO, user_id)
+            if m2.status in ['creator', 'administrator', 'member']:
+                return True
+        except Exception:
+            pass
+
+        return False
+
+    # DICCIONARIO DE EMOJIS TG ANIMADOS
+    TG_EMOJIS = {
+        "BANCO": "5422439311196834318",       # 🏦 (Logo/Banco para BCV)
+        "PROHIBIDO": "5240241223632954241",   # ⛔
+        "RELOJ_ARENA": "5447644880824181073", # ⏳
+        "SIRENA": "5251203410396458957",      # 🚨
+        "ESTADISTICA": "5181472829639498220", # 📊
+        "ESCUDO": "5416117059207572332",      # 🛡️
+        "ROBOT": "5206607081334906820",       # 🤖
+        "MEGAFONO": "5440539497383087970",    # 📣
+        "BOMBILLA": "5413879192267805083"     # 💡
+    }
+
+    def e(key, fallback=""):
+        emoji_id = TG_EMOJIS.get(key, "")
+        return f'<tg-emoji emoji-id="{emoji_id}">{fallback}</tg-emoji>' if emoji_id else fallback
+
+    # ------------------------------------------------------------------
+    # HANDLER PARA EL COMANDO /ia (EXCLUSIVO CREADOR / ADMINS)
+    # ------------------------------------------------------------------
+    @bot.message_handler(commands=['ia'])
+    def publicar_anuncio_ia(message):
+        user_id = message.from_user.id
+        if user_id not in ADMIN_IDS:
+            return
+
+        # Obtenemos el username del bot dinámicamente para el link
+        bot_info = bot.get_me()
+        bot_link = f"https://t.me/{bot_info.username}"
+
+        anuncio = (
+            f"{e('ROBOT', '🤖')} <b>SERVICIO DE CONSULTA IA FINANCIERA</b> {e('ROBOT', '🤖')}\n\n"
+            f"📌 <i>Estimada comunidad, para mantener este servicio gratuito, rápido y sostenible, "
+            f"el módulo de IA opera bajo los siguientes parámetros en privado:</i>\n\n"
+            f"✅ <b>Cupo Global:</b> 100 usuarios diarios.\n"
+            f"{e('PROHIBIDO', '⛔')} <b>Límite Individual:</b> 30 consultas por usuario en su día de acceso.\n"
+            f"{e('RELOJ_ARENA', '⏳')} <b>Rotación Equitativa:</b> Si usas la IA hoy, se activará un día de descanso para ti mañana, "
+            f"permitiendo que otros miembros del canal puedan consultar.\n"
+            f"{e('BANCO', '🏦')} <b>Actualización:</b> Datos en tiempo real de la tasa oficial del BCV.\n\n"
+            f"⚡ <i>¡Ingresa al bot en privado en <a href='{bot_link}'>@{bot_info.username}</a> y presiona el botón 🤖 <b>IA Consulta</b> para iniciar!</i>"
+        )
+
+        bot.send_message(
+            message.chat.id,
+            anuncio,
+            parse_mode="HTML",
+            disable_web_page_preview=True
+        )
+
+    # ------------------------------------------------------------------
     # FLUJO EN PRIVADO
-    # ---------------------------------------------------------
+    # ------------------------------------------------------------------
     def solicitar_consulta_ia(message):
         if message.chat.type != "private":
             return
 
         user_id = message.from_user.id
-		
+        chat_id = message.chat.id
+
         # --- Acceso Restringido (No unido al canal) ---
         if not usuario_esta_unido(user_id):
             bot.send_message(
@@ -115,11 +189,11 @@ def e(key, fallback=""):
                 parse_mode="HTML"
             )
             return
-		chat_id = message.chat.id
+
         HISTORIAL_CHAT[chat_id] = []
 
         markup = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
-        markup.add(KeyboardButton("🔙 Salir al menú"))
+        markup.add(KeyboardButton("🚪 Salir al menú"))
 
         msg = bot.send_message(
             chat_id,
@@ -136,7 +210,7 @@ def e(key, fallback=""):
             return
 
         user_id = message.from_user.id
-        
+
         if not usuario_esta_unido(user_id):
             bot.send_message(
                 message.chat.id,
@@ -151,7 +225,7 @@ def e(key, fallback=""):
         texto = message.text.strip() if message.text else ""
 
         # Opción de salida
-        if texto == "🔙 Salir al menú" or texto.startswith("/"):
+        if texto == "🚪 Salir al menú" or texto.startswith("/"):
             if chat_id in HISTORIAL_CHAT:
                 del HISTORIAL_CHAT[chat_id]
 
@@ -163,7 +237,7 @@ def e(key, fallback=""):
                 reply_markup=teclado_restablecido
             )
             return
-
+        
         # ---------------------------------------------------------
         # CONTROL DE ACCESO, CUPO Y DÍA INTERMEDIO (Solo si NO es Admin)
         # ---------------------------------------------------------

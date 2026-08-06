@@ -426,7 +426,7 @@ def construir_monitor_texto_html():
     }
 
     for usd_ref in [50.0, 150.0, 500.0]:
-        emoji_rango, nombre_def = emojis_rangos.get(usd_ref, (e("RANGO_3", "🥉")
+        emoji_rango, nombre_def = emojis_rangos.get(usd_ref, (e("RANGO_3", "🥉"),
         datos = rangos_cache.get(usd_ref) or rangos_cache.get(float(usd_ref)) or rangos_cache.get(str(usd_ref))
 
         if datos and datos.get("compra", 0) > 0 and datos.get("venta", 0) > 0:

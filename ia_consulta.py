@@ -50,11 +50,11 @@ def registrar_ia_consulta(bot, redis_client, obtener_teclado_func):
     # DICCIONARIO DE EMOJIS ANIMADOS DE TELEGRAM (IDs)
     TG_EMOJIS = {
         "BANCO": "5183805009766123191",       # 🏦 (BCV)
-        "PROHIBIDO": "5240241223632954241",   # ⛔
+        "PROHIBIDO": "5260293700088511294",   # ⛔
         "RELOJ_ARENA": "5447644880824181073", # ⏳
         "SIRENA": "5395695537687123235",      # 🚨
         "ESTADISTICA": "5231200819986047254", # 📊
-        "ESCUDO": "5416117059207572332",      # 🛡️
+        "ESCUDO": "5197288647275071607",      # 🛡️
         "VISTO": "5206607081334906820",       # ✔️
         "MEGAFONO": "5424818078833715060",    # 📣
         "BOMBILLA": "5422439311196834318",    # 💡

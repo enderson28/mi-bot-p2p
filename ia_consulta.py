@@ -164,7 +164,7 @@ def registrar_ia_consulta(bot, redis_client, obtener_teclado_func):
             teclado_restablecido = obtener_teclado_func(message.from_user)
             bot.send_message(
                 chat_id,
-                f"{e('BOMBILLA', '💡')} <b>Menú principal restablecido.</b>",
+                f"🏠 <b>Menú principal restablecido.</b>",
                 parse_mode="HTML",
                 reply_markup=teclado_restablecido
             )
@@ -319,7 +319,7 @@ def registrar_ia_consulta(bot, redis_client, obtener_teclado_func):
 
         bot.send_message(
             chat_id,
-            f"🫡 <b>Respuesta:</b>\n\n{respuesta_ia}",
+            f"✅ <b>Respuesta:</b>\n\n{respuesta_ia}",
             parse_mode="HTML"
         )
         

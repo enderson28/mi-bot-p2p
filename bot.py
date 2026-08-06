@@ -106,10 +106,10 @@ TEXTO_START = (
     "👋 <b>¡Bienvenido al Monitor Oficial IDV ~ Arbitraje P2P!</b>\n\n"
     "Este bot es tu herramienta aliada para proteger tu capital y generar ganancias reales en Venezuela 🇻🇪. Aquí no tienes que adivinar; el sistema calcula todo por ti.\n\n"
     "🚀 <b>¿Cómo empezar? Usa el menú interactivo de botones aquí abajo o escribe los comandos:</b>\n"
-    "➡️ <code>/precio</code> o botón 🟢🔴 <b>P2P~USDT</b> — Muestra las tasas reales BCV, precios P2P.\n"
-    "➡️ <code>/intervencion</code> o botón 📊<b>Intervención</b> — Desglose de bolívares requeridos para la compra de dólares oficiales.\n"
-    "➡️ <code>/bpay</code> o botón 🔸<b>BPay</b>🔸— Guía paso a paso para cargar USD bancarios a Binance.\n"
-    "➡️ <code>/gpay</code> o botón 🔹<b>GPay</b>🔹— Ruta alternativa para Deposito USD usando Google Pay.\n\n"
+    "➡️ <code>/p</code> o botón 🟢🔴 <b>P2P~USDT</b> — Muestra las tasas reales BCV, precios P2P.\n"
+    "➡️ <code>/i</code> o botón 📊<b>Intervención</b> — Desglose de bolívares requeridos para la compra de dólares oficiales.\n"
+    "➡️ <code>/bp</code> o botón 🔸<b>BPay</b>🔸— Guía paso a paso para cargar USD bancarios a Binance.\n"
+    "➡️ <code>/gp</code> o botón 🔹<b>GPay</b>🔹— Ruta alternativa para Deposito USD usando Google Pay.\n\n"
     "💡 <b>Nota:</b> <i>Si eres nuevo, lee con atención ~ Boton 👇🏽📜 Regla de Oro 📜. ¡Evita comprar costoso en el P2P!</i>"
 )
 
@@ -158,7 +158,7 @@ TEXTO_REGLA_ORO_HTML = (
     f"Si deseas comprar USDT por el arbitraje de <code>🟢 Compra</code>, también es perfectamente viable teniendo en cuenta que será una inversión estable sin margen de ganancias al momento (un tipo de ahorro), porque no estás comprando al USDT oficial sino al paralelo de arbitraje.\n\n"
     f"🔄 <b>La Ruta para Arbitraje Activo:</b>\n"
     f"1️⃣ Adquiere USD oficiales en tu banco a tasa BCV.\n"
-    f"2️⃣ Pásalos a Binance mediante /bpay o /gpay (Depósito USD).\n"
+    f"2️⃣ Pásalos a Binance mediante /bp o /gp (Depósito USD).\n"
     f"3️⃣ Convierte a USDT y vende usando la tasa de <code>🔴 Venta</code> de este monitor.\n\n"
     f"🛡️ <b>Estrategia de Capital Seguro:</b>\n"
     f"Al vender en VES, consulta mañana este bot. Usa solo los bolívares necesarios para volver a comprar tu capital base en el banco (<code>BCV + 0.5%</code>). <b>¡Deja tus ganancias acumuladas en USDT dentro de Binance como tu colchón de ahorro seguro!</b>"
@@ -1115,7 +1115,7 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
                     tasa_actual = CACHE_TASAS.get("bcv_tasa", tasa_nueva)
 
                     # Solo procesamos si la tasa raspada es diferente a la actual
-                    if tasa_nueva != tasa_actual:
+                    if tasa_nueva == tasa_actual:
                         CACHE_TASAS["bcv_tasa_anterior"] = tasa_actual
                         CACHE_TASAS["bcv_tasa"] = tasa_nueva
                         CACHE_TASAS["bcv_fecha"] = str(fecha)

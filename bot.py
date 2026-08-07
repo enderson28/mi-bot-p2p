@@ -40,14 +40,14 @@ BOT_USERNAME = "BancoIDV_bot" # Reemplaza con el alias de tu bot sin el @
 CANAL_CONGESTIONADO_OFICIAL = -1001504094779
 
 # Grupo Vincular de Conversación
-CANAL_CONGESTIONADO = "@COMUNIDADAS04"
+CANAL_CONGESTIONADO = -1001612840350
 
 # Otros Canales/Grupos Administrativos
 CANAL_ADMINS = -1003947562741
 CANAL_SECUNDARIO = -1004378497075
 
 # Canales de Pruebas (puedes mantenerlos o cambiarlos)
-CANAL_PRUEBA = "@COMUNIDV"
+CANAL_PRUEBA = -1004473532809
 CANAL_PRINCIPAL_IDV = -1003950050807
 
 # Lista unificada de chats donde el bot responderá a comandos de canal (/p, /i, /tasas)

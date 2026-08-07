@@ -58,7 +58,7 @@ def es_administrador(bot, chat_id, user_id, user=None):
 
     # 2. Verificación en el CANAL PRINCIPAL (@COMUNIDADAS04)
     try:
-        member_canal = bot.get_chat_member(CANAL_PRINCIPAL, user_id)
+        member_canal = bot.get_chat_member(CANAL_CONGESTIONADO, user_id)
         if member_canal.status in ['administrator', 'creator']:
             return True
     except Exception as e:
@@ -82,6 +82,7 @@ def es_administrador(bot, chat_id, user_id, user=None):
 
 # Lista de administradores VIP (convertidos a minúsculas)
 ADMINS_VIP = [ 
+    "5073264705",
     "@antonys4", 
     "@papitamaster", 
     "@bazoner", 
@@ -102,8 +103,8 @@ ADMINS_VIP = [
 ADMIN_ESPECIAL_1_PORCIENTO = "@carloses783"
 
 
-CANAL_PRINCIPAL = "@COMUNIDADAS04"
-GRUPO_ADMINS_ID = -1003947562741
+CANAL_CONGESTIONADO = -1001612840350
+CANAL_ADMINS = -1003947562741
 
 def es_admin_vip(bot, user):
     if not user:
@@ -119,7 +120,7 @@ def es_admin_vip(bot, user):
 
     # 2. ES ADMINISTRADOR DEL CANAL PRINCIPAL (@COMUNIDADAS04)
     try:
-        miembro = bot.get_chat_member(CANAL_PRINCIPAL, user_id)
+        miembro = bot.get_chat_member(CANAL_CONGESTIONADO, user_id)
         if miembro.status in ['administrator', 'creator']:
             return True
     except Exception:
@@ -127,7 +128,7 @@ def es_admin_vip(bot, user):
 
     # 3. ES MIEMBRO DEL GRUPO CERRADO DE ADMINS (-1003947562741)
     try:
-        miembro_grupo = bot.get_chat_member(GRUPO_ADMINS_ID, user_id)
+        miembro_grupo = bot.get_chat_member(CANAL_ADMINS, user_id)
         if miembro_grupo.status in ['member', 'administrator', 'creator']:
             return True
     except Exception:

@@ -32,19 +32,33 @@ bot = telebot.TeleBot(TOKEN_TELEGRAM)
 
 BOT_USERNAME = "BancoIDV_bot" # Reemplaza con el alias de tu bot sin el @
 
-# CONFIGURACIÓN DE EXCLUSIVIDAD MULTI-CANAL
-CANAL_PRUEBA = "@COMUNIDV"       # Canal de prueba
-CANAL_CONGESTIONADO = "@COMUNIDADAS04" # Canal principal
-CANAL_ADMINS = -1003947562741 # Reemplaza con el @ de tu grupo de admins
-CANAL_SECUNDARIO = -1004378497075 # Grupo de pruebaidv2
-CANAL_PRINCIPAL_IDV = -1003950050807 # Canal principal prueba
-# USUARIOS AUTORIZADOS PARA EL COMANDO /bot
-USUARIOS_AUTORIZADOS = [5073264705, 1676933074, 6299629267, 8166481937]
-# Creador Supremo (Tu ID numérico real)
-CREADOR_ID = 5073264705  # Reemplaza por tu ID numérico
+# ==========================================
+# CONFIGURACIÓN Y VARIABLES GLOBALES (PRODUCCIÓN)
+# ==========================================
 
-# Lista unificada de chats donde el bot responderá a los demás
-CHATS_PERMITIDOS = [CANAL_PRINCIPAL_IDV, CANAL_PRUEBA, CANAL_CONGESTIONADO, CANAL_ADMINS]
+# Canal Principal Oficial de Anuncios (Donde publica el dueño)
+CANAL_CONGESTIONADO_OFICIAL = -1001504094779
+
+# Grupo Vincular de Conversación
+CANAL_CONGESTIONADO = "@COMUNIDADAS04"
+
+# Otros Canales/Grupos Administrativos
+CANAL_ADMINS = -1003947562741
+CANAL_SECUNDARIO = -1004378497075
+
+# Canales de Pruebas (puedes mantenerlos o cambiarlos)
+CANAL_PRUEBA = "@COMUNIDV"
+CANAL_PRINCIPAL_IDV = -1003950050807
+
+# Lista unificada de chats donde el bot responderá a comandos de canal (/p, /i, /tasas)
+CHATS_PERMITIDOS = [
+    CANAL_CONGESTIONADO_OFICIAL, # <-- ID del canal principal
+    CANAL_CONGESTIONADO,         # <-- Grupo vinculado
+    CANAL_ADMINS, 
+    CANAL_PRINCIPAL_IDV, 
+    CANAL_PRUEBA
+]
+
 # CONFIGURACIÓN DE TIEMPOS
 RATE_LIMIT_AVISO = 600       # 10 minutos para enfriamiento de avisos a usuarios
 TIEMPO_VIDA_TABLA = 300      # 5 minutos para autodestrucción del monitor/intervención
@@ -588,7 +602,7 @@ def manejar_post_canal_tasas(message):
     chat_id = message.chat.id
 
     # Validar si es un canal autorizado
-    if str(chat_id) in [str(c) for c in CHATS_PERMITIDOS] or chat_id == CANAL_PRINCIPAL_IDV:
+    if str(chat_id) in [str(c) for c in CHATS_PERMITIDOS]:
         
         # 1. Borramos el comando enviado
         try:
@@ -616,7 +630,7 @@ def manejar_post_canal(message):
     chat_id = message.chat.id
 
     # Validar que sea un canal autorizado
-    if str(chat_id) in [str(c) for c in CHATS_PERMITIDOS] or chat_id == CANAL_PRINCIPAL_IDV:
+    if str(chat_id) in [str(c) for c in CHATS_PERMITIDOS]:
         
         # 1. Elimina el mensaje /p o /i del canal inmediatamente
         try:

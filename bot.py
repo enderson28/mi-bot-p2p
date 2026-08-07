@@ -257,7 +257,7 @@ def obtener_tasa_binance_p2p(tipo_operacion, monto_bs):
                     trade_conditions = bool(adv.get('tradeTypeCondition'))
                     adv_conditions = bool(adv.get('advConditions') or adv.get('classificationConditions'))
 
-                    if is_restricted or trade_conditions or adv_conditions or len(classifying) > 0:
+                    if is_restricted or trade_conditions or adv_conditions:
                         continue
 
                     if precio:
@@ -432,10 +432,18 @@ def construir_monitor_texto_html():
         500.0: (e("RANGO_1", "🥇"), "Rango Mayor (500+)")
     }
 
-    for usd_ref in [50.0, 150.0, 500.0]:
-        emoji_rango, nombre_def = emojis_rangos.get(usd_ref, (e("RANGO_3", "🥉"), "Rango"))
-        datos = rangos_cache.get(str(usd_ref)) or rangos_cache.get(float(usd_ref)) or rangos_cache.get(str(usd_ref))
 
+    for usd_ref in [50.0, 150.0, 500.0]:
+    emoji_rango, nombre_def = emojis_rangos.get(usd_ref, (e("RANGO_3", "🥉"), "Rango"))
+    
+    # 🔍 Probamos todas las variaciones posibles de llaves (str, int, float, str con int)
+    datos = (
+        rangos_cache.get(str(usd_ref)) or 
+        rangos_cache.get(usd_ref) or 
+        rangos_cache.get(str(int(usd_ref))) or 
+        rangos_cache.get(int(usd_ref))
+    )
+    
         if datos and datos.get("compra", 0) > 0 and datos.get("venta", 0) > 0:
             nombre_rango = datos.get("nombre", nombre_def)
             tasa_compra = datos["compra"]

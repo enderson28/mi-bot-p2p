@@ -397,8 +397,9 @@ TG_EMOJIS = {
     "SUBIDA": "5244837092042750681",       # 📈
     "BAJADA": "5246762912428603768",       # 📉
     "MUNDO": "5224450179368767019",        # 🌎
-    "FLECHA_DERECHA": "5416117059207572332",# ➡️
-    "DINERO": "5197434882321567830"        # 💵
+    "FLECHA_DERECHA": "5416117059207572332", # ➡️
+    "DINERO": "5197434882321567830",        # 💵
+    "BINANCE_P2P": "5832421268476924783"    # 🪙
 }
 
 def e(key, fallback=""):
@@ -406,6 +407,33 @@ def e(key, fallback=""):
     if emoji_id:
         return f'<tg-emoji emoji-id="{emoji_id}">{fallback}</tg-emoji>'
     return fallback
+
+def construir_monitor_canal_html():
+    """Genera la ficha resumen simplificada para el Canal Principal con Custom Emojis dinámicos"""
+    # Consulta la mejor tasa de compra y venta general
+    compra_base = obtener_tasa_binance_p2p("buy", 0) or 0.0
+    venta_base = obtener_tasa_binance_p2p("sell", 0) or 0.0
+
+    if compra_base == 0.0 or venta_base == 0.0:
+        return f"⚠️ <b>Error temporal al obtener tasas de Binance P2P.</b>"
+
+    spread = round(compra_base - venta_base, 2)
+    porcentaje = round((spread / venta_base) * 100, 2) if venta_base > 0 else 0.0
+
+    hora_actual = datetime.now(TZ_VENEZUELA).strftime("%I:%M:%S %p")
+
+    # Emoji dinámico de Spread (SUBIDA si es >= 0, BAJADA si es negativo)
+    emoji_spread = e("SUBIDA", "📈") if spread >= 0 else e("BAJADA", "📉")
+
+    # Formato corto usando el diccionario TG_EMOJIS mediante la función e()
+    texto = (
+        f"{e('BINANCE_P2P', '🟡')} <b>TASAS P2P EN VIVO</b>\n\n"
+        f"{e('VERDE', '🟢')} <b>COMPRA USDT:</b> {compra_base:.2f} Bs\n"
+        f"{e('ROJO', '🔴')} <b>VENTA USDT:</b> {venta_base:.2f} Bs\n\n"
+        f"{emoji_spread} <b>Spread:</b> {spread:.2f} Bs ({porcentaje:.2f}%)\n\n"
+        f"{e('MUNDO', '🌐')} <i>Última actualización: {hora_actual}</i>"
+    )
+    return texto
     
 
 def construir_monitor_texto_html():
@@ -550,6 +578,33 @@ def handle_start(message):
 
         # Mensaje recargado con teclado completo para novatos
         bot.send_message(message.chat.id, TEXTO_START, parse_mode="HTML", reply_markup=obtener_teclado_privado())
+
+# ==========================================
+# COMANDO EXCLUSIVO /tasas PARA CANAL
+# ==========================================
+@bot.channel_post_handler(commands=['tasas', 'tasa'])
+def manejar_post_canal_tasas(message):
+    """Maneja el comando /tasas enviado al Canal Principal"""
+    chat_id = message.chat.id
+
+    # Validar si es un canal autorizado
+    if str(chat_id) in [str(c) for c in CHATS_PERMITIDOS] or chat_id == CANAL_PRINCIPAL_IDV:
+        
+        # 1. Borramos el comando enviado
+        try:
+            bot.delete_message(chat_id, message.message_id)
+        except Exception:
+            pass
+
+        # 2. Construimos la ficha corta
+        texto_resultado = construir_monitor_canal_html()
+
+        # 3. Agregamos el botón de actualización
+        markup = InlineKeyboardMarkup()
+        markup.add(InlineKeyboardButton("🔄 Actualizar Tasas", callback_data="refrescar_canal_tasas"))
+
+        # 4. Publicamos en el Canal
+        bot.send_message(chat_id, texto_resultado, parse_mode="HTML", reply_markup=markup)
 
 
 # ==========================================
@@ -1039,6 +1094,27 @@ def procesar_soporte(message):
         bot.delete_message(chat_id, message.message_id)
     except Exception:
         pass
+
+@bot.callback_query_handler(func=lambda call: call.data == "refrescar_canal_tasas")
+def refrescar_tasas_canal_callback(call):
+    """Callback para el botón de actualizar la ficha corta del canal"""
+    texto_actualizado = construir_monitor_canal_html()
+    
+    markup = InlineKeyboardMarkup()
+    markup.add(InlineKeyboardButton("🔄 Actualizar Tasas", callback_data="refrescar_canal_tasas"))
+    
+    try:
+        bot.edit_message_text(
+            chat_id=call.message.chat.id,
+            message_id=call.message.message_id,
+            text=texto_actualizado,
+            parse_mode="HTML",
+            reply_markup=markup
+        )
+        bot.answer_callback_query(call.id, "✅ Tasas actualizadas")
+    except Exception:
+        bot.answer_callback_query(call.id, "⚡ Sin cambios en la tasa")
+
 
 # ==========================================
 #    MANEJADOR DEL BOTÓN INLINE (REFRESCAR)

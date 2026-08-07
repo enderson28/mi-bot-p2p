@@ -427,11 +427,11 @@ def construir_monitor_canal_html():
 
     # Formato corto usando el diccionario TG_EMOJIS mediante la función e()
     texto = (
-        f"{e('BINANCE_P2P', '🟡')} <b>TASAS P2P EN VIVO</b>\n\n"
+        f"{e('BINANCE_P2P', '🪙')} <b>TASAS P2P EN VIVO</b>\n\n"
         f"{e('VERDE', '🟢')} <b>COMPRA USDT:</b> {compra_base:.2f} Bs\n"
         f"{e('ROJO', '🔴')} <b>VENTA USDT:</b> {venta_base:.2f} Bs\n\n"
         f"{emoji_spread} <b>Spread:</b> {spread:.2f} Bs ({porcentaje:.2f}%)\n\n"
-        f"{e('MUNDO', '🌐')} <i>Última actualización: {hora_actual}</i>"
+        f"{e('MUNDO', '🌎')} <i>Última actualización: {hora_actual}</i>"
     )
     return texto
     

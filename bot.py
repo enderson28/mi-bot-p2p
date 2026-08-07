@@ -252,12 +252,14 @@ def obtener_tasa_binance_p2p(tipo_operacion, monto_bs):
                     if user_status in ["BLOCKED", "INACTIVE"]:
                         continue
 
-                    # 2. Filtro de restringidos / condiciones atípicas
+                    # 2. FILTRO DEFINITIVO DE RESTRINGIDOS / CONDICIONES ATÍPICAS
                     is_restricted = adv.get('isRestricted') or adv.get('restricted') or False
-                    trade_conditions = bool(adv.get('tradeTypeCondition'))
-                    adv_conditions = bool(adv.get('advConditions') or adv.get('classificationConditions'))
+                    trade_conditions = bool(adv.get('tradeConditions'))  # 👈 Corregido a plural 'tradeConditions'
+                    class_conditions = bool(adv.get('classificationConditions'))
+                    adv_conditions = bool(adv.get('advConditions'))
 
-                    if is_restricted or trade_conditions or adv_conditions:
+                    # Si tiene cualquier tipo de restricción o condición especial, lo saltamos
+                    if is_restricted or trade_conditions or class_conditions or adv_conditions:
                         continue
 
                     if precio:

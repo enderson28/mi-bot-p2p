@@ -420,7 +420,7 @@ def construir_monitor_canal_html():
     spread = round(compra_base - venta_base, 2)
     porcentaje = round((spread / venta_base) * 100, 2) if venta_base > 0 else 0.0
 
-    hora_actual = datetime.now(TZ_VENEZUELA).strftime("%I:%M:%S %p")
+    hora_actual = (datetime.now() - timedelta(hours=4)).strftime("%I:%M:%S %p")
 
     # Emoji dinámico de Spread (SUBIDA si es >= 0, BAJADA si es negativo)
     emoji_spread = e("SUBIDA", "📈") if spread >= 0 else e("BAJADA", "📉")

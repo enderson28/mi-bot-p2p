@@ -607,7 +607,7 @@ def fix_tasa_handler(message):
             if len(partes) > 1:
                 tasa_fix = float(partes[1])
                 CACHE_TASAS["bcv_tasa_anterior"] = tasa_fix
-                guardar_cacho_en_disco()
+                guardar_cache_en_disco()
                 bot.reply_to(message, f"✅ <b>¡Tasa anterior corregida a {tasa_fix}!</b>\nRAM y Redis sincronizados.", parse_mode="HTML")
             else:
                 bot.reply_to(message, "⚠️ Uso: <code>/fix_tasa 755.90</code>", parse_mode="HTML")

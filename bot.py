@@ -550,21 +550,58 @@ def handle_start(message):
 
         # Mensaje recargado con teclado completo para novatos
         bot.send_message(message.chat.id, TEXTO_START, parse_mode="HTML", reply_markup=obtener_teclado_privado())
-        
 
-# Manejador para /precio y el botón P2P
+
+# ==========================================
+# MANEJADOR PARA PUBLICACIONES EN CANALES
+# ==========================================
+@bot.channel_post_handler(commands=['p', 'i'])
+def manejar_post_canal(message):
+    """Maneja /p y /i cuando son publicados directamente en el Canal Principal"""
+    chat_id = message.chat.id
+
+    # Validar que sea un canal autorizado
+    if str(chat_id) in [str(c) for c in CHATS_PERMITIDOS] or chat_id == CANAL_PRINCIPAL_IDV:
+        
+        # 1. Elimina el mensaje /p o /i del canal inmediatamente
+        try:
+            bot.delete_message(chat_id, message.message_id)
+        except Exception:
+            pass
+
+        # 2. Determina el comando
+        texto_cmd = message.text.strip().lower() if message.text else ""
+        
+        if texto_cmd.startswith('/p'):
+            texto_resultado = construir_monitor_texto_html()
+            callback_refrescar = "refrescar_tasas"
+        elif texto_cmd.startswith('/i'):
+            texto_resultado = construir_intervencion_texto_html() if 'construir_intervencion_texto_html' in globals() else "Intervención"
+            callback_refrescar = "refrescar_intervencion"
+        else:
+            return
+
+        # 3. Crea el botón de actualizar
+        markup = InlineKeyboardMarkup()
+        markup.add(InlineKeyboardButton("🔄 Actualizar Tasas", callback_data=callback_refrescar))
+
+        # 4. Publica el post con las tasas en el Canal Principal
+        bot.send_message(chat_id, texto_resultado, parse_mode="HTML", reply_markup=markup)
+
+
+# Manejador para /p y el botón P2P
 @bot.message_handler(commands=['p', 'p2p'])
 @bot.message_handler(func=lambda m: m.text and m.text.strip() == "🟢☠️ Precio-Usdt ☠️🔴")
 def handle_precio_comando(message):
     procesar_precio(message)
 
-# Manejador para el botón de Intervención y el comando /intervencion
+# Manejador para el botón de Intervención y el comando /i
 @bot.message_handler(commands=['i'])
 @bot.message_handler(func=lambda m: m.text and m.text.strip() == "📊📊 Intervencion 📊📊")
 def handle_intervencion_comando(message):
     procesar_intervencion(message)
 
-# Manejador para los comandos /bpay y /gpay
+# Manejador para los comandos /bp y /gp
 @bot.message_handler(commands=['bp', 'gp'])
 def handle_guias_comando(message):
     procesar_guias(message)
@@ -684,7 +721,7 @@ def enviar_o_reemplazar_privado(chat_id, user_id, texto, reply_markup=None):
 # ==========================================
 
 def procesar_precio(message):
-    user_id = message.from_user.id
+    user_id = message.from_user.id if message.from_user else None
     chat_id = message.chat.id
 
     # Permite el paso ÚNICAMENTE si el chat está permitido por las reglas de seguridad 
@@ -722,6 +759,17 @@ def procesar_precio(message):
             print(f"Error en precio privado: {e}")
             bot.send_message(chat_id, "❌ Error temporal al obtener tasas. Inténtalo de nuevo en unos segundos.")
             return
+            
+    # --- 2. EN GRUPOS ---
+    # Si el mensaje proviene de un reenvío automático del canal al grupo:
+    if getattr(message, 'is_automatic_forward', False):
+        try:
+            # Quitamos los botones inline en la copia del grupo
+            bot.edit_message_reply_markup(chat_id=chat_id, message_id=message.message_id, reply_markup=None)
+        except Exception:
+            pass
+        return  # Frenamos la ejecución para que no responda con errores de Admin
+
 
     # --- 2. EN GRUPOS ---
     # Borramos el comando ejecutado inmediatamente para mantener el chat limpio
@@ -780,7 +828,7 @@ def procesar_precio(message):
                 pass
 
 def procesar_intervencion(message):
-    user_id = message.from_user.id
+    user_id = message.from_user.id if message.from_user else None
     chat_id = message.chat.id
 
     # --- FILTRO DE SEGURIDAD GENERAL ---
@@ -821,6 +869,17 @@ def procesar_intervencion(message):
             reply_markup=markup_intervencion
         )
         return
+
+    # --- 2. EN GRUPOS ---
+    # Si el mensaje proviene de un reenvío automático del canal al grupo:
+    if getattr(message, 'is_automatic_forward', False):
+        try:
+            # Quitamos los botones inline en la copia del grupo
+            bot.edit_message_reply_markup(chat_id=chat_id, message_id=message.message_id, reply_markup=None)
+        except Exception:
+            pass
+        return  # Frenamos la ejecución para que no responda con errores de Admin
+        
 
     # --- 2. EN GRUPOS ---
     try:

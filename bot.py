@@ -224,18 +224,19 @@ def obtener_tasa_binance_p2p(tipo_operacion, monto_bs):
         "asset": "USDT",
         "fiat": "VES",
         "merchantCheck": True,
+        "publisherType": "merchant",  # 👈 Esencial para filtrar comerciantes
         "page": 1,
         "rows": 10,
         "tradeType": tipo_operacion.upper(),
         "transAmount": str(int(monto_bs)),
         "filterType": "tradable",
         "additionalKycVerifyFilter": 0,
-        "shieldMerchantAds": True,  # 🛡️ Oculta anuncios blindados/especiales de comerciantes
         "periods": []
     }
 
     try:
-        r = requests.post(url, json=payload, headers=headers, timeout=(2.0, 2.0))
+        # Aumentamos el timeout a 5.0s para evitar fallas silenciosas en Railway
+        r = requests.post(url, json=payload, headers=headers, timeout=(5.0, 5.0))
         if r.status_code == 200:
             datos = r.json().get('data', [])
             if datos:
@@ -251,8 +252,7 @@ def obtener_tasa_binance_p2p(tipo_operacion, monto_bs):
                     if user_status in ["BLOCKED", "INACTIVE"]:
                         continue
 
-                    # 2. FILTRO DEFINITIVO DE RESTRINGIDOS / CONDICIONES ATÍPICAS
-                    classifying = adv.get('classifying') or []
+                    # 2. Filtro de restringidos / condiciones atípicas
                     is_restricted = adv.get('isRestricted') or adv.get('restricted') or False
                     trade_conditions = bool(adv.get('tradeTypeCondition'))
                     adv_conditions = bool(adv.get('advConditions') or adv.get('classificationConditions'))
@@ -263,14 +263,12 @@ def obtener_tasa_binance_p2p(tipo_operacion, monto_bs):
                     if precio:
                         precios_validos.append(float(precio))
 
-                # 3. FILTRO ANTI-FANTASMA (SALTA EL PRIMERO SI ES UN OUTLIER DESVIADO)
+                # 3. FILTRO ANTI-FANTASMA (Compara el 1er y 2do precio de la lista)
                 if precios_validos:
-                    # Si hay más de un anuncio, verificamos que el primero no esté 'roto'
                     if len(precios_validos) >= 2:
-                        # Si la diferencia entre el 1er y 2do anuncio es anormal (más de 2% de brecha)
+                        # Si la diferencia porcentual con el 2do anuncio es mayor al 2% (anuncio fantasma/desviado)
                         diferencia_porcentual = abs(precios_validos[0] - precios_validos[1]) / precios_validos[1]
                         if diferencia_porcentual > 0.02: 
-                            # El 1er anuncio es un fantasma/irreal, tomamos el 2do real
                             return precios_validos[1]
                     
                     return precios_validos[0]
@@ -280,7 +278,6 @@ def obtener_tasa_binance_p2p(tipo_operacion, monto_bs):
 
     return None
                     
-
 # --- CACHÉ GLOBAL DE TASAS ---
 CACHE_TASAS = {
     "bcv_tasa": 756.71,

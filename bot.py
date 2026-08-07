@@ -602,9 +602,11 @@ def handle_start(message):
 # ==========================================
 @bot.channel_post_handler(commands=['tasas', 'tasa'])
 def manejar_post_canal_tasas(message):
+    # Asegura que sea un post directo en un canal
+    if message.chat.type != 'channel':
+        return
     """Maneja el comando /tasas enviado al Canal Principal"""
     chat_id = message.chat.id
-
     # Validar si es un canal autorizado
     if str(chat_id) in [str(c) for c in CHATS_PERMITIDOS]:
         
@@ -630,9 +632,12 @@ def manejar_post_canal_tasas(message):
 # ==========================================
 @bot.channel_post_handler(commands=['p', 'i'])
 def manejar_post_canal(message):
+    # Asegura que sea un post directo en un canal
+    if message.chat.type != 'channel':
+        return
+        
     """Maneja /p y /i cuando son publicados directamente en el Canal Principal"""
     chat_id = message.chat.id
-
     # Validar que sea un canal autorizado
     if str(chat_id) in [str(c) for c in CHATS_PERMITIDOS]:
         

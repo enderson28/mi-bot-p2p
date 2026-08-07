@@ -333,7 +333,7 @@ def actualizar_cache_segundo_plano():
                 monto_bs = usd_ref * tasa_bcv_ajustada
                 compra = obtener_tasa_binance_p2p("BUY", monto_bs) or 0.0
                 venta = obtener_tasa_binance_p2p("SELL", monto_bs) or 0.0
-                nuevos_rangos[usd_ref] = {
+                nuevos_rangos[str(usd_ref)] = {
                     "nombre": nombre,
                     "compra": compra,
                     "venta": venta
@@ -370,7 +370,7 @@ def refrescar_tasas_en_vivo():
         except Exception as e:
             print(f"Error al obtener tasas P2P para {nombre}: {e}")
             compra, venta = 0.0, 0.0
-        nuevos_rangos[usd_ref] = {
+        nuevos_rangos[str(usd_ref)] = {
             "nombre": nombre,
             "compra": compra,
             "venta": venta
@@ -434,7 +434,7 @@ def construir_monitor_texto_html():
 
     for usd_ref in [50.0, 150.0, 500.0]:
         emoji_rango, nombre_def = emojis_rangos.get(usd_ref, (e("RANGO_3", "🥉"), "Rango"))
-        datos = rangos_cache.get(usd_ref) or rangos_cache.get(float(usd_ref)) or rangos_cache.get(str(usd_ref))
+        datos = rangos_cache.get(str(usd_ref)) or rangos_cache.get(float(usd_ref)) or rangos_cache.get(str(usd_ref))
 
         if datos and datos.get("compra", 0) > 0 and datos.get("venta", 0) > 0:
             nombre_rango = datos.get("nombre", nombre_def)

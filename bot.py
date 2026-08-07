@@ -211,6 +211,7 @@ def obtener_datos_bcv_validos():
     return tasa, fecha
     
     
+
 def obtener_tasa_binance_p2p(tipo_operacion, monto_bs):
     url = "https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search"
     headers = {
@@ -223,14 +224,13 @@ def obtener_tasa_binance_p2p(tipo_operacion, monto_bs):
         "asset": "USDT",
         "fiat": "VES",
         "merchantCheck": True,
-        "publisherType": "merchant",
         "page": 1,
         "rows": 10,
         "tradeType": tipo_operacion.upper(),
         "transAmount": str(int(monto_bs)),
         "filterType": "tradable",
         "additionalKycVerifyFilter": 0,
-        "shieldMerchantAds": False,
+        "shieldMerchantAds": True,  # 🛡️ Oculta anuncios blindados/especiales de comerciantes
         "periods": []
     }
 
@@ -239,35 +239,42 @@ def obtener_tasa_binance_p2p(tipo_operacion, monto_bs):
         if r.status_code == 200:
             datos = r.json().get('data', [])
             if datos:
+                precios_validos = []
                 for elemento in datos:
                     adv = elemento.get('adv', {})
                     advertiser = elemento.get('advertiser', {})
 
                     precio = adv.get('price')
                     user_status = advertiser.get('userStatus', '')
-                    user_type = advertiser.get('userType', '')
 
                     # 1. Ignorar usuarios bloqueados o inactivos
-                    if user_status in ['BLOCKED', 'INACTIVE']:
+                    if user_status in ["BLOCKED", "INACTIVE"]:
                         continue
 
-                    # 2. FILTRO DEFINITIVO DE RESTRINGIDOS
+                    # 2. FILTRO DEFINITIVO DE RESTRINGIDOS / CONDICIONES ATÍPICAS
                     classifying = adv.get('classifying') or []
                     is_restricted = adv.get('isRestricted') or adv.get('restricted') or False
                     trade_conditions = bool(adv.get('tradeTypeCondition'))
-                    adv_conditions = adv.get('advConditions') or adv.get('classificationConditions')
-                    has_conditions = bool(adv_conditions) if adv_conditions is not None else False
+                    adv_conditions = bool(adv.get('advConditions') or adv.get('classificationConditions'))
 
-                    # Si el anuncio requiere condiciones especiales o tiene restricciones en 'classifying'
-                    if is_restricted or trade_conditions or has_conditions or len(classifying) > 0:
-                        continue
-
-                    # 3. Solo aceptar comerciante verificado
-                    if user_type != 'merchant':
+                    if is_restricted or trade_conditions or adv_conditions or len(classifying) > 0:
                         continue
 
                     if precio:
-                        return float(precio)
+                        precios_validos.append(float(precio))
+
+                # 3. FILTRO ANTI-FANTASMA (SALTA EL PRIMERO SI ES UN OUTLIER DESVIADO)
+                if precios_validos:
+                    # Si hay más de un anuncio, verificamos que el primero no esté 'roto'
+                    if len(precios_validos) >= 2:
+                        # Si la diferencia entre el 1er y 2do anuncio es anormal (más de 2% de brecha)
+                        diferencia_porcentual = abs(precios_validos[0] - precios_validos[1]) / precios_validos[1]
+                        if diferencia_porcentual > 0.02: 
+                            # El 1er anuncio es un fantasma/irreal, tomamos el 2do real
+                            return precios_validos[1]
+                    
+                    return precios_validos[0]
+
     except Exception as e:
         print(f"⚠️ Error conectando con Binance P2P: {e}")
 

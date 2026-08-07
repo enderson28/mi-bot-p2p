@@ -206,8 +206,8 @@ def usuario_esta_unido(user_id):
     # Actualizacion de velocidad
 def obtener_datos_bcv_validos():
     """Retorna la tasa y fecha actuales guardadas en memoria desde el Cazador BCV."""
-    tasa = CACHE_TASAS.get("bcv_tasa", 745.64)
-    fecha = CACHE_TASAS.get("bcv_fecha", "2026-07-30")
+    tasa = CACHE_TASAS.get("bcv_tasa", 756.71)
+    fecha = CACHE_TASAS.get("bcv_fecha", "2026-08-06")
     return tasa, fecha
     
     
@@ -276,9 +276,9 @@ def obtener_tasa_binance_p2p(tipo_operacion, monto_bs):
 
 # --- CACHÉ GLOBAL DE TASAS ---
 CACHE_TASAS = {
-    "bcv_tasa": 745.64,
-    "bcv_tasa_anterior": 744.23,
-    "bcv_fecha": "2026-07-30",
+    "bcv_tasa": 756.71,
+    "bcv_tasa_anterior": 755.90,
+    "bcv_fecha": "2026-08-06",
     "rangos": {} # Guardará las tasas calculadas por rango
 }
 
@@ -312,7 +312,7 @@ def actualizar_cache_segundo_plano():
     while True:
         try:
             # Leemos la tasa BCV actual almacenada en memoria (la que envía el cazador)
-            tasa_bcv = CACHE_TASAS.get("bcv_tasa", 745.64)
+            tasa_bcv = CACHE_TASAS.get("bcv_tasa", 756.71)
             tasa_bcv_ajustada = tasa_bcv * 1.005
 
             ranges_def = [
@@ -344,8 +344,8 @@ threading.Thread(target=actualizar_cache_segundo_plano, daemon=True).start()
 
 def refrescar_tasas_en_vivo():
     global CACHE_TASAS
-    tasa_bcv = CACHE_TASAS.get("bcv_tasa", 745.64)
-    fecha_bcv = CACHE_TASAS.get("bcv_fecha", "2026-07-30")
+    tasa_bcv = CACHE_TASAS.get("bcv_tasa", 756.71)
+    fecha_bcv = CACHE_TASAS.get("bcv_fecha", "2026-08-06")
 
     tasa_bcv_ajustada = tasa_bcv * 1.005
     rangos_def = [
@@ -402,8 +402,8 @@ def e(key, fallback=""):
     
 
 def construir_monitor_texto_html():
-    tasa_bcv = CACHE_TASAS.get("bcv_tasa", 745.64)
-    fecha_valor_bcv = CACHE_TASAS.get("bcv_fecha", "30 Julio 2026")
+    tasa_bcv = CACHE_TASAS.get("bcv_tasa", 756.71)
+    fecha_valor_bcv = CACHE_TASAS.get("bcv_fecha", "06 Agosto 2026")
     tasa_intervencion = tasa_bcv * 1.005
 
     texto = (
@@ -469,9 +469,9 @@ def construir_intervencion_texto_html(user=None, porcentaje=None):
 
     porcentaje_txt = "1%" if porcentaje == 1.0 else "0.5%"
 
-    tasa_bcv = CACHE_TASAS.get("bcv_tasa", 745.64)
-    tasa_anterior = CACHE_TASAS.get("bcv_tasa_anterior", 744.23)
-    fecha_valor_bcv = CACHE_TASAS.get("bcv_fecha", "30 Julio 2026")
+    tasa_bcv = CACHE_TASAS.get("bcv_tasa", 756.71)
+    tasa_anterior = CACHE_TASAS.get("bcv_tasa_anterior", 755.90)
+    fecha_valor_bcv = CACHE_TASAS.get("bcv_fecha", "06 Agosto 2026")
 
     diferencia = tasa_bcv - tasa_anterior
 
@@ -610,7 +610,7 @@ def fix_tasa_handler(message):
                 guardar_cacho_en_disco()
                 bot.reply_to(message, f"✅ <b>¡Tasa anterior corregida a {tasa_fix}!</b>\nRAM y Redis sincronizados.", parse_mode="HTML")
             else:
-                bot.reply_to(message, "⚠️ Uso: <code>/fix_tasa 744.23</code>", parse_mode="HTML")
+                bot.reply_to(message, "⚠️ Uso: <code>/fix_tasa 755.90</code>", parse_mode="HTML")
         except Exception as e:
             bot.reply_to(message, f"❌ Error: {e}")
         

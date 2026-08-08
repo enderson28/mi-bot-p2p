@@ -27,6 +27,11 @@ def validar_copia_pega(bot, message, es_admin):
     Si un usuario normal pega cualquier texto oficial del bot o sus reportes,
     el bot borra el mensaje de inmediato para evitar spam o confusión.
     """
+
+    # 0. Ignorar publicaciones reenviadas automáticamente desde el canal oficial
+    if getattr(message, 'is_automatic_forward', False):
+        return False
+    
     # 1. Si es Administrador, lo dejamos hablar tranquilamente
     if es_admin:
         return False 

@@ -436,9 +436,9 @@ def construir_monitor_canal_html():
     if compra_base == 0.0 or venta_base == 0.0:
         return f"⚠️ <b>Error temporal al obtener tasas de Binance P2P.</b>"
 
-    spread = round(compra_base - venta_base, 2)
-    porcentaje = round((spread / venta_base) * 100, 2) if venta_base > 0 else 0.0
-
+    spread = round(venta_base - compra_base, 2)
+    porcentaje = round((spread / compra_base) * 100, 2) if compra_base > 0 else 0.0
+    
     hora_actual = (datetime.now() - timedelta(hours=4)).strftime("%I:%M:%S %p")
 
     # Emoji dinámico de Spread (SUBIDA si es >= 0, BAJADA si es negativo)

@@ -1225,32 +1225,44 @@ def refrescar_canal_tasas_callback(call):
 # ==========================================
 @bot.callback_query_handler(func=lambda call: call.data == "refrescar_tasas")
 def callback_refrescar_tasas(call):
-    if not usuario_esta_unido(call.from_user.id):
+    user_id = call.from_user.id if call.from_user else None
+
+    # 🛑 1. BLINDAJE EN CANALES: Solo Creador o Admin VIP
+    if call.message.chat.type == "channel":
+        if not (str(user_id) == str(CREADOR_ID) or es_admin_vip(bot, call.from_user)):
+            bot.answer_callback_query(
+                call.id,
+                text=f"❌ Solo Administradores pueden actualizar la tasa en el canal.\n👉 Consulta libremente en privado: @{BOT_USERNAME}",
+                show_alert=True
+            )
+            return
+
+    # 2. Verificación de usuario unido para Privados / Grupos
+    if not usuario_esta_unido(user_id):
         bot.answer_callback_query(call.id, text="❌ Acceso denegado. No perteneces al canal.")
         return
 
-    # 1. Responder de inmediato al botón
+    # 3. Responder de inmediato al botón
     bot.answer_callback_query(call.id, text="🔄 Actualizando tasas en vivo...")
 
     try:
-        # 2. Forzamos la actualización desde Binance
+        # 4. Forzamos la actualización desde Binance
         refrescar_tasas_en_vivo()
         monitor_fresco = construir_monitor_texto_html()
 
-
         aviso_regla = (
-            "\n\n💡 <b>¿Quieres saber cómo calcular tus ganancias paso a paso?</b>\n"
+            "\n\n 💡<b>¿Quieres saber cómo calcular tus ganancias paso a paso?</b>\n"
             "Presiona el botón <b>📜 Regla de Oro 📜</b> en el menú de abajo. 👇👇"
         )
 
-        if es_admin_vip(bot, call.from_user):
-            texto_editado = monitor_fresco 
+        if es_admin_vip(bot, call.from_user) or call.message.chat.type == "channel":
+            texto_editado = monitor_fresco
         else:
-            texto_editado = monitor_fresco + aviso_regla 
+            texto_editado = monitor_fresco + aviso_regla
 
-        # 3. Construimos el teclado
+        # 5. Construimos el teclado
         markup_tasas = InlineKeyboardMarkup()
-        if call.message.chat.id == CANAL_ADMINS or es_admin_vip(bot, call.from_user):
+        if str(call.message.chat.id) == str(CANAL_ADMINS) or es_admin_vip(bot, call.from_user):
             markup_tasas.row(
                 InlineKeyboardButton("🔄 Actualizar Tasas", callback_data="refrescar_tasas"),
                 InlineKeyboardButton("🗑️ Borrar", callback_data="borrar_mensaje")
@@ -1258,7 +1270,7 @@ def callback_refrescar_tasas(call):
         else:
             markup_tasas.add(InlineKeyboardButton("🔄 Actualizar Tasas", callback_data="refrescar_tasas"))
 
-        # 4. Editamos el mensaje
+        # 6. Editamos el mensaje
         bot.edit_message_text(
             chat_id=call.message.chat.id,
             message_id=call.message.message_id,
@@ -1276,7 +1288,20 @@ def callback_refrescar_tasas(call):
 
 @bot.callback_query_handler(func=lambda call: call.data == "refrescar_intervencion")
 def callback_refrescar_intervencion(call):
-    if not usuario_esta_unido(call.from_user.id):
+    user_id = call.from_user.id if call.from_user else None
+
+    # 🛑 1. BLINDAJE EN CANALES: Solo Creador o Admin VIP
+    if call.message.chat.type == "channel":
+        if not (str(user_id) == str(CREADOR_ID) or es_admin_vip(bot, call.from_user)):
+            bot.answer_callback_query(
+                call.id,
+                text=f"❌ Solo Administradores pueden actualizar la intervención en el canal.\n👉 Consulta libremente en privado: @{BOT_USERNAME}",
+                show_alert=True
+            )
+            return
+
+    # 2. Verificación de usuario unido
+    if not usuario_esta_unido(user_id):
         bot.answer_callback_query(call.id, text="❌ Acceso denegado. No perteneces al canal.")
         return
 
@@ -1285,7 +1310,7 @@ def callback_refrescar_intervencion(call):
 
         # Construimos el teclado evaluando si está en el grupo de admins
         markup_intervencion = InlineKeyboardMarkup()
-        if call.message.chat.id == CANAL_ADMINS or es_admin_vip(bot, call.from_user):
+        if str(call.message.chat.id) == str(CANAL_ADMINS) or es_admin_vip(bot, call.from_user):
             markup_intervencion.row(
                 InlineKeyboardButton("🔄 Actualizar Cálculo", callback_data="refrescar_intervencion"),
                 InlineKeyboardButton("🗑️ Borrar", callback_data="borrar_mensaje")
@@ -1301,10 +1326,12 @@ def callback_refrescar_intervencion(call):
             reply_markup=markup_intervencion
         )
         bot.answer_callback_query(call.id, text="¡Tabla de Intervención actualizada! 📊")
+
     except Exception:
-        bot.answer_callback_query(call.id, text="Las tasas se mantienen actualizadas. 🏦")
+        bot.answer_callback_query(call.id, text="Las tasas se mantienen actualizadas. 🏛️")
+        
                     
-    # ============================================
+# ============================================
 # BOTÓN FLOTANTE PARA BORRAR (PRECIO E INTERVENCIÓN)
 # ============================================
 @bot.callback_query_handler(func=lambda call: call.data == "borrar_mensaje")

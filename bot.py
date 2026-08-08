@@ -669,13 +669,13 @@ def manejar_post_canal(message):
 # Manejador para ejecutar /tasas en grupos permitidos y privados
 @bot.message_handler(commands=['tasas', 'tasa'])
 def handle_tasas_comando(message):
-    # 1. Filtro de seguridad
+    # 1. Filtro de seguridad: Verifica que el chat esté en CHATS_PERMITIDOS
     if not es_chat_permitido(bot, message, CHATS_PERMITIDOS, USUARIOS_AUTORIZADOS, CREADOR_ID):
         return
 
     chat_id = message.chat.id
 
-    # 2. Borramos el comando ejecutado para mantener el chat limpio
+    # 2. Borramos el comando escrito inmediatamente
     try:
         bot.delete_message(chat_id, message.message_id)
     except Exception:
@@ -684,11 +684,19 @@ def handle_tasas_comando(message):
     # 3. Construimos la ficha CORTA/LIMPIA del canal
     texto_resultado = construir_monitor_canal_html()
 
-    # 4. Agregamos el botón de actualización
+    # 4. Construcción de la botonera
     markup = InlineKeyboardMarkup()
-    markup.add(InlineKeyboardButton("🔄 Actualizar Tasas", callback_data="refrescar_canal_tasas"))
+    
+    # Si se ejecuta en los chats de trabajo/admin, agrega el botón de Borrar
+    if str(chat_id) in [str(CANAL_CONGESTIONADO), str(CANAL_ADMINS)]:
+        markup.row(
+            InlineKeyboardButton("🔄 Actualizar Tasas", callback_data="refrescar_canal_tasas"),
+            InlineKeyboardButton("🗑️ Borrar", callback_data="borrar_mensaje")
+        )
+    else:
+        markup.add(InlineKeyboardButton("🔄 Actualizar Tasas", callback_data="refrescar_canal_tasas"))
 
-    # 5. Enviamos la ficha limpia
+    # 5. Publicamos la ficha
     bot.send_message(chat_id, texto_resultado, parse_mode="HTML", reply_markup=markup)
 
 # Manejador para /p y el botón P2P

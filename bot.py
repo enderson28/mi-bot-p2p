@@ -1228,25 +1228,36 @@ def procesar_soporte(message):
         pass
 
 @bot.callback_query_handler(func=lambda call: call.data == "refrescar_canal_tasas")
-def refrescar_tasas_canal_callback(call):
-    """Callback para el botón de actualizar la ficha corta del canal"""
-    texto_actualizado = construir_monitor_canal_html()
-    
+def refrescar_canal_tasas_callback(call):
+    chat_id = call.message.chat.id
+
+    # 1. Obtenemos los datos actualizados para el canal / tabla corta
+    texto_resultado = construir_monitor_canal_html()
+
+    # 2. Mantenemos el botón '🗑️ Borrar' SIEMPRE que se refresque dentro de CANAL_ADMINS
     markup = InlineKeyboardMarkup()
-    markup.add(InlineKeyboardButton("🔄 Actualizar Tasas", callback_data="refrescar_canal_tasas"))
     
+    if str(chat_id) == str(CANAL_ADMINS):
+        markup.row(
+            InlineKeyboardButton("🔄 Actualizar Tasas", callback_data="refrescar_canal_tasas"),
+            InlineKeyboardButton("🗑️ Borrar", callback_data="borrar_mensaje")
+        )
+    else:
+        # En privados / canales solo mantiene el botón de refrescar
+        markup.add(InlineKeyboardButton("🔄 Actualizar Tasas", callback_data="refrescar_canal_tasas"))
+
+    # 3. Editamos la tabla para actualizar precios sin perder los botones
     try:
         bot.edit_message_text(
-            chat_id=call.message.chat.id,
+            chat_id=chat_id,
             message_id=call.message.message_id,
-            text=texto_actualizado,
+            text=texto_resultado,
             parse_mode="HTML",
             reply_markup=markup
         )
         bot.answer_callback_query(call.id, "✅ Tasas actualizadas")
     except Exception:
-        bot.answer_callback_query(call.id, "⚡ Sin cambios en la tasa")
-
+        bot.answer_callback_query(call.id, "Las tasas ya están al día")
 
 # ==========================================
 #    MANEJADOR DEL BOTÓN INLINE (REFRESCAR)

@@ -32,18 +32,37 @@ bot = telebot.TeleBot(TOKEN_TELEGRAM)
 
 BOT_USERNAME = "BancoIDV_bot" # Reemplaza con el alias de tu bot sin el @
 
-# CONFIGURACIÓN DE EXCLUSIVIDAD MULTI-CANAL
-CANAL_PRUEBA = "@COMUNIDV"       # Canal de prueba
-CANAL_CONGESTIONADO = "@COMUNIDADAS04" # Canal principal
-CANAL_ADMINS = -1003947562741 # Reemplaza con el @ de tu grupo de admins
-CANAL_SECUNDARIO = -1004378497075 # Grupo de pruebaidv2
-# USUARIOS AUTORIZADOS PARA EL COMANDO /bot
-USUARIOS_AUTORIZADOS = [5073264705, 1676933074, 6299629267, 8166481937]
-# Creador Supremo (Tu ID numérico real)
-CREADOR_ID = 5073264705  # Reemplaza por tu ID numérico
+# ==========================================
+# CONFIGURACIÓN Y VARIABLES GLOBALES (PRODUCCIÓN)
+# ==========================================
 
-# Lista unificada de chats donde el bot responderá a los demás
-CHATS_PERMITIDOS = [CANAL_PRUEBA, CANAL_CONGESTIONADO, CANAL_ADMINS]
+# Canal Principal Oficial de Anuncios (Donde publica el dueño)
+CANAL_CONGESTIONADO_OFICIAL = -1001504094779
+
+# Grupo Vincular de Conversación
+CANAL_CONGESTIONADO = -1001612840350
+
+# Otros Canales/Grupos Administrativos
+CANAL_ADMINS = -1003947562741
+CANAL_SECUNDARIO = -1004378497075
+
+# Canales de Pruebas (puedes mantenerlos o cambiarlos)
+CANAL_PRUEBA = -1004473532809
+CANAL_PRINCIPAL_IDV = -1003950050807
+
+# USUARIOS AUTORIZADOS Y CREADOR (¡Restaurar estas líneas!)
+USUARIOS_AUTORIZADOS = [5073264705, 1676933074, 6299629267, 8166481937]
+CREADOR_ID = 5073264705
+
+# Lista unificada de chats donde el bot responderá a comandos de canal (/p, /i, /tasas)
+CHATS_PERMITIDOS = [
+    CANAL_CONGESTIONADO_OFICIAL, # <-- ID del canal principal
+    CANAL_CONGESTIONADO,         # <-- Grupo vinculado
+    CANAL_ADMINS, 
+    CANAL_PRINCIPAL_IDV, 
+    CANAL_PRUEBA
+]
+
 # CONFIGURACIÓN DE TIEMPOS
 RATE_LIMIT_AVISO = 600       # 10 minutos para enfriamiento de avisos a usuarios
 TIEMPO_VIDA_TABLA = 300      # 5 minutos para autodestrucción del monitor/intervención
@@ -79,7 +98,7 @@ def obtener_teclado_privado(user=None):
     btn_intervencion = KeyboardButton("📊 Intervencion 📊")
     btn_regla = KeyboardButton("📜 Regla de Oro 📜")
     btn_bpay = KeyboardButton("🔶 BPay 🔶")
-    btn_gpay = KeyboardButton("🔵 GPay 🔵")
+    btn_gpay = KeyboardButton("🔷 GPay 🔷")
     btn_calculadora = KeyboardButton("📟 Calculadora")
     btn_soporte = KeyboardButton("⚙️ Soporte")
     btn_ia = KeyboardButton("🤖 IA Consulta")
@@ -396,8 +415,9 @@ TG_EMOJIS = {
     "SUBIDA": "5244837092042750681",       # 📈
     "BAJADA": "5246762912428603768",       # 📉
     "MUNDO": "5224450179368767019",        # 🌎
-    "FLECHA_DERECHA": "5416117059207572332",# ➡️
-    "DINERO": "5197434882321567830"        # 💵
+    "FLECHA_DERECHA": "5416117059207572332", # ➡️
+    "DINERO": "5197434882321567830",        # 💵
+    "BINANCE_P2P": "5832421268476924783"    # 🪙
 }
 
 def e(key, fallback=""):
@@ -405,6 +425,33 @@ def e(key, fallback=""):
     if emoji_id:
         return f'<tg-emoji emoji-id="{emoji_id}">{fallback}</tg-emoji>'
     return fallback
+
+def construir_monitor_canal_html():
+    """Genera la ficha resumen simplificada para el Canal Principal con Custom Emojis dinámicos"""
+    # Consulta la mejor tasa de compra y venta general
+    compra_base = obtener_tasa_binance_p2p("buy", 0) or 0.0
+    venta_base = obtener_tasa_binance_p2p("sell", 0) or 0.0
+
+    if compra_base == 0.0 or venta_base == 0.0:
+        return f"⚠️ <b>Error temporal al obtener tasas de Binance P2P.</b>"
+
+    spread = round(compra_base - venta_base, 2)
+    porcentaje = round((spread / venta_base) * 100, 2) if venta_base > 0 else 0.0
+
+    hora_actual = (datetime.now() - timedelta(hours=4)).strftime("%I:%M:%S %p")
+
+    # Emoji dinámico de Spread (SUBIDA si es >= 0, BAJADA si es negativo)
+    emoji_spread = e("SUBIDA", "📈") if spread >= 0 else e("BAJADA", "📉")
+
+    # Formato corto usando el diccionario TG_EMOJIS mediante la función e()
+    texto = (
+        f"{e('BINANCE_P2P', '🪙')} <b>TASAS P2P EN VIVO</b>\n\n"
+        f"{e('VERDE', '🟢')} <b>COMPRA USDT:</b> {compra_base:.2f} Bs\n"
+        f"{e('ROJO', '🔴')} <b>VENTA USDT:</b> {venta_base:.2f} Bs\n\n"
+        f"{emoji_spread} <b>Spread:</b> {spread:.2f} Bs ({porcentaje:.2f}%)\n\n"
+        f"{e('MUNDO', '🌎')} <i>Última actualización: {hora_actual}</i>"
+    )
+    return texto
     
 
 def construir_monitor_texto_html():
@@ -549,21 +596,90 @@ def handle_start(message):
 
         # Mensaje recargado con teclado completo para novatos
         bot.send_message(message.chat.id, TEXTO_START, parse_mode="HTML", reply_markup=obtener_teclado_privado())
-        
 
-# Manejador para /precio y el botón P2P
+# ==========================================
+# COMANDO EXCLUSIVO /tasas PARA CANAL
+# ==========================================
+@bot.channel_post_handler(commands=['tasas', 'tasa'])
+def manejar_post_canal_tasas(message):
+    # Asegura que sea un post directo en un canal
+    if message.chat.type != 'channel':
+        return
+    """Maneja el comando /tasas enviado al Canal Principal"""
+    chat_id = message.chat.id
+    # Validar si es un canal autorizado
+    if str(chat_id) in [str(c) for c in CHATS_PERMITIDOS]:
+        
+        # 1. Borramos el comando enviado
+        try:
+            bot.delete_message(chat_id, message.message_id)
+        except Exception:
+            pass
+
+        # 2. Construimos la ficha corta
+        texto_resultado = construir_monitor_canal_html()
+
+        # 3. Agregamos el botón de actualización
+        markup = InlineKeyboardMarkup()
+        markup.add(InlineKeyboardButton("🔄 Actualizar Tasas", callback_data="refrescar_canal_tasas"))
+
+        # 4. Publicamos en el Canal
+        bot.send_message(chat_id, texto_resultado, parse_mode="HTML", reply_markup=markup)
+
+
+# ==========================================
+# MANEJADOR PARA PUBLICACIONES EN CANALES
+# ==========================================
+@bot.channel_post_handler(commands=['p', 'i'])
+def manejar_post_canal(message):
+    # Asegura que sea un post directo en un canal
+    if message.chat.type != 'channel':
+        return
+        
+    """Maneja /p y /i cuando son publicados directamente en el Canal Principal"""
+    chat_id = message.chat.id
+    # Validar que sea un canal autorizado
+    if str(chat_id) in [str(c) for c in CHATS_PERMITIDOS]:
+        
+        # 1. Elimina el mensaje /p o /i del canal inmediatamente
+        try:
+            bot.delete_message(chat_id, message.message_id)
+        except Exception:
+            pass
+
+        # 2. Determina el comando
+        texto_cmd = message.text.strip().lower() if message.text else ""
+        
+        if texto_cmd.startswith('/p'):
+            texto_resultado = construir_monitor_texto_html()
+            callback_refrescar = "refrescar_tasas"
+        elif texto_cmd.startswith('/i'):
+            texto_resultado = construir_intervencion_texto_html() if 'construir_intervencion_texto_html' in globals() else "Intervención"
+            callback_refrescar = "refrescar_intervencion"
+        else:
+            return
+
+        # 3. Crea el botón de actualizar
+        markup = InlineKeyboardMarkup()
+        markup.add(InlineKeyboardButton("🔄 Actualizar Tasas", callback_data=callback_refrescar))
+
+        # 4. Publica el post con las tasas en el Canal Principal
+        bot.send_message(chat_id, texto_resultado, parse_mode="HTML", reply_markup=markup)
+
+
+# Manejador para /p y el botón P2P
 @bot.message_handler(commands=['p', 'p2p'])
 @bot.message_handler(func=lambda m: m.text and m.text.strip() == "🟢☠️ Precio-Usdt ☠️🔴")
 def handle_precio_comando(message):
     procesar_precio(message)
 
-# Manejador para el botón de Intervención y el comando /intervencion
+# Manejador para el botón de Intervención y el comando /i
 @bot.message_handler(commands=['i'])
 @bot.message_handler(func=lambda m: m.text and m.text.strip() == "📊📊 Intervencion 📊📊")
 def handle_intervencion_comando(message):
     procesar_intervencion(message)
 
-# Manejador para los comandos /bpay y /gpay
+# Manejador para los comandos /bp y /gp
 @bot.message_handler(commands=['bp', 'gp'])
 def handle_guias_comando(message):
     procesar_guias(message)
@@ -683,7 +799,7 @@ def enviar_o_reemplazar_privado(chat_id, user_id, texto, reply_markup=None):
 # ==========================================
 
 def procesar_precio(message):
-    user_id = message.from_user.id
+    user_id = message.from_user.id if message.from_user else None
     chat_id = message.chat.id
 
     # Permite el paso ÚNICAMENTE si el chat está permitido por las reglas de seguridad 
@@ -721,6 +837,17 @@ def procesar_precio(message):
             print(f"Error en precio privado: {e}")
             bot.send_message(chat_id, "❌ Error temporal al obtener tasas. Inténtalo de nuevo en unos segundos.")
             return
+            
+    # --- 2. EN GRUPOS ---
+    # Si el mensaje proviene de un reenvío automático del canal al grupo:
+    if getattr(message, 'is_automatic_forward', False):
+        try:
+            # Quitamos los botones inline en la copia del grupo
+            bot.edit_message_reply_markup(chat_id=chat_id, message_id=message.message_id, reply_markup=None)
+        except Exception:
+            pass
+        return  # Frenamos la ejecución para que no responda con errores de Admin
+
 
     # --- 2. EN GRUPOS ---
     # Borramos el comando ejecutado inmediatamente para mantener el chat limpio
@@ -779,7 +906,7 @@ def procesar_precio(message):
                 pass
 
 def procesar_intervencion(message):
-    user_id = message.from_user.id
+    user_id = message.from_user.id if message.from_user else None
     chat_id = message.chat.id
 
     # --- FILTRO DE SEGURIDAD GENERAL ---
@@ -820,6 +947,17 @@ def procesar_intervencion(message):
             reply_markup=markup_intervencion
         )
         return
+
+    # --- 2. EN GRUPOS ---
+    # Si el mensaje proviene de un reenvío automático del canal al grupo:
+    if getattr(message, 'is_automatic_forward', False):
+        try:
+            # Quitamos los botones inline en la copia del grupo
+            bot.edit_message_reply_markup(chat_id=chat_id, message_id=message.message_id, reply_markup=None)
+        except Exception:
+            pass
+        return  # Frenamos la ejecución para que no responda con errores de Admin
+        
 
     # --- 2. EN GRUPOS ---
     try:
@@ -979,6 +1117,27 @@ def procesar_soporte(message):
         bot.delete_message(chat_id, message.message_id)
     except Exception:
         pass
+
+@bot.callback_query_handler(func=lambda call: call.data == "refrescar_canal_tasas")
+def refrescar_tasas_canal_callback(call):
+    """Callback para el botón de actualizar la ficha corta del canal"""
+    texto_actualizado = construir_monitor_canal_html()
+    
+    markup = InlineKeyboardMarkup()
+    markup.add(InlineKeyboardButton("🔄 Actualizar Tasas", callback_data="refrescar_canal_tasas"))
+    
+    try:
+        bot.edit_message_text(
+            chat_id=call.message.chat.id,
+            message_id=call.message.message_id,
+            text=texto_actualizado,
+            parse_mode="HTML",
+            reply_markup=markup
+        )
+        bot.answer_callback_query(call.id, "✅ Tasas actualizadas")
+    except Exception:
+        bot.answer_callback_query(call.id, "⚡ Sin cambios en la tasa")
+
 
 # ==========================================
 #    MANEJADOR DEL BOTÓN INLINE (REFRESCAR)

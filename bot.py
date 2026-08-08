@@ -597,35 +597,112 @@ def handle_start(message):
         # Mensaje recargado con teclado completo para novatos
         bot.send_message(message.chat.id, TEXTO_START, parse_mode="HTML", reply_markup=obtener_teclado_privado())
 
-# ==========================================
-# COMANDO EXCLUSIVO /tasas PARA CANAL
-# ==========================================
-@bot.channel_post_handler(commands=['tasas', 'tasa'])
-def manejar_post_canal_tasas(message):
-    # Asegura que sea un post directo en un canal
-    if message.chat.type != 'channel':
-        return
-    """Maneja el comando /tasas enviado al Canal Principal"""
+# Manejador para ejecutar /tasas en grupos permitidos y privados
+@bot.message_handler(commands=['tasas', 'tasa'])
+def handle_tasas_comando(message):
+    user_id = message.from_user.id if message.from_user else None
     chat_id = message.chat.id
-    # Validar si es un canal autorizado
-    if str(chat_id) in [str(c) for c in CHATS_PERMITIDOS]:
-        
-        # 1. Borramos el comando enviado
+
+    # --- FILTRO DE SEGURIDAD GENERAL ---
+    if not es_chat_permitido(bot, message, CHATS_PERMITIDOS, USUARIOS_AUTORIZADOS, CREADOR_ID):
+        return
+
+    # --- 1. CHAT PRIVADO ---
+    if message.chat.type == "private":
+        if message.text and message.text.strip().startswith('/'):
+            try:
+                bot.delete_message(chat_id, message.message_id)
+            except Exception:
+                pass
+
+        if not usuario_esta_unido(user_id):
+            bot.reply_to(message, "❌ No tienes acceso. Debes unirte al canal oficial para usar el bot.")
+            return
+
         try:
-            bot.delete_message(chat_id, message.message_id)
+            texto_resultado = construir_monitor_canal_html()
+            markup_tasas = InlineKeyboardMarkup()
+            markup_tasas.add(InlineKeyboardButton("🔄 Actualizar Tasas", callback_data="refrescar_canal_tasas"))
+
+            enviar_o_reemplazar_privado(chat_id, user_id, texto_resultado, reply_markup=markup_tasas)
+            return
+        except Exception as e:
+            print(f"Error en tasas privado: {e}")
+            bot.send_message(chat_id, "❌ Error temporal al obtener tasas. Inténtalo de nuevo en unos segundos.")
+            return
+
+    # --- 2. EN GRUPOS ---
+    # Si el mensaje proviene de un reenvío automático del canal al grupo vinculado:
+    if getattr(message, 'is_automatic_forward', False):
+        try:
+            # Quitamos los botones inline en la copia del grupo
+            bot.edit_message_reply_markup(chat_id=chat_id, message_id=message.message_id, reply_markup=None)
         except Exception:
             pass
+        return  # Frenamos la ejecución para no responder en el grupo vinculado
 
-        # 2. Construimos la ficha corta
-        texto_resultado = construir_monitor_canal_html()
+    # Borramos el comando ejecutado inmediatamente para mantener el chat limpio
+    try:
+        bot.delete_message(chat_id, message.message_id)
+    except Exception:
+        pass
 
-        # 3. Agregamos el botón de actualización
-        markup = InlineKeyboardMarkup()
-        markup.add(InlineKeyboardButton("🔄 Actualizar Tasas", callback_data="refrescar_canal_tasas"))
+    # Verificación de si el usuario es Admin del Grupo de Telegram
+    es_admin_g = False
+    try:
+        es_admin_g = es_administrador(bot, chat_id, user_id, message.from_user)
+    except Exception:
+        es_admin_g = False
 
-        # 4. Publicamos en el Canal
-        bot.send_message(chat_id, texto_resultado, parse_mode="HTML", reply_markup=markup)
+    # SOLO si es CREADOR, ADMIN VIP o ADMIN DEL GRUPO responde:
+    if str(user_id) == str(CREADOR_ID) or es_admin_vip(bot, message.from_user) or es_admin_g:
+        try:
+            markup_tasas = None
 
+            # SI estamos en el grupo cerrado de admins, agregamos los dos botones
+            if str(chat_id) == str(CANAL_ADMINS):
+                markup_tasas = InlineKeyboardMarkup()
+                markup_tasas.row(
+                    InlineKeyboardButton("🔄 Actualizar Tasas", callback_data="refrescar_canal_tasas"),
+                    InlineKeyboardButton("🗑️ Borrar", callback_data="borrar_mensaje")
+                )
+            else:
+                # En cualquier otro grupo (ej. CANAL_CONGESTIONADO), NO lleva botones
+                markup_tasas = None
+
+            # Enviamos la tabla limpia o con botones según el grupo
+            msg_enviado = bot.send_message(
+                chat_id,
+                construir_monitor_canal_html(),
+                parse_mode="HTML",
+                reply_markup=markup_tasas
+            )
+
+            # Autodestrucción del mensaje enviado tras X minutos
+            borrar_mensaje_luego(chat_id, msg_enviado.message_id, TIEMPO_VIDA_TABLA)
+
+        except Exception as e:
+            print(f"Error enviando tasas en grupo: {e}")
+
+    else:
+        # SI ES USUARIO COMÚN: Aplica Rate Limit y muestra aviso de permiso
+        ahora = time.time()
+        ultima_vez_aviso = grupos_tiempo_aviso.get(chat_id, 0)
+
+        if ahora - ultima_vez_aviso > RATE_LIMIT_AVISO:
+            try:
+                aviso = bot.send_message(
+                    chat_id,
+                    f"❌ <b>Comando exclusivo para Administradores.</b>\n\n"
+                    f"Hola @{message.from_user.username or message.from_user.first_name}. Para mantener el orden, "
+                    f"👉 Consulta todas las tasas libremente en mi chat privado: @{BOT_USERNAME}",
+                    parse_mode="HTML"
+                )
+                grupos_tiempo_aviso[chat_id] = ahora
+                # Autodestruimos el aviso tras 10 segundos
+                borrar_mensaje_luego(chat_id, aviso.message_id, 10)
+            except Exception:
+                pass
 
 # ==========================================
 # MANEJADOR PARA PUBLICACIONES EN CANALES

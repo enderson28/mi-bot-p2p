@@ -731,60 +731,70 @@ def manejar_post_canal(message):
         bot.send_message(chat_id, texto_resultado, parse_mode="HTML", reply_markup=markup)
 
 # =============================================================
-# 📢 PUBLICADOR DIRECTO AL CANAL OFICIAL (Con tg-emojis intactos)
+# 📢 PUBLICADOR AL CANAL CON COPY_MESSAGE (Emojis + Botones)
 # =============================================================
 @bot.message_handler(commands=['p_canal', 'i_canal', 'tasas_canal'])
-def publicar_reportes_canal(message):
+def publicar_con_copia_canal(message):
     user_id = message.from_user.id
     user_name = f"@{message.from_user.username}" if message.from_user.username else user_id
 
-    # 1. Filtro de seguridad: Solo admins autorizados
+    # 1. Filtro de seguridad para administradores
     if user_id not in USUARIOS_AUTORIZADOS and user_name not in USUARIOS_AUTORIZADOS:
         return
 
-    # 2. Borrar el comando que escribió el admin en el grupo para mantenerlo limpio
+    # Borrar el comando escrito en el grupo
     try:
         bot.delete_message(message.chat.id, message.message_id)
     except Exception:
         pass
 
     cmd = message.text.strip().lower()
-    markup = InlineKeyboardMarkup()
+    callback_data_str = ""
 
-    # --- CASO 1: /p_canal (Monitor P2P Completo) ---
+    # 2. Seleccionar el texto y callback según el comando
     if cmd.startswith('/p_canal'):
         texto = construir_monitor_texto_html()
-        markup.add(InlineKeyboardButton("🔄 Actualizar Tasas", callback_data="refrescar_tasas"))
-
-    # --- CASO 2: /i_canal (Calculadora Intervención) ---
+        callback_data_str = "refrescar_tasas"
     elif cmd.startswith('/i_canal'):
-        # Le pasamos el objeto usuario para que personalice el cálculo si es necesario
         texto = construir_intervencion_texto_html(user=message.from_user)
-        markup.add(InlineKeyboardButton("🔄 Actualizar Intervención", callback_data="refrescar_intervencion"))
-
-    # --- CASO 3: /tasas_canal (Ficha Corta) ---
+        callback_data_str = "refrescar_intervencion"
     elif cmd.startswith('/tasas_canal'):
         texto = construir_monitor_canal_html()
-        markup.add(InlineKeyboardButton("🔄 Actualizar Tasas", callback_data="refrescar_canal_tasas"))
-
+        callback_data_str = "refrescar_canal_tasas"
     else:
         return
 
-    # 3. Enviar publicación directa al CANAL_PRINCIPAL_IDV
     try:
-        bot.send_message(
-            chat_id=CANAL_PRINCIPAL_IDV,
+        # Paso A: Creamos un teclado temporal para el mensaje base
+        markup_base = InlineKeyboardMarkup()
+        markup_base.add(InlineKeyboardButton("🔄 Actualizar", callback_data=callback_data_str))
+
+        # Enviamos primero al grupo de administración (aquí se renderizan los tg-emojis perfectos)
+        msg_grupo = bot.send_message(
+            chat_id=message.chat.id,
             text=texto,
             parse_mode='HTML',
-            reply_markup=markup
+            reply_markup=markup_base
         )
-        
-        # Opcional: Aviso rápido en el grupo de que se publicó con éxito
-        aviso = bot.send_message(message.chat.id, "✅ <b>Publicación enviada al canal oficial con éxito.</b>", parse_mode='HTML')
-        borrar_mensaje_luego(message.chat.id, aviso.message_id, 5)
+
+        # Paso B: Preparamos los botones finales para el Canal Oficial
+        markup_canal = InlineKeyboardMarkup()
+        markup_canal.add(InlineKeyboardButton("🔄 Actualizar Tasas", callback_data=callback_data_str))
+
+        # Paso C: Copiamos el mensaje exacto al Canal Principal con copy_message
+        bot.copy_message(
+            chat_id=CANAL_PRINCIPAL_IDV,
+            from_chat_id=message.chat.id,
+            message_id=msg_grupo.message_id,
+            reply_markup=markup_canal
+        )
+
+        # Opcional: Notificar en el grupo
+        aviso = bot.send_message(message.chat.id, "✅ <b>¡Publicado en el canal con tg-emojis y botones!</b>", parse_mode='HTML')
+        borrar_mensaje_luego(message.chat.id, aviso.message_id, 4)
 
     except Exception as e:
-        bot.send_message(message.chat.id, f"❌ <b>Error al publicar en el canal:</b> {e}", parse_mode='HTML')
+        bot.send_message(message.chat.id, f"❌ <b>Error al copiar al canal:</b> {e}", parse_mode='HTML')
         
 
 # Manejador para /p y el botón P2P

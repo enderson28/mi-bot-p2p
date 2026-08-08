@@ -574,6 +574,7 @@ def handle_start(message):
             markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
             markup.add(KeyboardButton("🟢 P2P-USDT 🔴"), KeyboardButton("📊 Intervencion 📊"))
             markup.add(KeyboardButton("📟 Calculadora"), KeyboardButton("⚙️ Soporte"))
+            markup.add(KeyboardButton("🤖 IA Consulta"))
         
             texto_vip = (
                 f"👋 <b>¡Hola, {message.from_user.first_name}!</b>\n\n"

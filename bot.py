@@ -1521,14 +1521,13 @@ def manejar_consultas_inline(inline_query):
         
         # 1. FILTRO DE SEGURIDAD EXCLUSIVO PARA ADMINS
         if user_id not in USUARIOS_AUTORIZADOS and user_name not in USUARIOS_AUTORIZADOS:
-            # Si un usuario no autorizado intenta usar @BancoIDV_bot, no le sale nada
             bot.answer_inline_query(inline_query.id, [], cache_time=1)
             return
 
         texto_busqueda = inline_query.query.strip().lower()
         resultados = []
 
-        # --- OPCIÓN 1: Escribe 'p' o '/p' (Reporte P2P completo) ---
+        # --- OPCIÓN 1: Escribe 'p' o '/p' ---
         if texto_busqueda in ['p', '/p']:
             texto_p = construir_monitor_texto_html()
             resultados.append(
@@ -1543,9 +1542,9 @@ def manejar_consultas_inline(inline_query):
                 )
             )
 
-        # --- OPCIÓN 2: Escribe 'i' o '/i' (Intervención) ---
+        # --- OPCIÓN 2: Escribe 'i' o '/i' ---
         elif texto_busqueda in ['i', '/i']:
-            texto_i = construir_intervencion_texto_html(user=user_id)
+            texto_i = construir_intervencion_texto_html(user_id)
             resultados.append(
                 types.InlineQueryResultArticle(
                     id='intervencion_inline',
@@ -1558,7 +1557,7 @@ def manejar_consultas_inline(inline_query):
                 )
             )
 
-        # --- OPCIÓN 3: Escribe 'tasas' o '/tasas' (Resumen corto de Canal) ---
+        # --- OPCIÓN 3: Escribe 'tasas' o '/tasas' ---
         elif texto_busqueda in ['tasas', '/tasas', 'tasa']:
             texto_tasas = construir_monitor_canal_html()
             resultados.append(
@@ -1573,11 +1572,10 @@ def manejar_consultas_inline(inline_query):
                 )
             )
 
-        # --- OPCIÓN POR DEFECTO (Si escribe solo @BancoIDV_bot sin nada) ---
+        # --- OPCIÓN POR DEFECTO ---
         else:
-            # Muestra las 3 opciones juntas en el menú desplegable
             texto_p = construir_monitor_texto_html()
-            texto_i = construir_intervencion_texto_html(user=user_id)
+            texto_i = construir_intervencion_texto_html(user_id)
             texto_tasas = construir_monitor_canal_html()
 
             resultados = [
@@ -1601,11 +1599,11 @@ def manejar_consultas_inline(inline_query):
                 )
             ]
 
-        # Enviar las opciones a Telegram
         bot.answer_inline_query(inline_query.id, resultados, cache_time=1)
 
     except Exception as e:
         print(f"Error en inline_query: {e}")
+        
 
 # ==========================================
 #            EJECUCIÓN DEL BOT

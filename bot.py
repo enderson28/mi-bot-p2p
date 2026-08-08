@@ -666,6 +666,11 @@ def manejar_post_canal(message):
         # 4. Publica el post con las tasas en el Canal Principal
         bot.send_message(chat_id, texto_resultado, parse_mode="HTML", reply_markup=markup)
 
+# Manejador para ejecutar /tasas en grupos permitidos y privados
+@bot.message_handler(commands=['tasas', 'tasa'])
+def handle_tasas_comando(message):
+    procesar_precio(message)
+
 
 # Manejador para /p y el botón P2P
 @bot.message_handler(commands=['p', 'p2p'])

@@ -1509,6 +1509,104 @@ def iniciar_servidor_receptor():
         print(f"🚀 Receptor de tasas escuchando en el puerto {port}")
         httpd.serve_forever()
                 
+
+# =============================================================
+# 🛡️ MANEJADOR INLINE (Publicaciones con Emojis Animados)
+# =============================================================
+@bot.inline_handler(lambda query: True)
+def manejar_consultas_inline(inline_query):
+    try:
+        user_id = inline_query.from_user.id
+        user_name = f"@{inline_query.from_user.username}" if inline_query.from_user.username else user_id
+        
+        # 1. FILTRO DE SEGURIDAD EXCLUSIVO PARA ADMINS
+        if user_id not in USUARIOS_AUTORIZADOS and user_name not in USUARIOS_AUTORIZADOS:
+            # Si un usuario no autorizado intenta usar @BancoIDV_bot, no le sale nada
+            bot.answer_inline_query(inline_query.id, [], cache_time=1)
+            return
+
+        texto_busqueda = inline_query.query.strip().lower()
+        resultados = []
+
+        # --- OPCIÓN 1: Escribe 'p' o '/p' (Reporte P2P completo) ---
+        if texto_busqueda in ['p', '/p']:
+            texto_p = construir_monitor_texto_html()
+            resultados.append(
+                types.InlineQueryResultArticle(
+                    id='p2p_inline',
+                    title="📊 Reporte Monitor P2P",
+                    description="Publicar tabla P2P con rangos y emojis animados",
+                    input_message_content=types.InputTextMessageContent(
+                        message_text=texto_p,
+                        parse_mode='HTML'
+                    )
+                )
+            )
+
+        # --- OPCIÓN 2: Escribe 'i' o '/i' (Intervención) ---
+        elif texto_busqueda in ['i', '/i']:
+            texto_i = construir_intervencion_texto_html(user=user_id)
+            resultados.append(
+                types.InlineQueryResultArticle(
+                    id='intervencion_inline',
+                    title="🏦 Reporte Intervención",
+                    description="Publicar calculador de intervención en el canal",
+                    input_message_content=types.InputTextMessageContent(
+                        message_text=texto_i,
+                        parse_mode='HTML'
+                    )
+                )
+            )
+
+        # --- OPCIÓN 3: Escribe 'tasas' o '/tasas' (Resumen corto de Canal) ---
+        elif texto_busqueda in ['tasas', '/tasas', 'tasa']:
+            texto_tasas = construir_monitor_canal_html()
+            resultados.append(
+                types.InlineQueryResultArticle(
+                    id='tasas_inline',
+                    title="📈 Resumen Tasas Vivo",
+                    description="Publicar ficha corta de Binance P2P",
+                    input_message_content=types.InputTextMessageContent(
+                        message_text=texto_tasas,
+                        parse_mode='HTML'
+                    )
+                )
+            )
+
+        # --- OPCIÓN POR DEFECTO (Si escribe solo @BancoIDV_bot sin nada) ---
+        else:
+            # Muestra las 3 opciones juntas en el menú desplegable
+            texto_p = construir_monitor_texto_html()
+            texto_i = construir_intervencion_texto_html(user=user_id)
+            texto_tasas = construir_monitor_canal_html()
+
+            resultados = [
+                types.InlineQueryResultArticle(
+                    id='p2p_default',
+                    title="📊 Monitor P2P Completo",
+                    description="Toca para publicar reporte completo P2P",
+                    input_message_content=types.InputTextMessageContent(message_text=texto_p, parse_mode='HTML')
+                ),
+                types.InlineQueryResultArticle(
+                    id='tasas_default',
+                    title="📈 Ficha Tasas en Vivo",
+                    description="Toca para publicar ficha corta Binance",
+                    input_message_content=types.InputTextMessageContent(message_text=texto_tasas, parse_mode='HTML')
+                ),
+                types.InlineQueryResultArticle(
+                    id='intervencion_default',
+                    title="🏦 Calculadora Intervención",
+                    description="Toca para publicar Intervención BCV",
+                    input_message_content=types.InputTextMessageContent(message_text=texto_i, parse_mode='HTML')
+                )
+            ]
+
+        # Enviar las opciones a Telegram
+        bot.answer_inline_query(inline_query.id, resultados, cache_time=1)
+
+    except Exception as e:
+        print(f"Error en inline_query: {e}")
+
 # ==========================================
 #            EJECUCIÓN DEL BOT
 # ==========================================
@@ -1529,7 +1627,8 @@ if __name__ == "__main__":
 
     # Inicia el receptor webhook en segundo plano
     threading.Thread(target=iniciar_servidor_receptor, daemon=True).start()
-
+    
+        
     # Arranca el polling limpio
     bot.infinity_polling() 
 

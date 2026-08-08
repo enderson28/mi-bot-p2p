@@ -597,6 +597,7 @@ def handle_start(message):
         # Mensaje recargado con teclado completo para novatos
         bot.send_message(message.chat.id, TEXTO_START, parse_mode="HTML", reply_markup=obtener_teclado_privado())
 
+
 # Manejador para ejecutar /tasas en grupos permitidos y privados
 @bot.message_handler(commands=['tasas', 'tasa'])
 def handle_tasas_comando(message):
@@ -632,45 +633,35 @@ def handle_tasas_comando(message):
             return
 
     # --- 2. EN GRUPOS ---
-    # Si el mensaje proviene de un reenvío automático del canal al grupo vinculado:
     if getattr(message, 'is_automatic_forward', False):
         try:
-            # Quitamos los botones inline en la copia del grupo
             bot.edit_message_reply_markup(chat_id=chat_id, message_id=message.message_id, reply_markup=None)
         except Exception:
             pass
-        return  # Frenamos la ejecución para no responder en el grupo vinculado
+        return
 
-    # Borramos el comando ejecutado inmediatamente para mantener el chat limpio
     try:
         bot.delete_message(chat_id, message.message_id)
     except Exception:
         pass
 
-    # Verificación de si el usuario es Admin del Grupo de Telegram
     es_admin_g = False
     try:
         es_admin_g = es_administrador(bot, chat_id, user_id, message.from_user)
     except Exception:
         es_admin_g = False
 
-    # SOLO si es CREADOR, ADMIN VIP o ADMIN DEL GRUPO responde:
     if str(user_id) == str(CREADOR_ID) or es_admin_vip(bot, message.from_user) or es_admin_g:
         try:
             markup_tasas = None
 
-            # SI estamos en el grupo cerrado de admins, agregamos los dos botones
             if str(chat_id) == str(CANAL_ADMINS):
                 markup_tasas = InlineKeyboardMarkup()
                 markup_tasas.row(
                     InlineKeyboardButton("🔄 Actualizar Tasas", callback_data="refrescar_canal_tasas"),
                     InlineKeyboardButton("🗑️ Borrar", callback_data="borrar_mensaje")
                 )
-            else:
-                # En cualquier otro grupo (ej. CANAL_CONGESTIONADO), NO lleva botones
-                markup_tasas = None
 
-            # Enviamos la tabla limpia o con botones según el grupo
             msg_enviado = bot.send_message(
                 chat_id,
                 construir_monitor_canal_html(),
@@ -678,14 +669,12 @@ def handle_tasas_comando(message):
                 reply_markup=markup_tasas
             )
 
-            # Autodestrucción del mensaje enviado tras X minutos
             borrar_mensaje_luego(chat_id, msg_enviado.message_id, TIEMPO_VIDA_TABLA)
 
         except Exception as e:
             print(f"Error enviando tasas en grupo: {e}")
 
     else:
-        # SI ES USUARIO COMÚN: Aplica Rate Limit y muestra aviso de permiso
         ahora = time.time()
         ultima_vez_aviso = grupos_tiempo_aviso.get(chat_id, 0)
 
@@ -699,82 +688,46 @@ def handle_tasas_comando(message):
                     parse_mode="HTML"
                 )
                 grupos_tiempo_aviso[chat_id] = ahora
-                # Autodestruimos el aviso tras 10 segundos
                 borrar_mensaje_luego(chat_id, aviso.message_id, 10)
             except Exception:
                 pass
 
-# ==========================================
-# MANEJADOR PARA PUBLICACIONES EN CANALES
-# ==========================================
-@bot.channel_post_handler(commands=['p', 'i'])
+
+# =======================================================
+# MANEJADOR PARA PUBLICACIONES EN CANALES (/p, /i, /tasas)
+# =======================================================
+@bot.channel_post_handler(commands=['p', 'i', 'tasas', 'tasa'])
 def manejar_post_canal(message):
-    # Asegura que sea un post directo en un canal
     if message.chat.type != 'channel':
         return
-        
-    """Maneja /p y /i cuando son publicados directamente en el Canal Principal"""
+
     chat_id = message.chat.id
-    # Validar que sea un canal autorizado
+
     if str(chat_id) in [str(c) for c in CHATS_PERMITIDOS]:
-        
-        # 1. Elimina el mensaje /p o /i del canal inmediatamente
         try:
             bot.delete_message(chat_id, message.message_id)
         except Exception:
             pass
 
-        # 2. Determina el comando
         texto_cmd = message.text.strip().lower() if message.text else ""
-        
+
         if texto_cmd.startswith('/p'):
             texto_resultado = construir_monitor_texto_html()
             callback_refrescar = "refrescar_tasas"
         elif texto_cmd.startswith('/i'):
-            texto_resultado = construir_intervencion_texto_html() if 'construir_intervencion_texto_html' in globals() else "Intervención"
+            texto_resultado = construir_intervencion_texto_html() if 'construir_intervencion_texto_html' in globals() else construir_monitor_texto_html()
             callback_refrescar = "refrescar_intervencion"
+        elif texto_cmd.startswith('/tasas') or texto_cmd.startswith('/tasa'):
+            texto_resultado = construir_monitor_canal_html()
+            callback_refrescar = "refrescar_canal_tasas"
         else:
             return
 
-        # 3. Crea el botón de actualizar
         markup = InlineKeyboardMarkup()
         markup.add(InlineKeyboardButton("🔄 Actualizar Tasas", callback_data=callback_refrescar))
 
-        # 4. Publica el post con las tasas en el Canal Principal
         bot.send_message(chat_id, texto_resultado, parse_mode="HTML", reply_markup=markup)
 
-# Manejador para ejecutar /tasas en grupos permitidos y privados
-@bot.message_handler(commands=['tasas', 'tasa'])
-def handle_tasas_comando(message):
-    # 1. Filtro de seguridad: Verifica que el chat esté en CHATS_PERMITIDOS
-    if not es_chat_permitido(bot, message, CHATS_PERMITIDOS, USUARIOS_AUTORIZADOS, CREADOR_ID):
-        return
-
-    chat_id = message.chat.id
-
-    # 2. Borramos el comando escrito inmediatamente
-    try:
-        bot.delete_message(chat_id, message.message_id)
-    except Exception:
-        pass
-
-    # 3. Construimos la ficha CORTA/LIMPIA del canal
-    texto_resultado = construir_monitor_canal_html()
-
-    # 4. Construcción de la botonera
-    markup = InlineKeyboardMarkup()
-    
-    # Si se ejecuta en los chats de trabajo/admin, agrega el botón de Borrar
-    if str(chat_id) in [str(CANAL_CONGESTIONADO), str(CANAL_ADMINS)]:
-        markup.row(
-            InlineKeyboardButton("🔄 Actualizar Tasas", callback_data="refrescar_canal_tasas"),
-            InlineKeyboardButton("🗑️ Borrar", callback_data="borrar_mensaje")
-        )
-    else:
-        markup.add(InlineKeyboardButton("🔄 Actualizar Tasas", callback_data="refrescar_canal_tasas"))
-
-    # 5. Publicamos la ficha
-    bot.send_message(chat_id, texto_resultado, parse_mode="HTML", reply_markup=markup)
 
 # Manejador para /p y el botón P2P
 @bot.message_handler(commands=['p', 'p2p'])
@@ -1230,23 +1183,30 @@ def procesar_soporte(message):
 @bot.callback_query_handler(func=lambda call: call.data == "refrescar_canal_tasas")
 def refrescar_canal_tasas_callback(call):
     chat_id = call.message.chat.id
+    user_id = call.from_user.id if call.from_user else None
 
-    # 1. Obtenemos los datos actualizados para el canal / tabla corta
+    # Si se pulsa desde un CANAL PÚBLICO y NO es Creador ni Admin VIP:
+    if call.message.chat.type == "channel":
+        if not (str(user_id) == str(CREADOR_ID) or es_admin_vip(bot, call.from_user)):
+            bot.answer_callback_query(
+                call.id,
+                f"❌ Solo Administradores pueden actualizar la tasa aquí.\n👉 Usa mi chat privado: @{BOT_USERNAME}",
+                show_alert=True  # Alerta emergente privada
+            )
+            return
+
+    # Si es Admin o es en un grupo/privado, se ejecuta la actualización normal:
     texto_resultado = construir_monitor_canal_html()
 
-    # 2. Mantenemos el botón '🗑️ Borrar' SIEMPRE que se refresque dentro de CANAL_ADMINS
     markup = InlineKeyboardMarkup()
-    
     if str(chat_id) == str(CANAL_ADMINS):
         markup.row(
             InlineKeyboardButton("🔄 Actualizar Tasas", callback_data="refrescar_canal_tasas"),
             InlineKeyboardButton("🗑️ Borrar", callback_data="borrar_mensaje")
         )
     else:
-        # En privados / canales solo mantiene el botón de refrescar
         markup.add(InlineKeyboardButton("🔄 Actualizar Tasas", callback_data="refrescar_canal_tasas"))
 
-    # 3. Editamos la tabla para actualizar precios sin perder los botones
     try:
         bot.edit_message_text(
             chat_id=chat_id,
@@ -1258,6 +1218,7 @@ def refrescar_canal_tasas_callback(call):
         bot.answer_callback_query(call.id, "✅ Tasas actualizadas")
     except Exception:
         bot.answer_callback_query(call.id, "Las tasas ya están al día")
+        
 
 # ==========================================
 #    MANEJADOR DEL BOTÓN INLINE (REFRESCAR)

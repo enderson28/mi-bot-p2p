@@ -1516,8 +1516,9 @@ def iniciar_servidor_receptor():
 @bot.inline_handler(lambda query: True)
 def manejar_consultas_inline(inline_query):
     try:
-        user_id = inline_query.from_user.id
-        user_name = f"@{inline_query.from_user.username}" if inline_query.from_user.username else user_id
+        user_obj = inline_query.from_user
+        user_id = user_obj.id
+        user_name = f"@{user_obj.username}" if user_obj.username else user_id
         
         # 1. FILTRO DE SEGURIDAD EXCLUSIVO PARA ADMINS
         if user_id not in USUARIOS_AUTORIZADOS and user_name not in USUARIOS_AUTORIZADOS:
@@ -1544,7 +1545,7 @@ def manejar_consultas_inline(inline_query):
 
         # --- OPCIÓN 2: Escribe 'i' o '/i' ---
         elif texto_busqueda in ['i', '/i']:
-            texto_i = construir_intervencion_texto_html(user_id)
+            texto_i = construir_intervencion_texto_html(user=user_obj)
             resultados.append(
                 types.InlineQueryResultArticle(
                     id='intervencion_inline',
@@ -1575,7 +1576,7 @@ def manejar_consultas_inline(inline_query):
         # --- OPCIÓN POR DEFECTO ---
         else:
             texto_p = construir_monitor_texto_html()
-            texto_i = construir_intervencion_texto_html(user_id)
+            texto_i = construir_intervencion_texto_html(user=user_obj)
             texto_tasas = construir_monitor_canal_html()
 
             resultados = [

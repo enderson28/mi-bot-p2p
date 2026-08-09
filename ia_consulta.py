@@ -30,18 +30,18 @@ def registrar_ia_consulta(bot, redis_client, obtener_teclado_func):
         if user_id in ADMIN_IDS:
             return True
 
-    # Lista con todos tus canales permitidos
-    canales = [CANAL_PRUEBA, CANAL_CONGESTIONADO, CANAL_PRINCIPAL_IDV]
+        # Lista con todos tus canales permitidos
+        canales = [CANAL_PRUEBA, CANAL_CONGESTIONADO, CANAL_PRINCIPAL_IDV]
 
-    for canal in canales:
-        try:
-            miembro = bot.get_chat_member(canal, user_id)
-            if miembro.status in ['creator', 'administrator', 'member']:
-                return True  # Con estar en UNO solo de la lista, ya le da acceso
-        except Exception:
-            pass  # Si el bot no está en el canal o falla la consulta, pasa al siguiente
+        for canal in canales:
+            try:
+                miembro = bot.get_chat_member(canal, user_id)
+                if miembro.status in ['creator', 'administrator', 'member']:
+                    return True  # Con estar en UNO solo de la lista, ya le da acceso
+            except Exception:
+                pass  # Si el bot no está en el canal o falla la consulta, pasa al siguiente
 
-    return False
+        return False
 
     # DICCIONARIO DE EMOJIS ANIMADOS DE TELEGRAM (IDs)
     TG_EMOJIS = {

@@ -1,4 +1,6 @@
 import time
+from collections import deque
+
 # Lista de frases clave para detectar copias de mensajes oficiales del bot
 FRASES_PROHIBIDAS = [
     # Reportes y Monitores Oficiales
@@ -217,6 +219,67 @@ def es_chat_permitido(bot, message, chats_permitidos, usuarios_autorizados, crea
 
     # Si no cumple ninguna de las anteriores, SILENCIO ABSOLUTO (Bloqueado)
     return False
+
+# =======================================================================
+# FILTRO ANTI-RAID Y CONTROL DE SOLICITUDES DE INGRESO (GATEKEEPER)
+# =======================================================================
+HISTORIAL_SOLICITUDES = deque(maxlen=30)
+
+def registrar_filtro_anti_raid(bot):
+    """
+    Maneja las solicitudes de ingreso (chat_join_request) cuando el grupo
+    está en privado con 'Aprobar nuevos miembros'.
+    Filtra bots reteniendo cuentas sin foto/alias y frena ráfagas (raids).
+    """
+    @bot.chat_join_request_handler()
+    def filtrar_solicitudes_entrada(request):
+        user = request.from_user
+        chat_id = request.chat.id
+        ahora = time.time()
+
+        # Registrar timestamp de la solicitud
+        HISTORIAL_SOLICITUDES.append(ahora)
+
+        # Detectar Ráfaga / Raid: 5 o más solicitudes en menos de 4 segundos
+        solicitudes_recientes = [t for t in HISTORIAL_SOLICITUDES if ahora - t < 4]
+        es_raid = len(solicitudes_recientes) >= 5
+
+        # 🚨 SI HAY UN RAID EN PROCESO:
+        if es_raid:
+            # Notificar al grupo cerrado de Admins (solo una vez en el pico del ataque)
+            if len(solicitudes_recientes) == 5:
+                try:
+                    bot.send_message(
+                        CANAL_ADMINS,
+                        "🚨 <b>¡ALERTA DE RAID DETECTADA!</b>\n"
+                        "Se detectó una entrada masiva de solicitudes.\n"
+                        "<i>Las aprobaciones automáticas se han pausado. Las solicitudes quedarán en espera para revisión manual.</i>",
+                        parse_mode="HTML"
+                    )
+                except Exception:
+                    pass
+            # Queda retenido sin aprobar ni rechazar
+            return
+
+        # 🔍 VERIFICACIÓN INDIVIDUAL DE CUENTA
+        try:
+            fotos = bot.get_user_profile_photos(user.id)
+            tiene_foto = fotos.total_count > 0
+        except Exception:
+            tiene_foto = False
+
+        tiene_username = user.username is not None
+
+        # Si el usuario tiene foto O alias, es legítimo -> APROBAR AUTOMÁTICO
+        if tiene_foto or tiene_username:
+            try:
+                bot.approve_chat_join_request(chat_id, user.id)
+            except Exception:
+                pass
+        else:
+            # Si no tiene foto NI alias (cuenta fantasma de bot), queda retenido en espera
+            pass
+            
     
     
     

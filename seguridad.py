@@ -260,26 +260,15 @@ def registrar_filtro_anti_raid(bot):
                     pass
             # Queda retenido sin aprobar ni rechazar
             return
-
-        # 🔍 VERIFICACIÓN INDIVIDUAL DE CUENTA
-        try:
-            fotos = bot.get_user_profile_photos(user.id)
-            tiene_foto = fotos.total_count > 0
-        except Exception:
-            tiene_foto = False
-
-        tiene_username = user.username is not None
-
-        # Si el usuario tiene foto O alias, es legítimo -> APROBAR AUTOMÁTICO
-        if tiene_foto or tiene_username:
-            try:
-                bot.approve_chat_join_request(chat_id, user.id)
-            except Exception:
-                pass
-        else:
-            # Si no tiene foto NI alias (cuenta fantasma de bot), queda retenido en espera
-            pass
             
+        # 🟢 SI NO ES RAID:
+        # No hacemos auto-aprobación. La solicitud se mantiene intacta
+        # en espera hasta que el módulo de captcha la procese.
+
+
+
+
+
     
     
     

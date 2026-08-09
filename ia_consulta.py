@@ -66,17 +66,18 @@ def registrar_ia_consulta(bot, redis_client, obtener_teclado_func):
             return f'<tg-emoji emoji-id="{emoji_id}">{fallback}</tg-emoji>'
         return fallback
 
-    # HANDLER PARA EL COMANDO /ia (GRUPOS, PRIVADO Y CANALES)
-    @bot.message_handler(commands=['ia'])
-    @bot.channel_post_handler(commands=['ia'])
+
+    # -----------------------------------------------------------------------
+    # LOGICA PRINCIPAL Y HANDLERS PARA /ia (GRUPOS, PRIVADO Y CANALES)
+    # -----------------------------------------------------------------------
     def publicar_anuncio_ia(message):
-        # 💥 Auto-destrucción del comando enviado
+        # Intentar borrar el mensaje del comando (funciona en grupos y canales)
         try:
             bot.delete_message(message.chat.id, message.message_id)
         except Exception:
             pass
 
-        # Si NO es un canal, verificamos que sea ADMIN del bot
+        # Si NO es un canal, verificar que el usuario sea Admin
         if message.chat.type != "channel":
             user_id = message.from_user.id if message.from_user else None
             if user_id not in ADMIN_IDS:
@@ -87,14 +88,14 @@ def registrar_ia_consulta(bot, redis_client, obtener_teclado_func):
 
         anuncio = (
             f"{e('ROBOT', '🤖')} <blockquote><b>SERVICIO DE CONSULTA IA FINANCIERA</b></blockquote> {e('ROBOT', '🤖')}\n\n"
-            f"{e('MEGAFONO', '📣')} <i>Estimada comunidad, para mantener este servicio gratuito, rápido y sostenible, "
+            f"{e('MEGAFONO', '📢')} <i>Estimada comunidad, para mantener este servicio gratuito, rápido y sostenible, "
             f"el módulo de IA opera bajo los siguientes parámetros en privado:</i>\n\n"
             f"{e('VISTO', '✔️')} <b>Cupo Global:</b> 100 usuarios diarios.\n"
-            f"{e('PROHIBIDO', '⛔')} <b>Límite Individual:</b> 30 consultas por usuario en su día de acceso.\n"
-            f"{e('FLECHA_ABAJO', '⬇️')} <b>Rotación Equitativa:</b> Si usas la IA hoy, se activará un día de descanso para ti mañana, "
+            f"{e('PROHIBIDO', '🚫')} <b>Límite Individual:</b> 30 consultas por usuario en su día de acceso.\n"
+            f"{e('FLECHA_ABAJO', '⬇️')} <b>Rotación Equitativa:</b> Si usas la IA hoy, se activará un día de descanso para ti, "
             f"permitiendo que otros miembros del canal puedan consultar.\n"
             f"{e('BANCO', '🏦')} <b>Actualización:</b> Datos en tiempo real de la tasa oficial del BCV.\n\n"
-            f"{e('RAYO', '⚡')} <i>¡Ingresa al bot en privado en <a href='{bot_link}'>@{bot_info.username}</a> y presiona el botón 🤖 <b>IA Consulta</b> para iniciar!</i>"
+            f"{e('RAYO', '⚡')} <i>Ingresa al bot en privado en <a href='{bot_link}'>@{bot_info.username}</a> y presiona el botón del menú.</i>"
         )
 
         bot.send_message(
@@ -103,6 +104,18 @@ def registrar_ia_consulta(bot, redis_client, obtener_teclado_func):
             parse_mode="HTML",
             disable_web_page_preview=True
         )
+
+    # Handler para chats privados y grupos
+    @bot.message_handler(commands=['ia'])
+    def cmd_ia_mensajes(message):
+        publicar_anuncio_ia(message)
+
+    # Handler independiente para canales
+    @bot.channel_post_handler(commands=['ia'])
+    def cmd_ia_canales(message):
+        publicar_anuncio_ia(message)
+
+
 
     # ------------------------------------------------------------------
     # FLUJO EN PRIVADO

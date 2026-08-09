@@ -11,7 +11,7 @@ from telebot.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMar
 from telebot import types
 from anuncios import iniciar_modulo_anuncios
 from seguridad import validar_copia_pega, es_admin_vip, es_admin_especial, es_administrador, es_chat_permitido
-from seguridad import limpiar_comandos_chat
+from seguridad import limpiar_comandos_chat, registrar_filtro_anti_raid
 from calculadora import registrar_calculadora
 from ia_consulta import registrar_ia_consulta
 import re
@@ -30,6 +30,8 @@ r = redis.from_url(redis_url) if redis_url else None
 # ==========================================
 TOKEN_TELEGRAM = os.getenv("TOKEN_TELEGRAM")
 bot = telebot.TeleBot(TOKEN_TELEGRAM)
+
+registrar_filtro_anti_raid(bot)
 
 BOT_USERNAME = "BancoIDV_bot" # Reemplaza con el alias de tu bot sin el @
 

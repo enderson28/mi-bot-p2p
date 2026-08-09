@@ -9,6 +9,7 @@ import threading
 from datetime import datetime, timedelta
 from telebot.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
 from telebot import types
+from captcha import setup_verification_handlers
 from anuncios import iniciar_modulo_anuncios
 from seguridad import validar_copia_pega, es_admin_vip, es_admin_especial, es_administrador, es_chat_permitido
 from seguridad import limpiar_comandos_chat, registrar_filtro_anti_raid
@@ -65,6 +66,8 @@ CHATS_PERMITIDOS = [
     CANAL_PRINCIPAL_IDV, 
     CANAL_PRUEBA
 ]
+
+setup_verification_handlers(bot, CANAL_PRUEBA)
 
 # CONFIGURACIÓN DE TIEMPOS
 RATE_LIMIT_AVISO = 600       # 10 minutos para enfriamiento de avisos a usuarios

@@ -75,6 +75,12 @@ def registrar_ia_consulta(bot, redis_client, obtener_teclado_func):
     # ------------------------------------------------------------------
     @bot.message_handler(commands=['ia'])
     def publicar_anuncio_ia(message):
+        # 💥 Auto-destrucción inmediata del mensaje /ia enviado
+        try:
+            bot.delete_message(message.chat.id, message.message_id)
+        except Exception:
+            pass
+            
         user_id = message.from_user.id
         if user_id not in ADMIN_IDS:
             return

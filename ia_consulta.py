@@ -18,34 +18,30 @@ USO_DIARIO_USUARIOS = {}
 REGISTRO_CUPO_DIARIO = {"fecha": "", "usuarios_registrados": set()}
 
 # Definición de canales en la parte superior
-CANAL_PRUEBA = "@COMUNIDV"
-CANAL_CONGESTIONADO = "@COMUNIDADAS04"
+CANAL_PRUEBA = -1004473532809
+CANAL_CONGESTIONADO = -1001612840350
+CANAL_PRINCIPAL_IDV = -1003950050807
 
 
 def registrar_ia_consulta(bot, redis_client, obtener_teclado_func):
 
-    # 🔒 VERIFICACIÓN MULTI-CANAL
+    # 🔒 VERIFICACIÓN MULTI-CANAL (Optimizado con lista)
     def usuario_esta_unido(user_id):
         if user_id in ADMIN_IDS:
             return True
 
-        # 1. Probar en el canal de pruebas
-        try:
-            m1 = bot.get_chat_member(CANAL_PRUEBA, user_id)
-            if m1.status in ['creator', 'administrator', 'member']:
-                return True
-        except Exception:
-            pass  # Si el bot no está en el canal o falla, pasa al siguiente
+    # Lista con todos tus canales permitidos
+    canales = [CANAL_PRUEBA, CANAL_CONGESTIONADO, CANAL_PRINCIPAL_IDV]
 
-        # 2. Probar en el canal principal / congestionado
+    for canal in canales:
         try:
-            m2 = bot.get_chat_member(CANAL_CONGESTIONADO, user_id)
-            if m2.status in ['creator', 'administrator', 'member']:
-                return True
+            miembro = bot.get_chat_member(canal, user_id)
+            if miembro.status in ['creator', 'administrator', 'member']:
+                return True  # Con estar en UNO solo de la lista, ya le da acceso
         except Exception:
-            pass
+            pass  # Si el bot no está en el canal o falla la consulta, pasa al siguiente
 
-        return False
+    return False
 
     # DICCIONARIO DE EMOJIS ANIMADOS DE TELEGRAM (IDs)
     TG_EMOJIS = {
@@ -70,20 +66,21 @@ def registrar_ia_consulta(bot, redis_client, obtener_teclado_func):
             return f'<tg-emoji emoji-id="{emoji_id}">{fallback}</tg-emoji>'
         return fallback
 
-    # ------------------------------------------------------------------
-    # HANDLER PARA EL COMANDO /ia (EXCLUSIVO CREADOR / ADMINS)
-    # ------------------------------------------------------------------
+    # HANDLER PARA EL COMANDO /ia (GRUPOS, PRIVADO Y CANALES)
     @bot.message_handler(commands=['ia'])
+    @bot.channel_post_handler(commands=['ia'])
     def publicar_anuncio_ia(message):
-        # 💥 Auto-destrucción inmediata del mensaje /ia enviado
+        # 💥 Auto-destrucción del comando enviado
         try:
             bot.delete_message(message.chat.id, message.message_id)
         except Exception:
             pass
-            
-        user_id = message.from_user.id
-        if user_id not in ADMIN_IDS:
-            return
+
+        # Si NO es un canal, verificamos que sea ADMIN del bot
+        if message.chat.type != "channel":
+            user_id = message.from_user.id if message.from_user else None
+            if user_id not in ADMIN_IDS:
+                return
 
         bot_info = bot.get_me()
         bot_link = f"https://t.me/{bot_info.username}"

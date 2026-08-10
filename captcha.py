@@ -1,14 +1,51 @@
 import random
+import threading
 from telebot import types
 
 pending_verifications = {}
 
-def registrar_solicitud_pendiente(user_id, chat_id):
-    """Guarda la solicitud de ingreso en la memoria temporal del bot."""
+def rechazar_solicitud_expirada(bot, chat_id, user_id):
+    """Rechaza automáticamente la solicitud en Telegram tras 1 hora sin responder captcha."""
+    if user_id in pending_verifications:
+        try:
+            # 1. Rechazamos la solicitud en el canal/grupo
+            bot.decline_chat_join_request(chat_id, user_id)
+            
+            # 2. Le avisamos amablemente por privado (opcional)
+            try:
+                bot.send_message(
+                    user_id,
+                    "⏳ <b>Tiempo agotado</b>\n\n"
+                    "Tu solicitud de ingreso ha caducado por no completar la verificación en 1 hora.\n"
+                    "Si deseas ingresar, por favor vuelve a presionar el enlace de unirte o solicitud al canal 👉🏼 @COMUNIDADAS04 .",
+                    parse_mode="HTML"
+                )
+            except Exception:
+                pass # Si el usuario bloqueó al bot, lo ignora silenciosamente
+
+            print(f"⏰ Solicitud expirada y rechazada automáticamente para el usuario: {user_id}")
+
+        except Exception as e:
+            print(f"Nota/Error al rechazar solicitud expirada de {user_id}: {e}")
+        finally:
+            # 3. Limpiamos el registro de la memoria
+            if user_id in pending_verifications:
+                del pending_verifications[user_id]
+
+
+def registrar_solicitud_pendiente(bot, user_id, chat_id):
+    """Guarda la solicitud de ingreso e inicia un reloj de 1 hora (3600s)."""
     pending_verifications[user_id] = {
         "chat_id": chat_id,
         "status": "pending"
     }
+    
+    # ⏱️ Programar auto-rechazo en 3600 segundos (1 hora)
+    timer = threading.Timer(3600, rechazar_solicitud_expirada, args=[bot, chat_id, user_id])
+    timer.daemon = True  # Para que no bloquee el apagado del bot
+    timer.start()
+
+
 
 def setup_verification_handlers(bot, target_channel_id=None, funcion_menu=None, funcion_esta_unido=None):
 

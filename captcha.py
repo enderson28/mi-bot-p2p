@@ -3,30 +3,16 @@ from telebot import types
 
 pending_verifications = {}
 
+# 🟢 Función para registrar al usuario desde seguridad.py
+def registrar_solicitud_pendiente(user_id, chat_id):
+    pending_verifications[user_id] = {
+        "chat_id": chat_id,
+        "status": "pending"
+    }
+
 def setup_verification_handlers(bot, target_channel_id=None):
 
-    # 1. Escuchar solicitudes de ingreso al canal/grupo (Sin filtro estricto para pruebas)
-    @bot.chat_join_request_handler()
-    def handle_join_request(req):
-        user_id = req.from_user.id
-        chat_id = req.chat.id
-        
-        pending_verifications[user_id] = {
-            "chat_id": chat_id,
-            "status": "pending"
-        }
-        
-        try:
-            bot.send_message(
-                user_id,
-                "👋 **¡Hola! Para completar tu ingreso al grupo, necesitas verificarte.**\n\n"
-                "Usa el comando /verificar o presiona /start para resolver un sencillo Captcha.",
-                parse_mode="Markdown"
-            )
-        except Exception:
-            pass
-
-    # 2. Comando /start y /verificar
+    # 1. Comando /start y /verificar
     @bot.message_handler(commands=['verificar', 'start'])
     def start_verification(message):
         user_id = message.from_user.id
@@ -68,7 +54,7 @@ def setup_verification_handlers(bot, target_channel_id=None):
             parse_mode="Markdown"
         )
 
-    # 3. Callback del Captcha
+    # 2. Callback del Captcha
     @bot.callback_query_handler(func=lambda call: call.data.startswith("captcha_"))
     def process_captcha(call):
         user_id = call.from_user.id
@@ -105,10 +91,9 @@ def setup_verification_handlers(bot, target_channel_id=None):
         else:
             bot.answer_callback_query(call.id, "❌ Respuesta incorrecta. Inténtalo de nuevo.", show_alert=True)
 
-    # 4. Manejador para el botón "Funciones del Bot" (Evita que se quede cargando)
+    # 3. Manejador para el botón "Funciones del Bot"
     @bot.callback_query_handler(func=lambda call: call.data == "bot_info")
     def responder_bot_info(call):
-        # Responde al callback para quitar el estado de "cargando" en Telegram
         bot.answer_callback_query(call.id)
         
         bot.send_message(
@@ -133,5 +118,5 @@ def mostrar_menu_bienvenida(bot, chat_id):
         "Explora nuestros servicios y herramientas oficiales desde este menú:",
         reply_markup=markup,
         parse_mode="Markdown"
-        )
-        
+    )
+    

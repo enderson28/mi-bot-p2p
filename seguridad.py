@@ -264,7 +264,7 @@ def registrar_filtro_anti_raid(bot):
         
         # 🟢 SI NO ES RAID:
         # Registramos al usuario en la memoria del captcha
-        registrar_solicitud_pendiente(user.id, chat_id)
+        registrar_solicitud_pendiente(bot, user.id, chat_id)
 
 
 

@@ -67,8 +67,6 @@ CHATS_PERMITIDOS = [
     CANAL_PRUEBA
 ]
 
-setup_verification_handlers(bot, CANAL_PRUEBA)
-
 # CONFIGURACIÓN DE TIEMPOS
 RATE_LIMIT_AVISO = 600       # 10 minutos para enfriamiento de avisos a usuarios
 TIEMPO_VIDA_TABLA = 300      # 5 minutos para autodestrucción del monitor/intervención
@@ -227,6 +225,38 @@ def usuario_esta_unido(user_id):
         pass
 
     return unido_prueba or unido_congestionado
+
+
+# ===============================================
+# DESPACHADOR DE MENÚ Y CAPTCHA
+# ===============================================
+
+def enviar_menu_principal(bot, user, chat_id):
+    if es_admin_vip(bot, user):
+        markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+        markup.add(KeyboardButton("🟢 P2P-USDT 🔴"), KeyboardButton("📊 Intervencion 📊"))
+        markup.add(KeyboardButton("📟 Calculadora"), KeyboardButton("⚙️ Soporte"))
+        markup.add(KeyboardButton("🤖 IA Consulta"))
+        
+        texto_vip = (
+            f"<b>👑 ¡Hola, {user.first_name}!</b>\n\n"
+            f"Gracias por tu valiosa labor diaria manteniendo el orden en la comunidad - AntonyS4.\n"
+            f"<i>⚡ Tienes activo el entorno VIP de trabajo rápido (sin distracciones ni guías de inicio).</i>"
+        )
+        bot.send_message(chat_id, texto_vip, parse_mode="HTML", reply_markup=markup)
+    else:
+        markup = obtener_teclado_privado(user)
+        bot.send_message(chat_id, TEXTO_START, parse_mode="HTML", reply_markup=markup)
+
+
+# Inicialización del captcha
+setup_verification_handlers(
+    bot, 
+    [CANAL_PRUEBA, CANAL_CONGESTIONADO],
+    funcion_menu=enviar_menu_principal, 
+    funcion_esta_unido=usuario_esta_unido
+)
+
     
     # Actualizacion de velocidad
 def obtener_datos_bcv_validos():
@@ -570,40 +600,6 @@ def construir_intervencion_texto_html(user=None, porcentaje=None):
 # ==========================================
 #     MANEJADORES DE COMANDOS Y BOTONES
 # ==========================================
-            
-@bot.message_handler(commands=['start'])
-def handle_start(message):
-    if message.chat.type == "private":
-        # 1. SI ES ADMINISTRADOR VIP
-        if es_admin_vip(bot, message.from_user):
-            # Teclado ultralimpio para Administradores
-            markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-            markup.add(KeyboardButton("🟢 P2P-USDT 🔴"), KeyboardButton("📊 Intervencion 📊"))
-            markup.add(KeyboardButton("📟 Calculadora"), KeyboardButton("⚙️ Soporte"))
-            markup.add(KeyboardButton("🤖 IA Consulta"))
-        
-            texto_vip = (
-                f"👋 <b>¡Hola, {message.from_user.first_name}!</b>\n\n"
-                "Gracias por tu valiosa labor diaria manteniendo el orden en la comunidad - AntonyS4.\n"
-                "🛡️ <i>Tienes activo el entorno VIP de trabajo rápido (sin distracciones ni guías de inicio).</i>"
-            )
-            bot.send_message(message.chat.id, texto_vip, parse_mode="HTML", reply_markup=markup)
-            return
-
-        # 2. SI ES USUARIO COMÚN (Mantiene verificación de canal y guías completas)
-        if not usuario_esta_unido(message.from_user.id):
-            texto_bloqueo = (
-                "⚠️ <b>Acceso Restringido</b>\n\n"
-                "Este bot es de uso exclusivo para nuestra comunidad.\n"
-                "📢 <b>Únete a la comunidad oficial aquí:</b> @COMUNIDADAS04\n\n"
-                "<i>Una vez te hayas unido, vuelve a presionar /start.</i>"
-            )
-            bot.send_message(message.chat.id, texto_bloqueo, parse_mode="HTML")
-            return
-
-        # Mensaje recargado con teclado completo para novatos
-        bot.send_message(message.chat.id, TEXTO_START, parse_mode="HTML", reply_markup=obtener_teclado_privado())
-
 
 # Manejador para ejecutar /tasas en grupos permitidos y privados
 @bot.message_handler(commands=['tasas', 'tasa'])

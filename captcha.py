@@ -3,10 +3,10 @@ from telebot import types
 
 pending_verifications = {}
 
-def setup_verification_handlers(bot, target_channel_id):
+def setup_verification_handlers(bot, target_channel_id=None):
 
-    # 1. Escuchar solicitudes de ingreso al canal/grupo
-    @bot.chat_join_request_handler(func=lambda req: req.chat.id == target_channel_id)
+    # 1. Escuchar solicitudes de ingreso al canal/grupo (Sin filtro estricto para pruebas)
+    @bot.chat_join_request_handler()
     def handle_join_request(req):
         user_id = req.from_user.id
         chat_id = req.chat.id
@@ -31,7 +31,7 @@ def setup_verification_handlers(bot, target_channel_id):
     def start_verification(message):
         user_id = message.from_user.id
         
-        # SI NO TIENE CAPTCHA PENDIENTE -> Muestra tu menú/bienvenida directo
+        # SI NO TIENE CAPTCHA PENDIENTE -> Muestra el menú de bienvenida directo
         if user_id not in pending_verifications:
             mostrar_menu_bienvenida(bot, message.chat.id)
             return
@@ -57,7 +57,7 @@ def setup_verification_handlers(bot, target_channel_id):
             types.InlineKeyboardButton(opt, callback_data=f"captcha_{opt}")
             for opt in all_options
         ]
-        markup.add(*buttons)  # <--- Sin comillas
+        markup.add(*buttons)
 
         bot.send_message(
             user_id,
@@ -105,8 +105,22 @@ def setup_verification_handlers(bot, target_channel_id):
         else:
             bot.answer_callback_query(call.id, "❌ Respuesta incorrecta. Inténtalo de nuevo.", show_alert=True)
 
+    # 4. Manejador para el botón "Funciones del Bot" (Evita que se quede cargando)
+    @bot.callback_query_handler(func=lambda call: call.data == "bot_info")
+    def responder_bot_info(call):
+        # Responde al callback para quitar el estado de "cargando" en Telegram
+        bot.answer_callback_query(call.id)
+        
+        bot.send_message(
+            call.message.chat.id,
+            "ℹ️ **Funciones de la Comunidad:**\n\n"
+            "• Monitoreo de tasas y divisas en tiempo real.\n"
+            "• Filtro anti-bots y seguridad avanzada.\n"
+            "• Consultas automatizadas.",
+            parse_mode="Markdown"
+        )
+
 def mostrar_menu_bienvenida(bot, chat_id):
-    """Aquí llamas/construyes tu menú oficial"""
     markup = types.InlineKeyboardMarkup()
     btn_info = types.InlineKeyboardButton("ℹ️ Funciones del Bot", callback_data="bot_info")
     btn_canal = types.InlineKeyboardButton("📢 Canal Oficial", url="https://t.me/COMUNIDV")
@@ -119,5 +133,5 @@ def mostrar_menu_bienvenida(bot, chat_id):
         "Explora nuestros servicios y herramientas oficiales desde este menú:",
         reply_markup=markup,
         parse_mode="Markdown"
-  )
-  
+        )
+        

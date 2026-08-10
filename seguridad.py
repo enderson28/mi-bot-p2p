@@ -1,5 +1,6 @@
 import time
 from collections import deque
+from captcha import registrar_solicitud_pendiente
 
 # Lista de frases clave para detectar copias de mensajes oficiales del bot
 FRASES_PROHIBIDAS = [
@@ -260,10 +261,10 @@ def registrar_filtro_anti_raid(bot):
                     pass
             # Queda retenido sin aprobar ni rechazar
             return
-            
+        
         # 🟢 SI NO ES RAID:
-        # No hacemos auto-aprobación. La solicitud se mantiene intacta
-        # en espera hasta que el módulo de captcha la procese.
+        # Registramos al usuario en la memoria del captcha
+        registrar_solicitud_pendiente(user.id, chat_id)
 
 
 

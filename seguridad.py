@@ -159,7 +159,8 @@ def es_admin_especial(user):
 # Lista de comandos autorizados para el bot de administración (Group Help)
 COMANDOS_GROUP_HELP = [
     "/reload", "/ban", "/mute", "/warn", 
-    "/unban", "/unmute", "/info", "/config", "/start"
+    "/unban", "/unmute", "/info", "/config", "/start",
+    "/aviso", "/aviso_captcha"
 ]
 
 def limpiar_comandos_chat(bot, message):

@@ -135,7 +135,8 @@ ADMINS_VIP = [
     "8418460698",        # Carlos V
     "1676933074",        # Antony Jefe
     "6299629267",        # Oswaldo oso
-    "1920750484"         # Cristiano      
+    "1920750484",        # Cristiano 
+    "7632618800"         #idk
 ]
 
 # Admin especial que requiere la tasa BCV con el 1% en Intervención

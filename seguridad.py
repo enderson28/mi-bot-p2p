@@ -1,5 +1,6 @@
 import time
 from collections import deque
+from captcha import registrar_solicitud_pendiente
 
 # Lista de frases clave para detectar copias de mensajes oficiales del bot
 FRASES_PROHIBIDAS = [
@@ -162,25 +163,23 @@ COMANDOS_GROUP_HELP = [
 ]
 
 def limpiar_comandos_chat(bot, message):
-    """
-    Elimina los mensajes que empiecen con '/' para mantener el chat limpio.
-    Permite un breve retraso para que Group Help procese la orden si es válida.
-    """
     if not message or not message.text:
         return False
 
     texto = message.text.strip().lower()
 
-    # Si el mensaje empieza con una barra diagonal '/'
+    # 🟢 IGNORAR NATIVAMENTE LOS COMANDOS DE ANUNCIOS (dejar que anuncios.py los maneje)
+    if texto.startswith("/aviso") or texto.startswith("/aviso_captcha"):
+        return False
+
+    # Si el mensaje empieza con '/'
     if texto.startswith("/"):
-        # Extraemos solo el comando principal (ejemplo: '/ban' de '/ban 10 days')
         comando = texto.split()[0]
 
-        # Si es un comando oficial de Group Help, esperamos medio segundo
+        # Si es de Group Help, espera 4 seg y borra
         if comando in COMANDOS_GROUP_HELP:
             time.sleep(4)
 
-        # Borramos el mensaje de texto del comando
         try:
             bot.delete_message(message.chat.id, message.message_id)
             return True
@@ -188,6 +187,7 @@ def limpiar_comandos_chat(bot, message):
             pass
 
     return False
+    
     
 def es_chat_permitido(bot, message, chats_permitidos, usuarios_autorizados, creador_id):
     if not message or not message.chat:
@@ -260,14 +260,22 @@ def registrar_filtro_anti_raid(bot):
                     pass
             # Queda retenido sin aprobar ni rechazar
             return
-            
+        
         # 🟢 SI NO ES RAID:
-        # No hacemos auto-aprobación. La solicitud se mantiene intacta
-        # en espera hasta que el módulo de captcha la procese.
+        # Registramos al usuario en la memoria del captcha
+        registrar_solicitud_pendiente(bot, user.id, chat_id)
 
 
 
-
+def registrar_limpiador_servicio(bot):
+    """Borra automáticamente avisos de 'Usuario se unió' o 'Usuario salió'"""
+    @bot.message_handler(content_types=['new_chat_members', 'left_chat_member'])
+    def borrar_mensajes_servicio(message):
+        try:
+            bot.delete_message(message.chat.id, message.message_id)
+        except Exception:
+            pass
+    
 
     
     

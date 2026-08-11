@@ -1,43 +1,119 @@
 import time
 import threading
 
-# Configuración del mensaje
-ID_GRUPO = "@COMUNIDADAS04"  # Reemplaza con el ID de tu grupo
-INTERVALO_HORAS = 6       # Cambia a 12 si prefieres cada 12 horas
+# ⏱️ Configuración de tiempos
+INTERVALO_HORAS = 2          # Frecuencia del anuncio automático (2 horas)
+DURACION_VISIBLE_MIN = 15     # Minutos visible antes de borrarse
 
-TEXTO_ANUNCIO = (
-    "🤖 <b>¡Consulta las Tasas y Guías en Privado!</b>\n\n"
-    "Para mantener el grupo libre de spam, las herramientas oficiales de "
-    "<b>[Comunidad - AntonyS4]</b> están disponibles en chat privado.\n\n"
-    "🖥️ <b>Monitor P2P / 📆 BCV en tiempo real</b>\n"
-    "📟 <b>Calculadora e 📊 Intervención</b>\n"
-    "📜 <b>Guías paso a paso (BPay / GPay)</b>\n\n"
-    "👉 <b>Toca aquí para iniciar:</b> @BancoIDV_bot"
-)
 
-def bucle_anuncios(bot):
-    """Bucle infinito que envía el anuncio en segundo plano."""
-    # Convertimos horas a segundos (6 horas = 21600 segundos)
+def obtener_texto_anuncio():
+    """Construye el texto enriquecido de forma 100% compatible con HTML de Telegram."""
+    return (
+        "🛡️ <b>¡SISTEMA DE VERIFICACIÓN Y SEGURIDAD!</b> 🛡️\n\n"
+        "🚨 Para mantener la comunidad libre de spam, bots y cuentas falsas, tenemos activo un captcha de entrada.\n\n"
+        "Si solicitaste ingreso y tu solicitud sigue <b>pendiente</b>, sigue estos pasos:\n"
+        "1️⃣ 🤖 Entra al chat privado de nuestro bot: @BancoIDV2_bot\n"
+        "2️⃣ ⚡ Presiona el botón <b>INICIAR</b> o envía <code>/start</code>.\n"
+        "3️⃣ ✔️ Resuelve la suma matemática súper sencilla.\n\n"
+        "⏳ <b>¡IMPORTANTE!</b> Dispones de <b>1 hora</b> desde que solicitas tu entrada para resolver la verificación o la solicitud será rechazada automáticamente(puedes volver a hacer la solicitud cuando gustes).\n\n"
+        "<i>💡 Este mensaje se autodestruirá en 15 minutos para mantener el chat limpio.</i>"
+    )
+
+
+def _eliminar_mensaje_luego(bot, chat_id, message_id, segundos):
+    """Función interna para borrar el anuncio tras X segundos."""
+    def eliminar():
+        time.sleep(segundos)
+        try:
+            bot.delete_message(chat_id, message_id)
+        except Exception:
+            pass
+    threading.Thread(target=eliminar, daemon=True).start()
+
+
+def bucle_anuncios(bot, lista_chats):
+    """Bucle infinito que envía el anuncio a cada canal/grupo en lista_chats."""
     segundos_espera = INTERVALO_HORAS * 3600
+    segundos_visibles = DURACION_VISIBLE_MIN * 60
 
     while True:
-        try:
-            # 1. ESPERA PRIMERO LAS 6 HORAS COMPLETAS
-            time.sleep(segundos_espera)
-            
-            # 2. ENVÍA EL ANUNCIO DESPUÉS DE ESPERAR
-            bot.send_message(ID_GRUPO, TEXTO_ANUNCIO, parse_mode="HTML")
-            print(f"📢 Anuncio automático enviado con éxito al grupo {ID_GRUPO}")
-            
-        except Exception as e:
-            print(f"⚠️ Error al enviar el anuncio automático: {e}")
-            # Si falla (por ejemplo, sin internet), reintenta en 1 minuto
-            time.sleep(60)
-            
+        # Espera las 2 horas completas ANTES de enviar el anuncio
+        time.sleep(segundos_espera)
 
-def iniciar_modulo_anuncios(bot):
-    """Inicia el hilo secundario para no bloquear el bot principal."""
-    hilo = threading.Thread(target=bucle_anuncios, args=(bot,), daemon=True)
+        texto = obtener_texto_anuncio()
+        for chat_id in lista_chats:
+            try:
+                msg = bot.send_message(
+                    chat_id, 
+                    texto, 
+                    parse_mode="HTML", 
+                    disable_web_page_preview=True
+                )
+                print(f"📢 Anuncio automático enviado con éxito a {chat_id}")
+                
+                # Programa la autodestrucción tras 15 minutos
+                _eliminar_mensaje_luego(bot, chat_id, msg.message_id, segundos_visibles)
+
+            except Exception as e:
+                print(f"⚠️ Error al enviar el anuncio automático a {chat_id}: {e}")
+
+
+def iniciar_modulo_anuncios(bot, lista_chats):
+    """Inicia el hilo secundario para los anuncios automáticos."""
+    hilo = threading.Thread(target=bucle_anuncios, args=(bot, lista_chats), daemon=True)
     hilo.start()
-    print("⏰ Módulo de anuncios automáticos activado correctamente.")
-  
+    print("📢 Módulo de anuncios automáticos activado correctamente.")
+
+
+def setup_comando_aviso(bot, funcion_es_admin_vip, usuarios_autorizados):
+    """Registra el comando manual /aviso o /aviso_captcha para Administradores."""
+    
+    @bot.message_handler(commands=['aviso', 'aviso_captcha'])
+    def handle_aviso_manual(message):
+        user = message.from_user
+        chat_id = message.chat.id
+
+        # 🔒 1. Verificar si es Admin del grupo actual
+        es_admin_del_chat = False
+        if message.chat.type in ['group', 'supergroup']:
+            try:
+                miembro = bot.get_chat_member(chat_id, user.id)
+                if miembro.status in ['administrator', 'creator']:
+                    es_admin_del_chat = True
+            except Exception:
+                pass
+
+        # 🔒 2. Verificar si es Admin VIP o Creador global
+        es_admin_vip = funcion_es_admin_vip(bot, user)
+        es_creador = user.id in usuarios_autorizados
+
+        # Si no cumple NINGUNA de las condiciones, rechaza el comando
+        if not (es_admin_del_chat or es_admin_vip or es_creador):
+            try:
+                bot.delete_message(chat_id, message.message_id)
+            except Exception:
+                pass
+            return
+
+        try:
+            # Borra el comando escrito por el admin (/aviso)
+            try:
+                bot.delete_message(chat_id, message.message_id)
+            except Exception:
+                pass
+
+            # Envía el anuncio
+            texto = obtener_texto_anuncio()
+            msg = bot.send_message(
+                chat_id, 
+                texto, 
+                parse_mode="HTML", 
+                disable_web_page_preview=True
+            )
+            
+            # Programa borrado en 10 minutos (600 seg)
+            _eliminar_mensaje_luego(bot, chat_id, msg.message_id, 600)
+
+        except Exception as e:
+            print(f"⚠️ Error al ejecutar comando manual /aviso: {e}")
+                

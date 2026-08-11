@@ -58,6 +58,9 @@ CANAL_PRINCIPAL_IDV = -1003950050807
 USUARIOS_AUTORIZADOS = [5073264705, 1676933074, 6299629267, 8166481937]
 CREADOR_ID = 5073264705
 
+# 🟢 REGISTRAR COMANDOS PRIORITARIOS AQUÍ (Arriba de los demás handlers)
+setup_comando_aviso(bot, es_admin_vip, USUARIOS_AUTORIZADOS)
+
 # Lista unificada de chats donde el bot responderá a comandos de canal (/p, /i, /tasas)
 CHATS_PERMITIDOS = [
     CANAL_CONGESTIONADO_OFICIAL, # <-- ID del canal principal
@@ -1694,9 +1697,6 @@ if __name__ == "__main__":
 
     # 🟢 2. Activamos el ciclo de anuncios pasando bot y la lista de chats
     iniciar_modulo_anuncios(bot, CHATS_ANUNCIOS)
-
-    # 🟢 3. Registramos el comando manual /aviso
-    setup_comando_aviso(bot, es_admin_vip, USUARIOS_AUTORIZADOS)
 
     print("🚀 Bot Maestro en línea con limpieza automática y temporizador de 5 min...")
 

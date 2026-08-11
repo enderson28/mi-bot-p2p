@@ -41,14 +41,7 @@ BOT_USERNAME = "BancoIDV_bot" # Reemplaza con el alias de tu bot sin el @
 # CONFIGURACIÓN Y VARIABLES GLOBALES (PRODUCCIÓN)
 # ==========================================
 
-# Canal Principal Oficial de Anuncios (Donde publica el dueño)
-CANAL_CONGESTIONADO_OFICIAL = -1001504094779
-
-# Grupo Vincular de Conversación
-CANAL_CONGESTIONADO = -1001612840350
-
 # Otros Canales/Grupos Administrativos
-CANAL_ADMINS = -1003947562741
 CANAL_SECUNDARIO = -1004378497075
 
 # Canales de Pruebas (puedes mantenerlos o cambiarlos)
@@ -56,7 +49,7 @@ CANAL_PRUEBA = -1004473532809
 CANAL_PRINCIPAL_IDV = -1003950050807
 
 # USUARIOS AUTORIZADOS Y CREADOR (¡Restaurar estas líneas!)
-USUARIOS_AUTORIZADOS = [5073264705, 1676933074, 6299629267, 8166481937]
+USUARIOS_AUTORIZADOS = [5073264705, 1676933074, 6299629267]
 CREADOR_ID = 5073264705
 
 # 🟢 REGISTRAR COMANDOS PRIORITARIOS AQUÍ (Arriba de los demás handlers)
@@ -64,9 +57,6 @@ setup_comando_aviso(bot, es_admin_vip, USUARIOS_AUTORIZADOS)
 
 # Lista unificada de chats donde el bot responderá a comandos de canal (/p, /i, /tasas)
 CHATS_PERMITIDOS = [
-    CANAL_CONGESTIONADO_OFICIAL, # <-- ID del canal principal
-    CANAL_CONGESTIONADO,         # <-- Grupo vinculado
-    CANAL_ADMINS, 
     CANAL_PRINCIPAL_IDV, 
     CANAL_PRUEBA
 ]
@@ -130,7 +120,7 @@ def obtener_boton_actualizar_inline():
 #  TEXTOS ORIGINALES COMPLETOS
 # ==========================================
 TEXTO_START = (
-    "👋 <b>¡Bienvenido al Monitor Oficial IDV ~ Arbitraje P2P!</b>\n\n"
+    "👋 <b>¡Bienvenido al Monitor Oficial ~ Arbitraje P2P!</b>\n\n"
     "Este bot es tu herramienta aliada para proteger tu capital y generar ganancias reales en Venezuela 🇻🇪. Aquí no tienes que adivinar; el sistema calcula todo por ti.\n\n"
     "🚀 <b>¿Cómo empezar? Usa el menú interactivo de botones aquí abajo o escribe los comandos:</b>\n"
     "➡️ <code>/p</code> o botón 🟢🔴 <b>P2P~USDT</b> — Muestra las tasas reales BCV, precios P2P.\n"
@@ -222,7 +212,7 @@ def usuario_esta_unido(user_id):
         pass
 
     try:
-        m2 = bot.get_chat_member(CANAL_CONGESTIONADO, user_id)
+        m2 = bot.get_chat_member(CANAL_PRINCIPAL_IDV, user_id)
         if m2.status in ['creator', 'administrator', 'member']:
             unido_congestionado = True
     except Exception:
@@ -256,7 +246,7 @@ def enviar_menu_principal(bot, user, chat_id):
 # Inicialización del captcha
 setup_verification_handlers(
     bot, 
-    [CANAL_PRUEBA, CANAL_CONGESTIONADO],
+    [CANAL_PRUEBA, CANAL_PRINCIPAL_IDV],
     funcion_menu=enviar_menu_principal, 
     funcion_esta_unido=usuario_esta_unido
 )
@@ -662,7 +652,7 @@ def handle_tasas_comando(message):
         try:
             markup_tasas = None
 
-            if str(chat_id) == str(CANAL_ADMINS):
+            if str(chat_id) == str(CANAL_PRUEBA):
                 markup_tasas = InlineKeyboardMarkup()
                 markup_tasas.row(
                     InlineKeyboardButton("🔄 Actualizar Tasas", callback_data="refrescar_canal_tasas"),
@@ -854,7 +844,7 @@ def handle_invitacion_comando(message):
             f'• <a href="tg://user?id=5073264705">⚙️ Enderson</a>\n'
             f'• <a href="tg://user?id=1676933074">🐲 Antony</a>\n'
             f'• <a href="tg://user?id=6299629267">🐻 Oswaldo</a>\n'
-            f'• <a href="tg://user?id=8166481937">👸🏼 CiIita</a>',
+            f'• <a href="tg://user?id=791436853">👸🏼 Sarita</a>',
             parse_mode="HTML",
             disable_web_page_preview=True
         )
@@ -997,7 +987,7 @@ def procesar_precio(message):
             markup_precio = None
 
             # Si estamos en el grupo cerrado de admins, agregamos los botones de refrescar/borrar
-            if str(chat_id) == str(CANAL_ADMINS):
+            if str(chat_id) == str(CANAL_PRUEBA):
                 markup_precio = InlineKeyboardMarkup()
                 markup_precio.row(
                     InlineKeyboardButton("🔄 Actualizar Tasas", callback_data="refrescar_tasas"),
@@ -1116,7 +1106,7 @@ def procesar_intervencion(message):
                 texto_grupo = construir_intervencion_texto_html(user=message.from_user, porcentaje=0.5)
 
             # SOLO si estamos en el grupo de admins, creamos los 2 botones VIP
-            if str(chat_id) == str(CANAL_ADMINS):
+            if str(chat_id) == str(CANAL_PRUEBA):
                 markup_intervencion = InlineKeyboardMarkup()
                 markup_intervencion.row(
                     InlineKeyboardButton("🔄 Actualizar Cálculo", callback_data="refrescar_intervencion"),
@@ -1272,7 +1262,7 @@ def refrescar_canal_tasas_callback(call):
     texto_resultado = construir_monitor_canal_html()
 
     markup = InlineKeyboardMarkup()
-    if str(chat_id) == str(CANAL_ADMINS):
+    if str(chat_id) == str(CANAL_PRUEBA):
         markup.row(
             InlineKeyboardButton("🔄 Actualizar Tasas", callback_data="refrescar_canal_tasas"),
             InlineKeyboardButton("🗑️ Borrar", callback_data="borrar_mensaje")
@@ -1335,7 +1325,7 @@ def callback_refrescar_tasas(call):
 
         # 5. Construimos el teclado
         markup_tasas = InlineKeyboardMarkup()
-        if str(call.message.chat.id) == str(CANAL_ADMINS) or es_admin_vip(bot, call.from_user):
+        if str(call.message.chat.id) == str(CANAL_PRUEBA) or es_admin_vip(bot, call.from_user):
             markup_tasas.row(
                 InlineKeyboardButton("🔄 Actualizar Tasas", callback_data="refrescar_tasas"),
                 InlineKeyboardButton("🗑️ Borrar", callback_data="borrar_mensaje")
@@ -1383,7 +1373,7 @@ def callback_refrescar_intervencion(call):
 
         # Construimos el teclado evaluando si está en el grupo de admins
         markup_intervencion = InlineKeyboardMarkup()
-        if str(call.message.chat.id) == str(CANAL_ADMINS) or es_admin_vip(bot, call.from_user):
+        if str(call.message.chat.id) == str(CANAL_PRUEBA) or es_admin_vip(bot, call.from_user):
             markup_intervencion.row(
                 InlineKeyboardButton("🔄 Actualizar Cálculo", callback_data="refrescar_intervencion"),
                 InlineKeyboardButton("🗑️ Borrar", callback_data="borrar_mensaje")
@@ -1518,7 +1508,7 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
                         def enviar_reportes_sincronizados():
                             try:
                                 # Lista de canales a los que quieres enviar la notificación
-                                canales_destino = [CANAL_CONGESTIONADO, CANAL_ADMINS, CANAL_SECUNDARIO]
+                                canales_destino = [CANAL_PRUEBA, CANAL_PRINCIPAL_IDV, CANAL_SECUNDARIO]
 
                                 # 1. Envío de Tabla de Intervención
                                 texto_intervencion = construir_intervencion_texto_html()
@@ -1694,7 +1684,7 @@ if __name__ == "__main__":
         pass
 
     # 🟢 1. Definimos los canales/grupos donde rotará el anuncio de captcha
-    CHATS_ANUNCIOS = [CANAL_PRUEBA, CANAL_CONGESTIONADO]
+    CHATS_ANUNCIOS = [CANAL_PRUEBA, CANAL_PRINCIPAL_IDV]
 
     # 🟢 2. Activamos el ciclo de anuncios pasando bot y la lista de chats
     iniciar_modulo_anuncios(bot, CHATS_ANUNCIOS)

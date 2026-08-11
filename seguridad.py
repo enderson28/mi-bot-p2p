@@ -91,8 +91,7 @@ def es_administrador(bot, chat_id, user_id, user=None):
 # Lista de administradores VIP (convertidos a minúsculas)
 ADMINS_VIP = [ 
     "5073264705", # Enderson Principal 
-    "8418460698", # Carlos V
-    "@enderson377", # Enderson Secundario 
+    "8418460698", # Carlos V 
     "1676933074", # Antony Jefe
     "6299629267", # Oswaldo oso
     "@bazoner", #Baz
@@ -110,7 +109,7 @@ ADMINS_VIP = [
 ]
 
 # Admin especial que requiere la tasa BCV con el 1% en Intervención
-ADMIN_ESPECIAL_1_PORCIENTO = "@carloses783"
+ADMIN_ESPECIAL_1_PORCIENTO = "8418460698"
 
 
 CANAL_CONGESTIONADO = -1001612840350

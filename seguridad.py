@@ -104,9 +104,9 @@ def es_administrador(bot, chat_id, user_id, user=None):
     if user_str in admins_vip_lower:
         return True
 
-    # 2. Verificación en el CANAL PRINCIPAL (@COMUNIDADES04)
+    # 2. Verificación en el GRUPO PRINCIPAL (@COMUNIDV)
     try:
-        member_canal = bot.get_chat_member(CANAL_CONGESTIONADO, user_id)
+        member_canal = bot.get_chat_member(CANAL_PRUEBA, user_id)
         if member_canal.status in ['administrator', 'creator']:
             return True
     except Exception as e:
@@ -135,7 +135,6 @@ ADMINS_VIP = [
     "8418460698",        # Carlos V
     "1676933074",        # Antony Jefe
     "6299629267",        # Oswaldo oso
-    "1920750484",        # Cristiano 
     "7632618800"         # idk
     "7816422089"         # Enderson Secundario
 ]
@@ -143,7 +142,9 @@ ADMINS_VIP = [
 # Admin especial que requiere la tasa BCV con el 1% en Intervención
 ADMIN_ESPECIAL_1_PORCIENTO = "8418460698"
 
-CANAL_CONGESTIONADO = -1001612840350
+CANAL_PRUEBA = -1004473532809
+CANAL_PRINCIPAL_IDV = -1003950050807
+
 
 def es_admin_vip(bot, user):
     if not user:
@@ -161,9 +162,9 @@ def es_admin_vip(bot, user):
     if str(user_id) in admins_vip_lower or username in admins_vip_lower:
         return True
 
-    # 2. ES ADMINISTRADOR DEL CANAL PRINCIPAL (@COMUNIDADES04)
+    # 2. ES ADMINISTRADOR DEL GRUPO PRINCIPAL (@COMUNIDV)
     try:
-        miembro = bot.get_chat_member(CANAL_CONGESTIONADO, user_id)
+        miembro = bot.get_chat_member(CANAL_PRUEBA, user_id)
         if miembro.status in ['administrator', 'creator']:
             return True
     except Exception:
@@ -287,7 +288,7 @@ def registrar_filtro_anti_raid(bot):
             if len(solicitudes_recientes) == 5:
                 try:
                     bot.send_message(
-                        CANAL_ADMINS,
+                        CANAL_PRUEBA,
                         "🚨 <b>¡ALERTA DE RAID DETECTADA!</b>\n"
                         "Se detectó una entrada masiva de solicitudes.\n"
                         "<i>Las aprobaciones automáticas se han pausado. Las solicitudes quedarán en espera para revisión manual.</i>",

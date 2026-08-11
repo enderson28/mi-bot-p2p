@@ -15,7 +15,7 @@ def obtener_texto_anuncio():
         "1️⃣ 🤖 Entra al chat privado de nuestro bot: @BancoIDV2_bot\n"
         "2️⃣ ⚡ Presiona el botón <b>INICIAR</b> o envía <code>/start</code>.\n"
         "3️⃣ ✔️ Resuelve la suma matemática súper sencilla.\n\n"
-        "⏳ <b>¡IMPORTANTE!</b> Dispones de <b>1 hora</b> desde que solicitas tu entrada para resolver la verificación o la solicitud será rechazada automáticamente.\n\n"
+        "⏳ <b>¡IMPORTANTE!</b> Dispones de <b>1 hora</b> desde que solicitas tu entrada para resolver la verificación o la solicitud será rechazada automáticamente(puedes volver a hacer la solicitud cuando gustes).\n\n"
         "<i>💡 Este mensaje se autodestruirá en 15 minutos para mantener el chat limpio.</i>"
     )
 

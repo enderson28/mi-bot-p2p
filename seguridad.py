@@ -267,7 +267,15 @@ def registrar_filtro_anti_raid(bot):
 
 
 
-
+def registrar_limpiador_servicio(bot):
+    """Borra automáticamente avisos de 'Usuario se unió' o 'Usuario salió'"""
+    @bot.message_handler(content_types=['new_chat_members', 'left_chat_member'])
+    def borrar_mensajes_servicio(message):
+        try:
+            bot.delete_message(message.chat.id, message.message_id)
+        except Exception:
+            pass
+    
 
     
     

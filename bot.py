@@ -11,7 +11,7 @@ from telebot.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMar
 from telebot import types
 from captcha import setup_verification_handlers
 from seguridad import validar_copia_pega, es_admin_vip, es_admin_especial, es_administrador, es_chat_permitido
-from seguridad import limpiar_comandos_chat, registrar_filtro_anti_raid
+from seguridad import limpiar_comandos_chat, registrar_filtro_anti_raid, registrar_limpiador_servicio
 from calculadora import registrar_calculadora
 from ia_consulta import registrar_ia_consulta
 from anuncios import iniciar_modulo_anuncios, setup_comando_aviso
@@ -33,6 +33,7 @@ TOKEN_TELEGRAM = os.getenv("TOKEN_TELEGRAM")
 bot = telebot.TeleBot(TOKEN_TELEGRAM)
 
 registrar_filtro_anti_raid(bot)
+registrar_limpiador_servicio(bot)
 
 BOT_USERNAME = "BancoIDV_bot" # Reemplaza con el alias de tu bot sin el @
 

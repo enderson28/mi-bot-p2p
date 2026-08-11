@@ -90,19 +90,20 @@ def es_administrador(bot, chat_id, user_id, user=None):
 
 # Lista de administradores VIP (convertidos a minúsculas)
 ADMINS_VIP = [ 
-    "5073264705",
-    "@enderson377",
-    "@antonys4", 
-    "@papitamaster", 
-    "@bazoner", 
-    "@cristianobicicleteando", 
-    "@nylebian",
-    "@crisyfc",
-    "@bunnyZ1234",
+    "5073264705", # Enderson Principal 
+    "8418460698", # Carlos V
+    "@enderson377", # Enderson Secundario 
+    "1676933074", # Antony Jefe
+    "6299629267", # Oswaldo oso
+    "@bazoner", #Baz
+    "@cristianobicicleteando", #Cristiano
+    "8166481937", # Cilita
+    "@crisyfc", # Cris
+    "7249758098", # Señor conejo
     "@cabezita24",
     "@daciani",
     "@kurohigexd",
-    "@enriquecmoly",
+    "1084385835", # Enrique moly
     "@raudesikle",
     "@skyliarsz"
     

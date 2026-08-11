@@ -65,7 +65,7 @@ def iniciar_modulo_anuncios(bot, lista_chats):
     print("📢 Módulo de anuncios automáticos activado correctamente.")
 
 
-def setup_comando_aviso(bot, funcion_es_admin_vip, usuarios_autorizados):
+def setup_comando_aviso(bot, es_admin_vip, usuarios_autorizados):
     """Registra el comando manual /aviso o /aviso_captcha para Administradores."""
     
     @bot.message_handler(commands=['aviso', 'aviso_captcha'])
@@ -84,7 +84,7 @@ def setup_comando_aviso(bot, funcion_es_admin_vip, usuarios_autorizados):
                 pass
 
         # 🔒 2. Verificar si es Admin VIP o Creador global
-        es_admin_vip = funcion_es_admin_vip(bot, user)
+        es_admin_vip = es_admin_vip(bot, user)
         es_creador = user.id in usuarios_autorizados
 
         # Si no cumple NINGUNA de las condiciones, rechaza el comando

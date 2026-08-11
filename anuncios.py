@@ -12,7 +12,7 @@ def obtener_texto_anuncio():
         "🛡️ <b>¡SISTEMA DE VERIFICACIÓN Y SEGURIDAD!</b> 🛡️\n\n"
         "🚨 Para mantener la comunidad libre de spam, bots y cuentas falsas, tenemos activo un captcha de entrada.\n\n"
         "Si solicitaste ingreso y tu solicitud sigue <b>pendiente</b>, sigue estos pasos:\n"
-        "1️⃣ 🤖 Entra al chat privado de nuestro bot: @{BOT_USERNAME}\n"
+        "1️⃣ 🤖 Entra al chat privado de nuestro bot: @BancoIDV2_bot\n"
         "2️⃣ ⚡ Presiona el botón <b>INICIAR</b> o envía <code>/start</code>.\n"
         "3️⃣ ✔️ Resuelve la suma matemática súper sencilla.\n\n"
         "⏳ <b>¡IMPORTANTE!</b> Dispones de <b>1 hora</b> desde que solicitas tu entrada para resolver la verificación o la solicitud será rechazada automáticamente(aunque puedes volver a solicitarla cuando gustes).\n\n"

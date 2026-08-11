@@ -5,51 +5,18 @@ import threading
 INTERVALO_HORAS = 2          # Frecuencia con la que se publica el anuncio automático
 DURACION_VISIBLE_MIN = 15     # Minutos que permanece visible antes de borrarse
 
-# 🎨 DICCIONARIO DE EMOJIS ANIMADOS DE TELEGRAM (IDs)
-TG_EMOJIS = {
-    "BANCO": "5183805009766123191",         # 🏦
-    "PROHIBIDO": "5260291700800511294",     # 🚫
-    "RELOJ_ARENA": "544764488024101073",   # ⏳
-    "SIRENA": "5395095537607123235",        # 🚨
-    "ESTADISTICA": "5231200819986047254",   # 📊
-    "ESCUDO": "5197288647275871607",       # 🛡️
-    "VISTO": "5206607001334986028",        # ✔️
-    "MEGAFONO": "5424818070833715060",     # 📣
-    "BOMBILLA": "5422439311196834318",     # 💡
-    "ROBOT": "5323772371830588991",        # 🤖
-    "FLECHA_ABAJO": "5406745015365943482", # ⬇️
-    "RAYO": "5456140674028019486",         # ⚡
-    "CONSULTAR": "5303130782804924588"     # 💬
-}
-
-def e(key, fallback=""):
-    """Genera la etiqueta de emoji personalizado de Telegram con fallback visual."""
-    emoji_id = TG_EMOJIS.get(key, "")
-    if emoji_id:
-        return f'<tg-emoji emoji-id="{emoji_id}">{fallback}</tg-emoji>'
-    return fallback
-
 
 def obtener_texto_anuncio():
-    """Construye el texto enriquecido con emojis animados de Telegram."""
-    escudo = e("ESCUDO", "🛡️")
-    sirena = e("SIRENA", "🚨")
-    visto = e("VISTO", "✔️")
-    robot = e("ROBOT", "🤖")
-    reloj = e("RELOJ_ARENA", "⏳")
-    bombilla = e("BOMBILLA", "💡")
-    flecha = e("FLECHA_ABAJO", "⬇️")
-    rayo = e("RAYO", "⚡")
-
+    """Construye el texto enriquecido de forma 100% compatible con HTML de Telegram."""
     return (
-        f"{escudo} <b>¡SISTEMA DE VERIFICACIÓN Y SEGURIDAD!</b> {escudo}\n\n"
-        f"{sirena} Para mantener la comunidad libre de spam, bots y cuentas falsas, tenemos activo un captcha de entrada.\n\n"
-        f"Si solicitaste ingreso y tu solicitud sigue <b>pendiente</b>, sigue estos pasos:\n"
-        f"1️⃣ {robot} Entra al chat privado de nuestro bot: @BancoIDV_bot\n"
-        f"2️⃣ {rayo} Presiona el botón <b>INICIAR</b> o envía <code>/start</code>.\n"
-        f"3️⃣ {visto} Resuelve la suma matemática súper sencilla.\n\n"
-        f"{reloj} <b>¡IMPORTANTE!</b> Dispones de <b>1 hora</b> desde que solicitas tu entrada para resolver la verificación o la solicitud será rechazada automáticamente.\n\n"
-        f"<i>{bombilla} Este mensaje se autodestruirá en 15 minutos para mantener el chat limpio.</i>"
+        "🛡️ <b>¡SISTEMA DE VERIFICACIÓN Y SEGURIDAD!</b> 🛡️\n\n"
+        "🚨 Para mantener la comunidad libre de spam, bots y cuentas falsas, tenemos activo un captcha de entrada.\n\n"
+        "Si solicitaste ingreso y tu solicitud sigue <b>pendiente</b>, sigue estos pasos:\n"
+        "1️⃣ 🤖 Entra al chat privado de nuestro bot: @BancoIDV_bot\n"
+        "2️⃣ ⚡ Presiona el botón <b>INICIAR</b> o envía <code>/start</code>.\n"
+        "3️⃣ ✔️ Resuelve la suma matemática súper sencilla.\n\n"
+        "⏳ <b>¡IMPORTANTE!</b> Dispones de <b>1 hora</b> desde que solicitas tu entrada para resolver la verificación o la solicitud será rechazada automáticamente.\n\n"
+        "<i>💡 Este mensaje se autodestruirá en 15 minutos para mantener el chat limpio.</i>"
     )
 
 
@@ -124,7 +91,7 @@ def setup_comando_aviso(bot, funcion_es_admin_vip, usuarios_autorizados):
             except Exception:
                 pass
 
-            # 2. Envía el aviso estilizado con TG_EMOJIS
+            # 2. Envía el aviso estilizado
             texto = obtener_texto_anuncio()
             msg = bot.send_message(
                 chat_id, 
@@ -138,4 +105,4 @@ def setup_comando_aviso(bot, funcion_es_admin_vip, usuarios_autorizados):
 
         except Exception as e:
             print(f"⚠️ Error al ejecutar comando manual /aviso: {e}")
-    
+            

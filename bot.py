@@ -10,11 +10,11 @@ from datetime import datetime, timedelta
 from telebot.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
 from telebot import types
 from captcha import setup_verification_handlers
-from anuncios import iniciar_modulo_anuncios
 from seguridad import validar_copia_pega, es_admin_vip, es_admin_especial, es_administrador, es_chat_permitido
 from seguridad import limpiar_comandos_chat, registrar_filtro_anti_raid
 from calculadora import registrar_calculadora
 from ia_consulta import registrar_ia_consulta
+from anuncios import iniciar_modulo_anuncios, setup_comando_aviso
 import re
 import urllib3
 from bs4 import BeautifulSoup
@@ -1679,7 +1679,7 @@ def manejar_consultas_inline(inline_query):
 # ==========================================
 
 if __name__ == "__main__":
-    # 💾 Carga la tasa guardada en disco antes de iniciar
+    # Carga la tasa guardada en disco antes de iniciar
     cargar_cache_de_disco()
 
     # Limpia webhooks y descarta actualizaciones pendientes
@@ -1689,14 +1689,22 @@ if __name__ == "__main__":
     except Exception:
         pass
 
-    iniciar_modulo_anuncios(bot)
+    # 🟢 1. Definimos los canales/grupos donde rotará el anuncio de captcha
+    CHATS_ANUNCIOS = [CANAL_PRUEBA, CANAL_CONGESTIONADO]
+
+    # 🟢 2. Activamos el ciclo de anuncios pasando bot y la lista de chats
+    iniciar_modulo_anuncios(bot, CHATS_ANUNCIOS)
+
+    # 🟢 3. Registramos el comando manual /aviso
+    setup_comando_aviso(bot, es_admin_vip, USUARIOS_AUTORIZADOS)
+
     print("🚀 Bot Maestro en línea con limpieza automática y temporizador de 5 min...")
 
     # Inicia el receptor webhook en segundo plano
     threading.Thread(target=iniciar_servidor_receptor, daemon=True).start()
-    
-        
+
     # Arranca el polling limpio
-    bot.infinity_polling() 
+    bot.infinity_polling()
+    
 
     

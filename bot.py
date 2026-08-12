@@ -958,7 +958,7 @@ def procesar_precio(message):
                 pass
 
         if not usuario_esta_unido(user_id):
-            bot.reply_to(message, "❌ No tienes acceso. Debes unirte al canal oficial 👉🏼 @BANCOIDV y grupo de charla 👉🏼 @COMUNIDV para usar el bot.")
+            bot.reply_to(message, "❌ No tienes acceso. Debes solitar unirte al grupo de charla 👉🏼 @COMUNIDV , ↪️ volver al bot, ✏️ escribir /start , resolver el captcha ✅🔍 e ingresar al grupo.")
             return
 
         try:
@@ -1067,7 +1067,7 @@ def procesar_intervencion(message):
                 pass
 
         if not usuario_esta_unido(user_id):
-            bot.reply_to(message, "❌ No tienes acceso. Debes unirte al canal oficial 👉🏼 @BANCOIDV y grupo de charla 👉🏼 @COMUNIDV para usar el bot.")
+            bot.reply_to(message, "❌ No tienes acceso. Debes solicitar unirte al grupo de charla 👉🏼 @COMUNIDV , ↪️ volver al bot, ✏️ escribír /start , resolver el captcha ✅🔍 e ingresar al grupo.")
             return
 
         # Creamos el botón flotante para actualizar
@@ -1184,7 +1184,7 @@ def procesar_guias(message):
                 pass
 
         if not usuario_esta_unido(user_id):
-            bot.reply_to(message, "❌ No tienes acceso. Debes unirte al canal oficial 👉🏼 @BANCOIDV y grupo de charla 👉🏼 @COMUNIDV para usar el bot.")
+            bot.reply_to(message, "❌ No tienes acceso. Debes solicitar unirte al grupo de charla 👉🏼 @COMUNIDV , ↪️ volver al bot, ✏️ escribir  /start , resolver el captcha ✅🔍 e ingresar al grupo.")
             return   
             
         texto_guia = TEXTO_BPAY if es_bpay else TEXTO_GPAY
@@ -1217,7 +1217,7 @@ def procesar_regla_oro(message):
                 pass
 
         if not usuario_esta_unido(user_id):
-            bot.reply_to(message, "❌ No tienes acceso. Debes unirte al canal oficial 👉🏼 @BANCOIDV y grupo de charla 👉🏼 @COMUNIDV para usar el bot.")
+            bot.reply_to(message, "❌ No tienes acceso. Debes solicitar unirte al grupo de charla 👉🏼 @COMUNIDV , ↪️ volver al bot, ✏️ escribir  /start , resolver el captcha ✅🔍 e ingresar al grupo.")
             return
 
         enviar_o_reemplazar_privado(
@@ -1245,7 +1245,7 @@ def procesar_soporte(message):
                 pass
 
         if not usuario_esta_unido(user_id):
-            bot.reply_to(message, "❌ No tienes acceso. Debes unirte al canal oficial 👉🏼 @BANCOIDV 👉🏼 @COMUNIDV para usar el bot.")
+            bot.reply_to(message, "❌ No tienes acceso. Debes solicitar unirte al grupo de charla 👉🏼 @COMUNIDV , ↪️ volver al bot , ✏️ escribir /start , resolver el captcha ✅🔍 e ingresar al grupo.")
             return
 
         enviar_o_reemplazar_privado(

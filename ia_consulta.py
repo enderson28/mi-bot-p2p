@@ -19,7 +19,6 @@ REGISTRO_CUPO_DIARIO = {"fecha": "", "usuarios_registrados": set()}
 
 # Definición de canales en la parte superior
 CANAL_PRUEBA = -1004473532809
-CANAL_CONGESTIONADO = -1001612840350
 CANAL_PRINCIPAL_IDV = -1003950050807
 
 
@@ -31,7 +30,7 @@ def registrar_ia_consulta(bot, redis_client, obtener_teclado_func):
             return True
 
         # Lista con todos tus canales permitidos
-        canales = [CANAL_PRUEBA, CANAL_CONGESTIONADO, CANAL_PRINCIPAL_IDV]
+        canales = [CANAL_PRUEBA, CANAL_PRINCIPAL_IDV]
 
         for canal in canales:
             try:
@@ -133,7 +132,7 @@ def registrar_ia_consulta(bot, redis_client, obtener_teclado_func):
                 chat_id,
                 f"{e('ESCUDO', '🛡️')} <b>Acceso Restringido</b>\n\n"
                 f"Para utilizar el módulo de IA Consulta debes ser miembro de nuestra comunidad oficial:\n"
-                f"👉 <b>{CANAL_CONGESTIONADO}</b>\n\n"
+                f"👉 <b>{CANAL_PRUEBA}</b>\n\n"
                 f"<i>Una vez te hayas unido, vuelve a presionar el botón.</i>",
                 parse_mode="HTML"
             )

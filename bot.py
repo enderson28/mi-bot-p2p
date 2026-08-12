@@ -234,7 +234,7 @@ def enviar_menu_principal(bot, user, chat_id):
         
         texto_vip = (
             f"<b>👑 ¡Hola, {user.first_name}!</b>\n\n"
-            f"Gracias por tu valiosa labor diaria manteniendo el orden en la comunidad - AntonyS4.\n"
+            f"Gracias por tu valiosa labor diaria manteniendo el orden en la comunidad ~ Enderson 👏🏽.\n"
             f"<i>⚡ Tienes activo el entorno VIP de trabajo rápido (sin distracciones ni guías de inicio).</i>"
         )
         bot.send_message(chat_id, texto_vip, parse_mode="HTML", reply_markup=markup)

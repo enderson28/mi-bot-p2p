@@ -197,6 +197,7 @@ TEXTO_SOPORTE = (
     "<i>(Toca sobre los datos para copiarlos)</i>"
 )
 
+
 # ==========================================
 #  LÓGICA DE PROCESAMIENTO Y APIS
 # ==========================================
@@ -204,11 +205,14 @@ def usuario_esta_unido(user_id):
     if not user_id:
         return False
         
-    # Recorremos todos los chats permitidos (canal y grupo)
+    # 1. Si es CREADOR o está en la lista VIP, acceso automático asegurado
+    if str(user_id) == str(CREADOR_ID) or str(user_id) in [str(u).lower() for u in ADMINS_VIP]:
+        return True
+
+    # 2. Recorremos los chats permitidos (canales Y grupo vinculado)
     for chat_id in CHATS_PERMITIDOS:
         try:
             miembro = bot.get_chat_member(chat_id, user_id)
-            # Si en CUALQUIERA de tus chats es miembro, admin o creador, tiene acceso
             if miembro.status in ['creator', 'administrator', 'member']:
                 return True
         except Exception:

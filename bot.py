@@ -252,15 +252,14 @@ def enviar_menu_principal(bot, user, chat_id):
         bot.send_message(chat_id, TEXTO_START, parse_mode="HTML", reply_markup=markup)
 
 
-# Inicialización del captcha
+# Inicialización del captcha corregida
 setup_verification_handlers(
     bot, 
-    [CANAL_PRUEBA, CANAL_PRINCIPAL_IDV],
+    target_channel_id=CANAL_PRINCIPAL_IDV,
     funcion_menu=enviar_menu_principal, 
     funcion_esta_unido=usuario_esta_unido
 )
 
-    
     # Actualizacion de velocidad
 def obtener_datos_bcv_validos():
     """Retorna la tasa y fecha actuales guardadas en memoria desde el Cazador BCV."""

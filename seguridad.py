@@ -2,42 +2,30 @@ import time
 from collections import deque
 from captcha import registrar_solicitud_pendiente
 
-# ==========================================
+# =========================================================
 # LISTA NEGRA GLOBAL (BLOQUEO ABSOLUTO)
-# ==========================================
-# Agrega aquí los IDs numéricos (o usernames) a bloquear.
-# Si la persona está en esta lista, el bot ignorará sus comandos 
-# tanto en privado como en el grupo público.
-LISTA_NEGRA = [
-    "8166481937",  # Cilita
-    "1084385835",  # Enrique moly
-    "7249758098",  # Conejo
-    "8757407672",  # Cris
-    "7616851192",  # Kim jong
-    "6107750160",  #Kurohige
-    "5571811141",  # Baz gordo
-    "5168447048",  # Carlos pajuo
-    "7632618800",  # Ye
-    "5103278703"   # milimetro 
-]
+# =========================================================
+# Dejada completamente vacía para evitar bloqueos accidentales
+LISTA_NEGRA = []
 
 def es_lista_negra(user):
     """Devuelve True si el usuario o su ID están en la lista negra global."""
     if not user:
         return False
-    
+
     user_id = str(user.id)
     username = f"@{user.username.lower()}" if getattr(user, 'username', None) else ""
-    
+
     lista_lower = [str(u).lower() for u in LISTA_NEGRA]
-    
+
     if user_id in lista_lower or (username and username in lista_lower):
         return True
-        
+
     return False
 
-
-# Lista de frases clave para detectar copias de mensajes oficiales del bot
+# =========================================================
+# PROTECCIÓN CONTRA COPIA Y PEGA DE CONTENIDO
+# =========================================================
 FRASES_PROHIBIDAS = [
     # Reportes y Monitores Oficiales
     "monitor de tasas",
@@ -60,7 +48,6 @@ FRASES_PROHIBIDAS = [
     "comando exclusivo del creador del bot"
 ]
 
-
 def validar_copia_pega(bot, message, es_admin):
     """
     Si un usuario normal pega cualquier texto oficial del bot o sus reportes,
@@ -81,21 +68,22 @@ def validar_copia_pega(bot, message, es_admin):
     for frase in FRASES_PROHIBIDAS:
         if frase in texto:
             try:
-                # Borramos el mensaje pegado
                 bot.delete_message(message.chat.id, message.message_id)
             except Exception:
                 pass
-            return True  # Deuelve True indicando que era una copia detectada
+            return True
 
     return False
 
-
+# =========================================================
+# GESTIÓN Y VERIFICACIÓN DE ADMINISTRADORES
+# =========================================================
 def es_administrador(bot, chat_id, user_id, user=None):
-    # 🚨 BLINDAJE PRIORITARIO: Si está en la lista negra, no es admin de nada para el bot
+    # BLINDAJE PRIORITARIO: Si está en la lista negra, no es admin
     if user and es_lista_negra(user):
         return False
 
-    # 1. Si es CREADOR o Admin VIP directo por lista local (ID o Username)
+    # 1. Si es CREADOR o Admin VIP directo por lista local
     if user and es_admin_vip(bot, user):
         return True
 
@@ -104,7 +92,7 @@ def es_administrador(bot, chat_id, user_id, user=None):
     if user_str in admins_vip_lower:
         return True
 
-    # 2. Verificación en el GRUPO PRINCIPAL (@COMUNIDV)
+    # 2. Verificación en el GRUPO PRINCIPAL
     try:
         member_canal = bot.get_chat_member(CANAL_PRUEBA, user_id)
         if member_canal.status in ['administrator', 'creator']:
@@ -112,7 +100,7 @@ def es_administrador(bot, chat_id, user_id, user=None):
     except Exception as e:
         print(f"Error consultando admin en canal principal: {e}")
 
-    # 3. Verificación si es Admin del GRUPO ACTUAL (Por si tienes admins locales en el grupo)
+    # 3. Verificación si es Admin del GRUPO ACTUAL
     try:
         if isinstance(chat_id, int) and chat_id < 0:
             member = bot.get_chat_member(chat_id, user_id)
@@ -121,43 +109,38 @@ def es_administrador(bot, chat_id, user_id, user=None):
     except Exception:
         pass
 
-    # Si no es admin de ningún lado, devuelve False
     return False
 
-
-# ==========================================
+# =========================================================
 # CONFIGURACIÓN DE ROLES Y EXCEPCIONES VIP
-# ==========================================
+# =========================================================
 
-# Lista de administradores VIP (convertidas a minúsculas)
+# Solo dejamos el ID del Creador Principal en VIP
 ADMINS_VIP = [
-    "5073264705",        # Enderson Principal
+    "5073264705",   # Enderson Principal
 ]
 
-# Admin especial que requiere la tasa BCV con el 1% en Intervención
 ADMIN_ESPECIAL_1_PORCIENTO = "8418460698"
 
 CANAL_PRUEBA = -1004473532809
 CANAL_PRINCIPAL_IDV = -1003950050807
 
-
 def es_admin_vip(bot, user):
     if not user:
         return False
 
-    # 🚨 BLINDAJE PRIORITARIO: Si está en lista negra, jamás obtiene estatus VIP
     if es_lista_negra(user):
         return False
 
     user_id = user.id
     username = f"@{user.username.lower()}" if user.username else ""
 
-    # 1. VERIFICACIÓN INSTANTÁNEA (Lista local en memoria)
+    # 1. VERIFICACIÓN INSTANTÁNEA (Lista local)
     admins_vip_lower = [str(u).lower() for u in ADMINS_VIP]
     if str(user_id) in admins_vip_lower or username in admins_vip_lower:
         return True
 
-    # 2. ES ADMINISTRADOR DEL GRUPO PRINCIPAL (@COMUNIDV)
+    # 2. ES ADMINISTRADOR DEL GRUPO PRINCIPAL
     try:
         miembro = bot.get_chat_member(CANAL_PRUEBA, user_id)
         if miembro.status in ['administrator', 'creator']:
@@ -166,7 +149,6 @@ def es_admin_vip(bot, user):
         pass
 
     return False
-
 
 def es_admin_especial(user):
     """Verifica si es el admin que requiere el 1%"""
@@ -179,13 +161,13 @@ def es_admin_especial(user):
 
     return (user_id == admin_especial) or (username == admin_especial)
 
-
-# Lista de comandos autorizados para el bot de administración (Group Help)
+# =========================================================
+# LIMPIEZA DE COMANDOS Y PERMISOS DE CHAT
+# =========================================================
 COMANDOS_GROUP_HELP = [
     "/reload", "/ban", "/mute", "/warn",
     "/unban", "/unmute", "/info", "/config", "/start"
 ]
-
 
 def limpiar_comandos_chat(bot, message):
     if not message or not message.text:
@@ -193,18 +175,14 @@ def limpiar_comandos_chat(bot, message):
 
     texto = message.text.strip().lower()
 
-    # 🟢 IGNORAR NATIVAMENTE LOS COMANDOS DE ANUNCIOS (dejar que anuncios.py los maneje)
     if texto.startswith("/aviso") or texto.startswith("/aviso_captcha"):
         return False
 
-    # Si el mensaje empieza con '/'
     if texto.startswith("/"):
         comando = texto.split()[0]
 
-        # Si es de Group Help, espera 4 seg y borra
         if comando in COMANDOS_GROUP_HELP:
             time.sleep(4)
-
             try:
                 bot.delete_message(message.chat.id, message.message_id)
                 return True
@@ -213,32 +191,28 @@ def limpiar_comandos_chat(bot, message):
 
     return False
 
-
 def es_chat_permitido(bot, message, chats_permitidos, usuarios_autorizados, creador_id):
     if not message or not message.chat:
         return False
 
-    # 🚨 BLINDAJE PRIORITARIO: Si la orden viene de alguien en lista negra, SILENCIO ABSOLUTO
+    # BLINDAJE PRIORITARIO: Si la orden viene de lista negra, ignora totalmente
     if message.from_user and es_lista_negra(message.from_user):
         return False
 
     chat_id = message.chat.id
     chat_username = f"@{message.chat.username}".lower() if message.chat.username else ""
-    creador_str = str(creador_id)
 
-    # 1. CHAT PRIVADO: Siempre permitido (salvo que esté en Lista Negra, filtrado arriba)
+    # 1. CHAT PRIVADO: Siempre permitido
     if message.chat.type == "private":
         return True
 
-    # Convertimos los chats permitidos a strings/minúsculas para comparar con precisión
     permitidos_str = [str(c).lower() for c in chats_permitidos]
 
-    # 2. GRUPOS/CANALES OFICIALES DE LA LISTA (Incluye CANAL_ADMINS, @COMUNIDADES04, etc.)
+    # 2. GRUPOS/CANALES OFICIALES DE LA LISTA
     if str(chat_id) in permitidos_str or (chat_username and chat_username in permitidos_str):
         return True
 
-    # 3. EXCEPCIÓN EN OTROS GRUPOS AJENOS:
-    # Exige ESTRICTAMENTE que el Creador Supremo esté dentro del grupo y sea Admin/Propietario
+    # 3. EXCEPCIÓN EN OTROS GRUPOS AJENOS
     try:
         miembro_creador = bot.get_chat_member(chat_id, int(creador_id))
         if miembro_creador.status in ['creator', 'administrator']:
@@ -246,23 +220,15 @@ def es_chat_permitido(bot, message, chats_permitidos, usuarios_autorizados, crea
     except Exception:
         pass
 
-    # Si no cumple ninguna de las anteriores, SILENCIO ABSOLUTO (Bloqueado)
     return False
 
-
-# ==============================================================================
-# FILTRO ANTI-RAID Y CONTROL DE SOLICITUDES DE INGRESO (GATEKEEPER)
-# ==============================================================================
-
+# =========================================================
+# FILTRO ANTI-RAID Y CONTROL DE SOLICITUDES DE INGRESO
+# =========================================================
 HISTORIAL_SOLICITUDES = deque(maxlen=30)
 
-
 def registrar_filtro_anti_raid(bot):
-    """
-    Maneja las solicitudes de ingreso (chat_join_request) cuando el grupo
-    está en privado con "Aprobar nuevos miembros".
-    Filtra bots reteniendo cuentas sin foto/alias y frena ráfagas (raids).
-    """
+    """Maneja las solicitudes de ingreso cuando el grupo está en privado."""
 
     @bot.chat_join_request_handler()
     def filtrar_solicitudes_entrada(request):
@@ -270,37 +236,29 @@ def registrar_filtro_anti_raid(bot):
         chat_id = request.chat.id
         ahora = time.time()
 
-        # Registrar timestamp de la solicitud
         HISTORIAL_SOLICITUDES.append(ahora)
 
-        # Detectar Ráfaga / Raid: 5 o más solicitudes en menos de 4 segundos
         solicitudes_recientes = [t for t in HISTORIAL_SOLICITUDES if ahora - t < 4]
         es_raid = len(solicitudes_recientes) >= 5
 
-        # 🚨 SI HAY UN RAID EN PROCESO:
         if es_raid:
-            # Notificar al grupo cerrado de Admins (solo una vez en el pico del ataque)
             if len(solicitudes_recientes) == 5:
                 try:
                     bot.send_message(
                         CANAL_PRUEBA,
-                        "🚨 <b>¡ALERTA DE RAID DETECTADA!</b>\n"
+                        "🚨 <b>ALERTA DE RAID DETECTADA!</b>\n"
                         "Se detectó una entrada masiva de solicitudes.\n"
-                        "<i>Las aprobaciones automáticas se han pausado. Las solicitudes quedarán en espera para revisión manual.</i>",
+                        "<i>Las aprobaciones automáticas se han pausado. Las solicitudes quedarán en espera.</i>",
                         parse_mode="HTML"
                     )
                 except Exception:
                     pass
-            # Queda retenido sin aprobar ni rechazar
             return
 
-        # 🟢 SI NO ES RAID:
-        # Registramos al usuario en la memoria del captcha
         registrar_solicitud_pendiente(bot, user.id, chat_id)
 
-
 def registrar_limpiador_servicio(bot):
-    """Borra automáticamente avisos de 'Usuario se unió' o 'Usuario salió'"""
+    """Borra automáticamente avisos de entrada o salida de usuarios"""
 
     @bot.message_handler(content_types=['new_chat_members', 'left_chat_member'])
     def borrar_mensajes_servicio(message):
@@ -308,4 +266,4 @@ def registrar_limpiador_servicio(bot):
             bot.delete_message(message.chat.id, message.message_id)
         except Exception:
             pass
-
+            

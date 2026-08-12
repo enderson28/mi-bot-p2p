@@ -201,24 +201,20 @@ TEXTO_SOPORTE = (
 #  LÓGICA DE PROCESAMIENTO Y APIS
 # ==========================================
 def usuario_esta_unido(user_id):
-    unido_prueba = False
-    unido_congestionado = False
-
-    try:
-        m1 = bot.get_chat_member(CANAL_PRUEBA, user_id)
-        if m1.status in ['creator', 'administrator', 'member']:
-            unido_prueba = True
-    except Exception:
-        pass
-
-    try:
-        m2 = bot.get_chat_member(CANAL_PRINCIPAL_IDV, user_id)
-        if m2.status in ['creator', 'administrator', 'member']:
-            unido_congestionado = True
-    except Exception:
-        pass
-
-    return unido_prueba or unido_congestionado
+    if not user_id:
+        return False
+        
+    # Recorremos todos los chats permitidos (canal y grupo)
+    for chat_id in CHATS_PERMITIDOS:
+        try:
+            miembro = bot.get_chat_member(chat_id, user_id)
+            # Si en CUALQUIERA de tus chats es miembro, admin o creador, tiene acceso
+            if miembro.status in ['creator', 'administrator', 'member']:
+                return True
+        except Exception:
+            continue
+            
+    return False
 
 
 # ===============================================

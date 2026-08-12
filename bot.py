@@ -255,7 +255,7 @@ def enviar_menu_principal(bot, user, chat_id):
 # Inicialización del captcha corregida
 setup_verification_handlers(
     bot, 
-    target_channel_id=CANAL_PRINCIPAL_IDV,
+    target_channel_id=CANAL_PRUEBA,
     funcion_menu=enviar_menu_principal, 
     funcion_esta_unido=usuario_esta_unido
 )

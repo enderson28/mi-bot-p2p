@@ -203,11 +203,17 @@ TEXTO_SOPORTE = (
 # ==========================================
 def usuario_esta_unido(user, user_id=None):
     """
-    Verifica si un usuario tiene acceso permitido al bot en privado.
-    Acepta tanto el objeto 'user' de Telegram como un 'user_id' numérico.
+    Verifica si un usuario tiene acceso permitido al bot.
+    Funciona si recibe un objeto 'user' de Telegram O un 'user_id' (entero/string).
     """
-    # Si nos pasan un id directo en lugar del objeto user
-    actual_id = user.id if hasattr(user, 'id') else user_id
+    # Determinar el ID real sin importar cómo lo envíe captcha.py
+    if hasattr(user, 'id'):
+        actual_id = user.id
+    elif user_id is not None:
+        actual_id = user_id
+    else:
+        actual_id = user
+
     if not actual_id:
         return False
 
@@ -215,11 +221,15 @@ def usuario_esta_unido(user, user_id=None):
     if str(actual_id) == str(CREADOR_ID):
         return True
 
-    # 2. Si es Admin VIP o Administrador en algún grupo/canal
-    if hasattr(user, 'id') and es_admin_vip(bot, user):
-        return True
+    # 2. Si es Admin VIP (creamos un objeto simple si solo tenemos la ID)
+    try:
+        user_obj = user if hasattr(user, 'id') else type('UserObj', (object,), {'id': actual_id, 'username': ''})()
+        if es_admin_vip(bot, user_obj):
+            return True
+    except Exception:
+        pass
 
-    # 3. Verificamos membresía común en la lista de chats permitidos
+    # 3. Verificamos si pertenece a cualquiera de los chats/canales permitidos
     for chat_id in CHATS_PERMITIDOS:
         try:
             miembro = bot.get_chat_member(chat_id, actual_id)
@@ -255,7 +265,7 @@ def enviar_menu_principal(bot, user, chat_id):
 # Inicialización del captcha
 setup_verification_handlers(
     bot=bot,
-    target_channel_id=CANAL_PRINCIPAL_IDV,
+    target_channel_id=CANAL_PRUEBA,
     funcion_menu=enviar_menu_principal,
     funcion_esta_unido=usuario_esta_unido
 )

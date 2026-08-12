@@ -56,8 +56,7 @@ CREADOR_ID = 5073264705
 setup_comando_aviso(bot, es_admin_vip, USUARIOS_AUTORIZADOS)
 
 # Lista unificada de chats donde el bot responderá a comandos de canal (/p, /i, /tasas)
-CHATS_PERMITIDOS = [
-    CANAL_PRINCIPAL_IDV, 
+CHATS_PERMITIDOS = [ 
     CANAL_PRUEBA
 ]
 
@@ -707,41 +706,6 @@ def handle_tasas_comando(message):
             except Exception:
                 pass
 
-
-# =======================================================
-# MANEJADOR PARA PUBLICACIONES EN CANALES (/p, /i, /tasas)
-# =======================================================
-@bot.channel_post_handler(commands=['p', 'i', 'tasas', 'tasa'])
-def manejar_post_canal(message):
-    if message.chat.type != 'channel':
-        return
-
-    chat_id = message.chat.id
-
-    if str(chat_id) in [str(c) for c in CHATS_PERMITIDOS]:
-        try:
-            bot.delete_message(chat_id, message.message_id)
-        except Exception:
-            pass
-
-        texto_cmd = message.text.strip().lower() if message.text else ""
-
-        if texto_cmd.startswith('/p'):
-            texto_resultado = construir_monitor_texto_html()
-            callback_refrescar = "refrescar_tasas"
-        elif texto_cmd.startswith('/i'):
-            texto_resultado = construir_intervencion_texto_html() if 'construir_intervencion_texto_html' in globals() else construir_monitor_texto_html()
-            callback_refrescar = "refrescar_intervencion"
-        elif texto_cmd.startswith('/tasas') or texto_cmd.startswith('/tasa'):
-            texto_resultado = construir_monitor_canal_html()
-            callback_refrescar = "refrescar_canal_tasas"
-        else:
-            return
-
-        markup = InlineKeyboardMarkup()
-        markup.add(InlineKeyboardButton("🔄 Actualizar Tasas", callback_data=callback_refrescar))
-
-        bot.send_message(chat_id, texto_resultado, parse_mode="HTML", reply_markup=markup)
 
 # =============================================================
 # 📢 PUBLICADOR AL CANAL CON COPY_MESSAGE (Emojis + Botones)

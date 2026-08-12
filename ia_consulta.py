@@ -18,7 +18,7 @@ USO_DIARIO_USUARIOS = {}
 REGISTRO_CUPO_DIARIO = {"fecha": "", "usuarios_registrados": set()}
 
 # Definición de canales en la parte superior
-CANAL_PRUEBA = -1004473532809
+CANAL_PRUEBA = "@COMUNIDV"
 CANAL_PRINCIPAL_IDV = -1003950050807
 
 
@@ -163,7 +163,7 @@ def registrar_ia_consulta(bot, redis_client, obtener_teclado_func):
             bot.send_message(
                 message.chat.id,
                 f"{e('PROHIBIDO', '⛔')} <b>Acceso Denegado</b>\n\n"
-                f"Debes unirte a nuestra comunidad oficial <b>{CANAL_CONGESTIONADO}</b> para continuar utilizando la IA.",
+                f"Debes unirte a nuestra comunidad oficial <b>{CANAL_PRUEBA}</b> para continuar utilizando la IA.",
                 parse_mode="HTML"
             )
             return

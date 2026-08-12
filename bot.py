@@ -206,7 +206,7 @@ def usuario_esta_unido(user_id):
         return False
         
     # 1. Si es CREADOR o está en la lista VIP, acceso automático asegurado
-    if str(user_id) == str(CREADOR_ID) or str(user_id) in [str(u).lower() for u in ADMINS_VIP]:
+    if str(user_id) == str(CREADOR_ID):
         return True
 
     # 2. Recorremos los chats permitidos (canales Y grupo vinculado)

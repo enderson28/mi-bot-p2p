@@ -824,7 +824,7 @@ def handle_invitacion_comando(message):
     if user_identifier in USUARIOS_AUTORIZADOS or message.from_user.id in USUARIOS_AUTORIZADOS:
         
         texto_invitacion = (
-            "🤖 <b>¡Aprovecha al máximo las herramientas del Bot~IDV!</b>\n\n"
+            "🤖 <b>¡Aprovecha al máximo las herramientas del Bot!</b>\n\n"
             "Consulta en privado sin límites y sin esperar tiempos de enfriamiento:\n"
             "🖥️ Monitor P2P /📆 BCV en tiempo real\n"
             "📟 Calculadora e 📊 Intervención\n"
@@ -940,7 +940,7 @@ def procesar_precio(message):
                 pass
 
         if not usuario_esta_unido(user_id):
-            bot.reply_to(message, "❌ No tienes acceso. Debes unirte al canal oficial para usar el bot.")
+            bot.reply_to(message, "❌ No tienes acceso. Debes unirte al canal oficial 👉🏼 @COMUNIDV para usar el bot.")
             return
 
         try:
@@ -1049,7 +1049,7 @@ def procesar_intervencion(message):
                 pass
 
         if not usuario_esta_unido(user_id):
-            bot.reply_to(message, "❌ No tienes acceso. Debes unirte al canal oficial para usar el bot.")
+            bot.reply_to(message, "❌ No tienes acceso. Debes unirte al canal oficial 👉🏼 @COMUNIDV para usar el bot.")
             return
 
         # Creamos el botón flotante para actualizar
@@ -1166,7 +1166,7 @@ def procesar_guias(message):
                 pass
 
         if not usuario_esta_unido(user_id):
-            bot.reply_to(message, "❌ No tienes acceso. Debes unirte al canal oficial para usar el bot.")
+            bot.reply_to(message, "❌ No tienes acceso. Debes unirte al canal oficial 👉🏼 @COMUNIDV para usar el bot.")
             return   
             
         texto_guia = TEXTO_BPAY if es_bpay else TEXTO_GPAY
@@ -1199,7 +1199,7 @@ def procesar_regla_oro(message):
                 pass
 
         if not usuario_esta_unido(user_id):
-            bot.reply_to(message, "❌ No tienes acceso. Debes unirte al canal oficial para usar el bot.")
+            bot.reply_to(message, "❌ No tienes acceso. Debes unirte al canal oficial 👉🏼 @COMUNIDV para usar el bot.")
             return
 
         enviar_o_reemplazar_privado(
@@ -1227,7 +1227,7 @@ def procesar_soporte(message):
                 pass
 
         if not usuario_esta_unido(user_id):
-            bot.reply_to(message, "❌ No tienes acceso. Debes unirte al canal oficial para usar el bot.")
+            bot.reply_to(message, "❌ No tienes acceso. Debes unirte al canal oficial 👉🏼 @COMUNIDV para usar el bot.")
             return
 
         enviar_o_reemplazar_privado(
@@ -1508,7 +1508,7 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
                         def enviar_reportes_sincronizados():
                             try:
                                 # Lista de canales a los que quieres enviar la notificación
-                                canales_destino = [CANAL_PRUEBA, CANAL_PRINCIPAL_IDV, CANAL_SECUNDARIO]
+                                canales_destino = [CANAL_PRUEBA, CANAL_SECUNDARIO]
 
                                 # 1. Envío de Tabla de Intervención
                                 texto_intervencion = construir_intervencion_texto_html()
@@ -1684,7 +1684,7 @@ if __name__ == "__main__":
         pass
 
     # 🟢 1. Definimos los canales/grupos donde rotará el anuncio de captcha
-    CHATS_ANUNCIOS = [CANAL_PRUEBA, CANAL_PRINCIPAL_IDV]
+    CHATS_ANUNCIOS = [CANAL_PRUEBA]
 
     # 🟢 2. Activamos el ciclo de anuncios pasando bot y la lista de chats
     iniciar_modulo_anuncios(bot, CHATS_ANUNCIOS)

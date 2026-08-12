@@ -1248,13 +1248,18 @@ def refrescar_canal_tasas_callback(call):
     chat_id = call.message.chat.id
     user_id = call.from_user.id if call.from_user else None
 
-    # Si se pulsa desde un CANAL PÚBLICO y NO es Creador ni Admin VIP:
-    if call.message.chat.type == "channel":
-        if not (str(user_id) == str(CREADOR_ID) or es_admin_vip(bot, call.from_user)):
+    # 🚨 BLINDAJE EN GRUPOS Y CANALES
+    if call.message.chat.type != "private":
+        es_admin_o_vip = (
+            str(user_id) == str(CREADOR_ID) 
+            or es_admin_vip(bot, call.from_user) 
+            or es_administrador(bot, chat_id, user_id, call.from_user)
+        )
+        if not es_admin_o_vip:
             bot.answer_callback_query(
                 call.id,
-                f"❌ Solo Administradores pueden actualizar la tasa aquí.\n👉 Usa mi chat privado: @{BOT_USERNAME}",
-                show_alert=True  # Alerta emergente privada
+                text=f"❌ Solo Administradores pueden actualizar la tasa aquí.👉 Usa mi chat privado: @{BOT_USERNAME}",
+                show_alert=True
             )
             return
 
@@ -1290,12 +1295,17 @@ def refrescar_canal_tasas_callback(call):
 def callback_refrescar_tasas(call):
     user_id = call.from_user.id if call.from_user else None
 
-    # 🛑 1. BLINDAJE EN CANALES: Solo Creador o Admin VIP
-    if call.message.chat.type == "channel":
-        if not (str(user_id) == str(CREADOR_ID) or es_admin_vip(bot, call.from_user)):
+    # 🚨 1. BLINDAJE EN GRUPOS Y CANALES
+    if call.message.chat.type != "private":
+        es_admin_o_vip = (
+            str(user_id) == str(CREADOR_ID) 
+            or es_admin_vip(bot, call.from_user) 
+            or es_administrador(bot, call.message.chat.id, user_id, call.from_user)
+        )
+        if not es_admin_o_vip:
             bot.answer_callback_query(
                 call.id,
-                text=f"❌ Solo Administradores pueden actualizar la tasa en el canal.\n👉 Consulta libremente en privado: @{BOT_USERNAME}",
+                text=f"❌ Solo Administradores pueden actualizar la tasa en el grupo.👉 Consulta libremente en privado: @{BOT_USERNAME}",
                 show_alert=True
             )
             return
@@ -1353,12 +1363,17 @@ def callback_refrescar_tasas(call):
 def callback_refrescar_intervencion(call):
     user_id = call.from_user.id if call.from_user else None
 
-    # 🛑 1. BLINDAJE EN CANALES: Solo Creador o Admin VIP
-    if call.message.chat.type == "channel":
-        if not (str(user_id) == str(CREADOR_ID) or es_admin_vip(bot, call.from_user)):
+    # 🚨 1. BLINDAJE EN GRUPOS Y CANALES
+    if call.message.chat.type != "private":
+        es_admin_o_vip = (
+            str(user_id) == str(CREADOR_ID) 
+            or es_admin_vip(bot, call.from_user) 
+            or es_administrador(bot, call.message.chat.id, user_id, call.from_user)
+        )
+        if not es_admin_o_vip:
             bot.answer_callback_query(
                 call.id,
-                text=f"❌ Solo Administradores pueden actualizar la intervención en el canal.\n👉 Consulta libremente en privado: @{BOT_USERNAME}",
+                text=f"❌ Solo Administradores pueden actualizar la intervención aquí.👉 Consulta libremente en privado: @{BOT_USERNAME}",
                 show_alert=True
             )
             return

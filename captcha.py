@@ -103,7 +103,7 @@ def setup_verification_handlers(bot, target_channel_id=None, funcion_menu=None, 
             message.chat.id,
             "⚠️ <b>Acceso Restringido</b>\n\n"
             "Este bot es de uso exclusivo para nuestra comunidad.\n"
-            "Solicita tu ingreso a través del grupo oficial 👉🏼 @COMUNIDV , despues de hacer la solicitud 🕜 vuelve a este menu y escribe /start , seras aprobado automáticamente al resolver el captcha ✅ .",
+            "Solicita tu ingreso a través del grupo oficial 👉🏼 @COMUNIDV , despues de hacer la solicitud 🕜, ↪️ vuelve a este menu y ✏️ escribe /start , seras aprobado automáticamente al resolver el captcha ✅ .",
             parse_mode="HTML"
         )
 

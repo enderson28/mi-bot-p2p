@@ -103,7 +103,7 @@ def setup_verification_handlers(bot, target_channel_id=None, funcion_menu=None, 
             message.chat.id,
             "⚠️ <b>Acceso Restringido</b>\n\n"
             "Este bot es de uso exclusivo para nuestra comunidad.\n"
-            "Solicita tu ingreso a través del enlace oficial del canal o 👉🏼 aqui @COMUNIDV .",
+            "Unete a nuestro Canal Principal 👉🏼 @BANCOIDV y Solicita tu ingreso a través del grupo oficial 👉🏼 @COMUNIDV .",
             parse_mode="HTML"
         )
 

@@ -201,25 +201,34 @@ TEXTO_SOPORTE = (
 # ==========================================
 #  LÓGICA DE PROCESAMIENTO Y APIS
 # ==========================================
-def usuario_esta_unido(user_id):
-    if not user_id:
+def usuario_esta_unido(user, user_id=None):
+    """
+    Verifica si un usuario tiene acceso permitido al bot en privado.
+    Acepta tanto el objeto 'user' de Telegram como un 'user_id' numérico.
+    """
+    # Si nos pasan un id directo en lugar del objeto user
+    actual_id = user.id if hasattr(user, 'id') else user_id
+    if not actual_id:
         return False
-        
-    # 1. Si es CREADOR o está en la lista VIP, acceso automático asegurado
-    if str(user_id) == str(CREADOR_ID):
+
+    # 1. El Creador Supremo siempre tiene acceso
+    if str(actual_id) == str(CREADOR_ID):
         return True
 
-    # 2. Recorremos los chats permitidos (canales Y grupo vinculado)
+    # 2. Si es Admin VIP o Administrador en algún grupo/canal
+    if hasattr(user, 'id') and es_admin_vip(bot, user):
+        return True
+
+    # 3. Verificamos membresía común en la lista de chats permitidos
     for chat_id in CHATS_PERMITIDOS:
         try:
-            miembro = bot.get_chat_member(chat_id, user_id)
+            miembro = bot.get_chat_member(chat_id, actual_id)
             if miembro.status in ['creator', 'administrator', 'member']:
                 return True
         except Exception:
             continue
-            
-    return False
 
+    return False
 
 # ===============================================
 # DESPACHADOR DE MENÚ Y CAPTCHA

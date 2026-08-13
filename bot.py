@@ -463,10 +463,11 @@ TG_EMOJIS = {
     "BAJADA": "5246762912428603768",       # 📉
     "MUNDO": "5224450179368767019",        # 🌎
     "FLECHA_DERECHA": "5416117059207572332", # ➡️
-    "DINERO": "5197434882321567830",        # 💵
-    "BINANCE_P2P": "5832421268476924783",    # 🪙
-    "GUIAS": "5282843764451195532",           #🖥️
-    "CALCULADORA": "5303214794336125778"       #🧮
+    "DINERO": "5197434882321567830",       # 💵
+    "BINANCE_P2P": "5832421268476924783",  # 🪙
+    "GUIAS": "5282843764451195532",        # 🖥️
+    "CALCULADORA": "5303214794336125778",  # 🧮
+    "ROBOT": "5323772371830588991",        # 🤖
 }
 
 def e(key, fallback=""):
@@ -808,12 +809,12 @@ def handle_invitacion_comando(message):
     if user_identifier in USUARIOS_AUTORIZADOS or message.from_user.id in USUARIOS_AUTORIZADOS:
         
         texto_invitacion = (
-            f"{e('ROBOT', '🤖')} <b>¡Aprovecha al máximo las herramientas del Bot!</b>\n\n"
-            f"{e('BOMBILLA', '💡')} Consulta en privado sin límites y sin esperar tiempos de enfriamiento:\n"
-            f"<blockquote>{e('MONITOR', '💻')} P2P {e('CALENDARIO', '🗓')} BCV en tiempo real</blockquote>\n"
-            f"{e( 'CALCULADORA', '🧮')} Calculadora e {e('BCV', '🏦')} Intervención\n"
+            f"<blockquote>{e('ROBOT', '🤖')} <b>¡Aprovecha al máximo las herramientas del Bot!</b> </blockquote>\n\n"
+            f"{e('BOMBILLA', '💡')} Consulta en privado 🗞️ sin límites y sin esperar ⏲️ tiempos de enfriamiento:\n"
+            f"<blockquote>{e('MONITOR', '💻')} Monitor ~ {e('USDT', '🪙')} P2P / {e('CALENDARIO', '🗓')} BCV en tiempo real</blockquote>\n"
+            f"{e( 'CALCULADORA', '🧮')} Calculadora 🇻🇪 BS y USD 💲 e {e('BCV', '🏦')} Intervención\n"
             f"{e( 'GUIAS', '🖥️')} Guías paso a paso\n\n"
-            f"{e('CHINCHE', '📌')} <b>Toca aquí para iniciar:</b> @BancoIDV_bot"
+            f"<blockquote>{e('CHINCHE', '📌')} <b>Toca aquí para iniciar:</b> @BancoIDV_bot</blockquote>\n"
             f"-----------------------------------------\n\n"
         )
         

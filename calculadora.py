@@ -24,13 +24,13 @@ def registrar_calculadora(bot, obtener_cache_func, obtener_teclado_func):
         bot.clear_step_handler_by_chat_id(message.chat.id)
 
         texto_indicacion = (
-            "📟 **CALCULADORA AUTOMÁTICA BCV (+0.5% Intervención)**\n\n"
-            "💵 **Modo actual:** USD ➡️ Bolívares\n"
+            "🧮 **CALCULADORA AUTOMÁTICA BCV (+0.5% Intervención)**\n\n"
+            "🟢 **Modo actual:** USD ➡️ Bolívares\n"
             "Escribe la cifra en **$ USD** directamente (Ejemplo: `5`, `12.5`, `100`):\n\n"
             "⏳ _Esperando tu monto..._"
         ) if modo == "USD_BS" else (
             "🔀 **CALCULADORA INVERSA BCV (+0.5% Intervención)**\n\n"
-            "🇻🇪 **Modo actual:** Bolívares ➡️ USD\n"
+            "🟡 **Modo actual:** Bolívares ➡️ USD\n"
             "Escribe la cifra en **Bs** directamente (Ejemplo: `500`, `1500.50`):\n\n"
             "⏳ _Esperando tu monto..._"
         )

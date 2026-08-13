@@ -467,7 +467,10 @@ TG_EMOJIS = {
     "BINANCE_P2P": "5832421268476924783",  # 🪙
     "GUIAS": "5282843764451195532",        # 🖥️
     "CALCULADORA": "5303214794336125778",  # 🧮
-    "ROBOT": "5323772371830588991"         # 🤖
+    "ROBOT": "5323772371830588991",         # 🤖
+    "RELOJERA": "5382194935057372936",      # ⏱
+    "CONSULTA1": "5197503331215361533",     # 📈
+    "ESCUDO": "5197288647275071607"         # 🛡
 }
 
 def e(key, fallback=""):
@@ -810,9 +813,9 @@ def handle_invitacion_comando(message):
         
         texto_invitacion = (
             f"<blockquote>{e('ROBOT', '🤖')} <b>¡Aprovecha al máximo las herramientas del Bot!</b> </blockquote>\n\n"
-            f"{e('BOMBILLA', '💡')} Consulta en privado 🗞️ sin límites y sin esperar ⏲️ tiempos de enfriamiento:\n"
+            f"{e( 'CONSULTA1', '📈')} Consulta en privado {e( 'ESCUDO', '🛡')} , sin límites y sin esperar {e( 'RELOJERA', '⏱')} tiempos de enfriamiento:\n"
             f"<blockquote>{e('MONITOR', '💻')} Monitor ~ {e('USDT', '🪙')} P2P / {e('CALENDARIO', '🗓')} BCV en tiempo real</blockquote>\n"
-            f"{e( 'CALCULADORA', '🧮')} Calculadora 🇻🇪 BS y USD 💲 e {e('BCV', '🏦')} Intervención\n"
+            f"{e( 'CALCULADORA', '🧮')} Calculadora 🇻🇪 BS y {e('DINERO', '💵')} USD / {e('BCV', '🏦')} Intervención\n"
             f"{e( 'GUIAS', '🖥️')} Guías paso a paso\n\n"
             f"<blockquote>{e('CHINCHE', '📌')} <b>Toca aquí para iniciar:</b> @BancoIDV_bot</blockquote>\n"
             f"-----------------------------------------\n\n"

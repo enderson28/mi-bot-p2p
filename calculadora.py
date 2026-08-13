@@ -25,12 +25,12 @@ def registrar_calculadora(bot, obtener_cache_func, obtener_teclado_func):
 
         texto_indicacion = (
             "📠 **CALCULADORA AUTOMÁTICA BCV (+0.5% Intervención)**\n\n"
-            "💲 **Modo actual:** USD ➡️ Bolívares\n"
-            "Escribe la cifra en **$ USD** directamente (Ejemplo: `5`, `12.5`, `100`):\n\n"
+            "✅ **Modo actual:** 💲 ⏩ 🇻🇪 Bolívares\n"
+            "Escribe la cifra en **USD** directamente (Ejemplo: `5`, `12.5`, `100`):\n\n"
             "⏳ _Esperando tu monto..._"
         ) if modo == "USD_BS" else (
             "📠 **CALCULADORA DIVISAS AL BCV (+0.5% Intervención)**\n\n"
-            "🇻🇪 **Modo actual:** Bolívares ➡️ USD\n"
+            "✅ **Modo actual:** 🇻🇪 Bolívares ⏩ 💲\n"
             "Escribe la cifra en **Bs** directamente (Ejemplo: `500`, `1500.50`):\n\n"
             "⏳ _Esperando tu monto..._"
         )
@@ -105,7 +105,7 @@ def registrar_calculadora(bot, obtener_cache_func, obtener_teclado_func):
                 f"🏦 *Tasa BCV oficial:* `{tasa_bcv:,.2f}` Bs.\n"
                 f"⚖️ *Tasa + 0.5% Intervención:* `{tasa_con_intervencion:,.4f}` Bs.\n\n"
                 f"💳 *Total a pagar en Bolívares:*\n"
-                f"👉 *`{monto_bolivares:,.2f}` Bs.*\n\n"
+                f"👉 `{monto_bolivares:,.2f}` *Bs.*\n\n"
                 "📌 _Puedes seguir escribiendo montos en $ o cambiar de modo abajo._"
             )
         else: # Modo BS_USD (Inverso)
@@ -113,12 +113,12 @@ def registrar_calculadora(bot, obtener_cache_func, obtener_teclado_func):
             monto_usd = monto_bolivares / tasa_con_intervencion
             
             respuesta = (
-                "📠 *RESULTADO DE CÁLCULO DIVISAS AL BCV*\n\n"
+                "💸 *RESULTADO DE CÁLCULO DIVISAS AL BCV*\n\n"
                 f"🇻🇪 *Monto disponible en Bs:* `{monto_bolivares:,.2f}` Bs.\n"
                 f"🏦 *Tasa BCV oficial:* `{tasa_bcv:,.2f}` Bs.\n"
                 f"⚖️ *Tasa + 0.5% Intervención:* `{tasa_con_intervencion:,.4f}` Bs.\n\n"
                 f"💵 *Puedes comprar un total de:*\n"
-                f"👉 *`${monto_usd:,.2f}` USD*\n\n"
+                f"👉 `{monto_usd:,.2f}` *USD*\n\n"
                 "📌 _Puedes seguir escribiendo montos en Bs o cambiar de modo abajo._"
             )
 

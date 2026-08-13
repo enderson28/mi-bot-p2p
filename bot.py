@@ -471,7 +471,8 @@ TG_EMOJIS = {
     "RELOJERA": "5382194935057372936",      # ⏱
     "CONSULTA1": "5197503331215361533",     # 📈
     "ESCUDO": "5197288647275071607",        # 🛡
-    "PROGRAMADOR": "5417836094098007862"    # 🐱
+    "PROGRAMADOR": "5417836094098007862",   # 🐱
+    "ESTRELLA": "5267500801240092311"       # ⭐
 }
 
 def e(key, fallback=""):
@@ -831,8 +832,8 @@ def handle_invitacion_comando(message):
         aviso = bot.send_message(
             message.chat.id,
             f'⚠️ <b>Comando exclusivo de los administradores principales 🤓:</b>\n'
-            f'• <a href="tg://user?id=5073264705">{e( 'PROGRAMADOR', '🐱')} Enderson</a>\n'
-            f'• <a href="tg://user?id=791436853">👸🏼 Sarita</a>',
+            f'• <a href="tg://user?id=5073264705">{e('PROGRAMADOR', '🐱')} Enderson</a>\n'
+            f'• <a href="tg://user?id=791436853">{e('ESTRELLA', '⭐')} Sarita</a>',
             parse_mode="HTML",
             disable_web_page_preview=True
         )

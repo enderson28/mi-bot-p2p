@@ -831,8 +831,8 @@ def handle_invitacion_comando(message):
             message.chat.id,
             f'⚠️ <b>Comando exclusivo de los administradores principales 🤓:</b>\n'
             f'• <a href="tg://user?id=5073264705">⚙️ Enderson</a>\n'
-            f'• <a href="tg://user?id=5971008307">🚫 Dip</a>\n'
-            f'• <a href="tg://user?id=8418460698">🔥 Carlos V</a>\n'
+            f'• <a href="tg://user?id=5971008307">🚫 Dips</a>\n'
+            f'• <a href="tg://user?id=8418460698">🔥 Carlitos</a>\n'
             f'• <a href="tg://user?id=791436853">👸🏼 Sarita</a>',
             parse_mode="HTML",
             disable_web_page_preview=True

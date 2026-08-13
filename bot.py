@@ -49,7 +49,7 @@ CANAL_PRUEBA = -1004473532809
 CANAL_PRINCIPAL_IDV = -1003950050807
 
 # USUARIOS AUTORIZADOS Y CREADOR (¡Restaurar estas líneas!)
-USUARIOS_AUTORIZADOS = [5073264705, 1676933074, 6299629267]
+USUARIOS_AUTORIZADOS = [5073264705, 5971008307, 791436853]
 CREADOR_ID = 5073264705
 
 # 🟢 REGISTRAR COMANDOS PRIORITARIOS AQUÍ (Arriba de los demás handlers)
@@ -464,7 +464,9 @@ TG_EMOJIS = {
     "MUNDO": "5224450179368767019",        # 🌎
     "FLECHA_DERECHA": "5416117059207572332", # ➡️
     "DINERO": "5197434882321567830",        # 💵
-    "BINANCE_P2P": "5832421268476924783"    # 🪙
+    "BINANCE_P2P": "5832421268476924783",    # 🪙
+    "GUIAS": "5282843764451195532",           #🖥️
+    "CALCULADORA": "5303214794336125778"       #🧮
 }
 
 def e(key, fallback=""):
@@ -806,12 +808,13 @@ def handle_invitacion_comando(message):
     if user_identifier in USUARIOS_AUTORIZADOS or message.from_user.id in USUARIOS_AUTORIZADOS:
         
         texto_invitacion = (
-            "🤖 <b>¡Aprovecha al máximo las herramientas del Bot!</b>\n\n"
-            "Consulta en privado sin límites y sin esperar tiempos de enfriamiento:\n"
-            "🖥️ Monitor P2P /📆 BCV en tiempo real\n"
-            "📟 Calculadora e 📊 Intervención\n"
-            "📜 Guías paso a paso\n\n"
-            "👉 <b>Toca aquí para iniciar:</b> @BancoIDV_bot"
+            f"{e('ROBOT', '🤖')} <b>¡Aprovecha al máximo las herramientas del Bot!</b>\n\n"
+            f"{e('BOMBILLA', '💡')} Consulta en privado sin límites y sin esperar tiempos de enfriamiento:\n"
+            f"<blockquote>{e('MONITOR', '💻')} P2P {e('CALENDARIO', '🗓')} BCV en tiempo real</blockquote>\n"
+            f"{e( 'CALCULADORA', '🧮')} Calculadora e {e('BCV', '🏦')} Intervención\n"
+            f"{e( 'GUIAS', '🖥️')} Guías paso a paso\n\n"
+            f"{e('CHINCHE', '📌')} <b>Toca aquí para iniciar:</b> @BancoIDV_bot"
+            f"-----------------------------------------\n\n"
         )
         
         msg_inv = bot.send_message(message.chat.id, texto_invitacion, parse_mode="HTML")
@@ -824,8 +827,8 @@ def handle_invitacion_comando(message):
             message.chat.id,
             f'⚠️ <b>Comando exclusivo de los administradores principales 🤓:</b>\n'
             f'• <a href="tg://user?id=5073264705">⚙️ Enderson</a>\n'
-            f'• <a href="tg://user?id=1676933074">🐲 Antony</a>\n'
-            f'• <a href="tg://user?id=6299629267">🐻 Oswaldo</a>\n'
+            f'• <a href="tg://user?id=1676933074">🐲 Nuevo Admin ?</a>\n'
+            f'• <a href="tg://user?id=5971008307">🚫 Dip</a>\n'
             f'• <a href="tg://user?id=791436853">👸🏼 Sarita</a>',
             parse_mode="HTML",
             disable_web_page_preview=True

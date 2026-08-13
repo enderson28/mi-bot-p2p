@@ -1,121 +1,130 @@
-from telebot.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
+from telebot.types import ReplyKeyboardMarkup, KeyboardButton
 
 def registrar_calculadora(bot, obtener_cache_func, obtener_teclado_func):
     """
-    Registra el módulo de calculadora interactiva de divisas BCV + 0.5%.
+    Registra el módulo de calculadora interactiva de divisas (USD -> Bs y Bs -> USD).
     """
 
-    def solicitar_monto_mensaje(message):
-        """Entrada desde el teclado de texto '📟 Calculadora'"""
+    def obtener_teclado_calc():
+        """Devuelve el teclado fijo inferior para la calculadora."""
+        markup = ReplyKeyboardMarkup(resize_keyboard=True)
+        markup.add(
+            KeyboardButton("💲 USD a 🇻🇪 Bs"),
+            KeyboardButton("🇻🇪 Bs a 💲USD")
+        )
+        markup.add(KeyboardButton("⬅️ Volver al menú"))
+        return markup
+
+    @bot.message_handler(func=lambda message: message.text == "📟 Calculadora" in message.text if message.text else False)
+    def solicitar_monto_mensaje(message, modo="USD_BS"):
         if message.chat.type != 'private':
             return
-        
-        # Teclado fijo inferior con un solo botón de escape
-        markup = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
-        markup.add(KeyboardButton("⬅️ Volver al menú"))
+
+        texto_indicacion = (
+            "📟 **CALCULADORA AUTOMÁTICA BCV (+0.5% Intervención)**\n\n"
+            "💲 **Modo actual:** USD ➡️ Bolívares\n"
+            "Escribe la cifra en **$ USD** directamente (Ejemplo: `5`, `12.5`, `100`):\n\n"
+            "⏳ _Esperando tu monto..._"
+        ) if modo == "USD_BS" else (
+            "📟 **CALCULADORA INVERSA BCV (+0.5% Intervención)**\n\n"
+            "🇻🇪 **Modo actual:** Bolívares ➡️ USD\n"
+            "Escribe la cifra en **Bs** directamente (Ejemplo: `500`, `1500.50`):\n\n"
+            "⏳ _Esperando tu monto..._"
+        )
 
         msg = bot.send_message(
             message.chat.id,
-            "📟 *CALCULADORA AUTOMÁTICA 📆BCV (+0.5% Intervención)*\n\n"
-            "¿Cuántos 💸 USD deseas calcular?\n"
-            "Escribe la cifra directamente en el chat (Ejemplo: `5`, `12.5`, `30`, `500`):\n\n"
-            "⏳ _Esperando tu monto..._",
+            texto_indicacion,
             parse_mode="Markdown",
-            reply_markup=markup
+            reply_markup=obtener_teclado_calc()
         )
-        bot.register_next_step_handler(msg, procesar_calculo)
+        
+        # Guardamos en la sesión el modo actual pasando una tupla o argumento al handler
+        bot.register_next_step_handler(msg, lambda m: procesar_calculo(m, modo))
 
-    def solicitar_monto_inline(call):
-        """Entrada desde el botón inline '🔄 Calcular otro monto'"""
-        chat_id = call.message.chat.id
-
-        # Responder al callback para quitar el estado de carga en Telegram
-        bot.answer_callback_query(call.id)
-
-        # Teclado fijo inferior por si el usuario decide volver desde aquí
-        markup_reply = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
-        markup_reply.add(KeyboardButton("⬅️ Volver al menú"))
-
-        msg = bot.send_message(
-            chat_id,
-            "📟 *CALCULADORA AUTOMÁTICA 📆BCV (+0.5% Intervención)*\n\n"
-            "¿Cuántos 💸 USD deseas calcular?\n"
-            "Escribe la cifra directamente en el chat (Ejemplo: `5`, `12.5`, `30`, `500`):\n\n"
-            "⏳ _Esperando tu monto..._",
-            parse_mode="Markdown",
-            reply_markup=markup_reply
-        )
-        bot.register_next_step_handler(msg, procesar_calculo)
-
-    def procesar_calculo(message):
-        """Procesa la cifra o restablece el menú si decide volver"""
+    def procesar_calculo(message, modo="USD_BS"):
         if message.chat.type != 'private':
             return
 
         texto = message.text.strip() if message.text else ""
 
-        # Opción de salida: presiona 'Volver al menú' o envía un comando
+        # 1. Opción de salida al menú principal
         if texto == "⬅️ Volver al menú" or texto.startswith("/"):
             teclado_restablecido = obtener_teclado_func(message.from_user)
             bot.send_message(
                 message.chat.id,
-                "🏡 *Menú principal restablecido.*",
+                "🏠 *Menú principal restablecido.*",
                 parse_mode="Markdown",
                 reply_markup=teclado_restablecido
             )
             return
 
-        # Normalizar coma a punto decimal (ej: 12,5 -> 12.5)
-        texto_limpio = texto.replace(",", ".")
-        
-        try:
-            monto_usd = float(texto_limpio)
-            if monto_usd <= 0:
-                raise ValueError("Monto positivo requerido")
-        except ValueError:
-            bot.send_message(
-                message.chat.id,
-                "⚠️ *Monto inválido.* Por favor escribe solo números (Ejemplo: `15` o `20.5`) "
-                "o presiona *⬅️ Volver al menú* abajo.",
-                parse_mode="Markdown"
-            )
-            # Reintentar escuchando el mensaje nuevamente
-            bot.register_next_step_handler(message, procesar_calculo)
+        # 2. Cambio de modo directo desde los botones inferiores
+        if texto == "💲 USD a 🇻🇪 Bs":
+            solicitar_monto_mensaje(message, modo="USD_BS")
+            return
+        elif texto == "🇻🇪 Bs a 💲 USD":
+            solicitar_monto_mensaje(message, modo="BS_USD")
             return
 
-        # Tasa BCV desde el cache / Redis
+        # 3. Normalizar comas a puntos
+        texto_limpio = texto.replace(",", ".")
+
+        try:
+            monto_entrada = float(texto_limpio)
+            if monto_entrada <= 0:
+                raise ValueError("Monto positivo requerido")
+        except ValueError:
+            msg_err = bot.send_message(
+                message.chat.id,
+                "⚠️ *Monto inválido.* Por favor escribe solo números (Ejemplo: `15` o `20.5`) "
+                "o cambia de modo abajo.",
+                parse_mode="Markdown",
+                reply_markup=obtener_teclado_calc()
+            )
+            bot.register_next_step_handler(msg_err, lambda m: procesar_calculo(m, modo))
+            return
+
+        # 4. Obtener tasa BCV
         cache = obtener_cache_func()
-        tasa_bcv = cache.get("bcv_tasa", 745.64)
+        tasa_bcv = cache.get("bcv_tasa", 745.64)  # Tasa base
         tasa_con_intervencion = tasa_bcv * 1.005  # Tasa + 0.5%
-        monto_bolivares = monto_usd * tasa_con_intervencion
 
-        respuesta = (
-            f"♻️ *RESULTADO DE CÁLCULO BCV*\n\n"
-            f"💵 *Monto en USD:* $`{monto_usd:,.2f}`\n"
-            f"🏛️ *Tasa BCV oficial:* `{tasa_bcv:,.2f}` Bs.\n"
-            f"⚖️ *Tasa + 0.5% Intervención:* `{tasa_con_intervencion:,.4f}` Bs.\n\n"
-            f"💰 *Total a pagar en Bolívares:*\n"
-            f"👉 `{monto_bolivares:,.2f}` *Bs.*\n\n"
-            f"_Cálculo basado en la tasa oficial del día._"
-        )
+        # 5. Cálculo según el modo seleccionado
+        if modo == "USD_BS":
+            monto_usd = monto_entrada
+            monto_bolivares = monto_usd * tasa_con_intervencion
+            
+            respuesta = (
+                "📠 *RESULTADO DE CÁLCULO BCV*\n\n"
+                f"💵 *Monto en USD:* `${monto_usd:,.2f}`\n"
+                f"🏦 *Tasa BCV oficial:* `{tasa_bcv:,.2f}` Bs.\n"
+                f"⚖️ *Tasa + 0.5% Intervención:* `{tasa_con_intervencion:,.4f}` Bs.\n\n"
+                f"💳 *Total a pagar en Bolívares:* \n"
+                f"👉 *`{monto_bolivares:,.2f}` Bs.*\n\n"
+                "📌 _Puedes seguir escribiendo montos en $ o cambiar de modo abajo._"
+            )
+        else: # Modo BS_USD (Inverso)
+            monto_bolivares = monto_entrada
+            monto_usd = monto_bolivares / tasa_con_intervencion
+            
+            respuesta = (
+                "📠 *RESULTADO DE CÁLCULO INVERSO BCV*\n\n"
+                f"💳 *Monto disponible en Bs:* `{monto_bolivares:,.2f}` Bs.\n"
+                f"🏦 *Tasa BCV oficial:* `{tasa_bcv:,.2f}` Bs.\n"
+                f"⚖️ *Tasa + 0.5% Intervención:* `{tasa_con_intervencion:,.4f}` Bs.\n\n"
+                f"💵 *Puedes comprar un total de:* \n"
+                f"👉 *`${monto_usd:,.2f}` USD*\n\n"
+                "📌 _Puedes seguir escribiendo montos en Bs o cambiar de modo abajo._"
+            )
 
-        # Botón Inline para encadenar múltiples cálculos
-        markup_inline = InlineKeyboardMarkup()
-        markup_inline.add(InlineKeyboardButton("🔄 Calcular otro monto", callback_data="recalcular_monto"))
-
+        # 6. Enviar respuesta y MANTENER HILO DE CONVERSACIÓN
         msg_res = bot.send_message(
             message.chat.id,
             respuesta,
             parse_mode="Markdown",
-            reply_markup=markup_inline
+            reply_markup=obtener_teclado_calc()
         )
-        
-        bot.register_next_step_handler(msg_res, procesar_calculo)
 
-    # Manejador del callback del botón inline
-    @bot.callback_query_handler(func=lambda call: call.data == "recalcular_monto")
-    def callback_recalcular(call):
-        solicitar_monto_inline(call)
-
-    return solicitar_monto_mensaje
-    
+        # Re-registramos para el siguiente número manteniendo el modo actual
+        bot.register_next_step_handler(msg_res, lambda m: procesar_calculo(m, modo))

@@ -8,7 +8,7 @@ from telebot.types import ReplyKeyboardMarkup, KeyboardButton
 MODELO_IA = "openai/gpt-4o-mini"
 
 # ID DEL CREADOR / ADMINISTRADORES (Sin límites ni restricciones)
-ADMIN_IDS = [5073264705, 1676933074]
+ADMIN_IDS = [5073264705]
 
 # Diccionarios globales en memoria
 HISTORIAL_CHAT = {}
@@ -18,7 +18,7 @@ USO_DIARIO_USUARIOS = {}
 REGISTRO_CUPO_DIARIO = {"fecha": "", "usuarios_registrados": set()}
 
 # Definición de canales en la parte superior
-CANAL_PRUEBA = "@COMUNIDV"
+CANAL_PRUEBA = -1004473532809
 CANAL_PRINCIPAL_IDV = -1003950050807
 
 

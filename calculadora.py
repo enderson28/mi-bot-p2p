@@ -24,13 +24,13 @@ def registrar_calculadora(bot, obtener_cache_func, obtener_teclado_func):
         bot.clear_step_handler_by_chat_id(message.chat.id)
 
         texto_indicacion = (
-            "🧮 **CALCULADORA AUTOMÁTICA BCV (+0.5% Intervención)**\n\n"
-            "🟢 **Modo actual:** USD ➡️ Bolívares\n"
+            "📟 **CALCULADORA AUTOMÁTICA BCV (+0.5% Intervención)**\n\n"
+            "💵 **Modo actual:** USD ➡️ Bolívares\n"
             "Escribe la cifra en **$ USD** directamente (Ejemplo: `5`, `12.5`, `100`):\n\n"
             "⏳ _Esperando tu monto..._"
         ) if modo == "USD_BS" else (
             "🔀 **CALCULADORA INVERSA BCV (+0.5% Intervención)**\n\n"
-            "🟡 **Modo actual:** Bolívares ➡️ USD\n"
+            "🇻🇪 **Modo actual:** Bolívares ➡️ USD\n"
             "Escribe la cifra en **Bs** directamente (Ejemplo: `500`, `1500.50`):\n\n"
             "⏳ _Esperando tu monto..._"
         )
@@ -62,13 +62,14 @@ def registrar_calculadora(bot, obtener_cache_func, obtener_teclado_func):
             )
             return
 
-        # 2. Cambio de modo detectando las palabras clave o botones (con o sin emojis)
-        if "USD a" in texto or "💵 USD" in texto:
+        # 2. Cambio de modo detectando la intención exacta
+        if "USD a" in texto or texto.startswith("💵 USD"):
             solicitar_monto_mensaje(message, modo="USD_BS")
             return
-        elif "Bs a" in texto or "🇻🇪 Bs" in texto:
+        elif "Bs a" in texto or texto.startswith("🇻🇪 Bs"):
             solicitar_monto_mensaje(message, modo="BS_USD")
             return
+            
 
         # 3. Normalizar comas a puntos
         texto_limpio = texto.replace(",", ".")

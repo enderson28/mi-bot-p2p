@@ -4,90 +4,71 @@ from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 logger = logging.getLogger(__name__)
 
-# Diccionario temporal en memoria para guardar el estado del flujo por usuario
 USER_ARBITRAJE_DATA = {}
 
-# Comisiones por Banco / Tarjeta
 COMISIONES_BANCOS = {
-    "provincial": {"nombre": "🏛️ BBVA Provincial", "comision": 0.00},
-    "bdv_debit": {"nombre": "🏛️ BDV (Masterdebit 1.5%)", "comision": 0.015},
-    "bdv_credit": {"nombre": "🏛️ BDV / Tesoro / Otros (2.5%)", "comision": 0.025},
+    "provincial": {"nombre": "🏛️ BBVA Provincial (0%)", "comision": 0.00},
+    "bdv_debit": {"nombre": "🏛️ BDV Masterdebit (1.5%)", "comision": 0.015},
+    "bdv_credit": {"nombre": "🏛️ BDV Credit / Tesoro / Otros (2.5%)", "comision": 0.025},
 }
 
 COMISION_PASARELA_BINANCE = 0.041  # 4.1% fija
 
 
-def obtener_tasas_redis(redis_client):
+def obtener_datos_cache_redis(redis_client):
     """
-    Extrae la tasa actual y la anterior directamente del JSON en CACHE_TASAS_STORAGE
+    Obtiene el diccionario completo CACHE_TASAS guardado por tu monitor en Redis.
     """
     try:
         data_raw = redis_client.get("CACHE_TASAS_STORAGE")
         if data_raw:
-            # Si viene como bytes en Redis, lo decodificamos a string
             if isinstance(data_raw, bytes):
                 data_raw = data_raw.decode('utf-8')
-                
-            dato = json.loads(data_raw) if isinstance(data_raw, str) else data_raw
-            
-            # Extraemos la tasa actual
-            tasa_hoy = float(dato.get("bcv_tasa")) if dato.get("bcv_tasa") else None
-            
-            # Extraemos la tasa anterior (o si tienes otra clave para la de mañana)
-            tasa_manana = float(dato.get("bcv_tasa_anterior")) if dato.get("bcv_tasa_anterior") else None
-
-            return tasa_hoy, tasa_manana
+            return json.loads(data_raw) if isinstance(data_raw, str) else data_raw
     except Exception as e:
-        logger.error(f"Error al obtener tasa de CACHE_TASAS_STORAGE: {e}")
-        
-    return None, None
-
-def obtener_tasa_p2p_redis(redis_client, monto_bs):
-    """
-    Obtiene la tasa de VENTA 🔴 P2P de Redis para el rango de Bs especificado.
-    Si no existe por rango, busca una clave fallback de p2p_venta.
-    """
-    try:
-        # Intenta obtener data del monitor P2P guardada en Redis
-        p2p_data_raw = redis_client.get("binance:p2p_venta")
-        if p2p_data_raw:
-            p2p_data = json.loads(p2p_data_raw)
-            # Si tienes filtrado por rangos en JSON:
-            # Revisa la estructura que usa tu bot actualmente y extrae el valor correspondiente
-            if isinstance(p2p_data, dict) and "tasa" in p2p_data:
-                return float(p2p_data["tasa"])
-            elif isinstance(p2p_data, (int, float)):
-                return float(p2p_data)
-
-        # Fallback a un valor numérico si tu Redis guarda la tasa directa
-        tasa_directa = redis_client.get("tasa_p2p_venta")
-        if tasa_directa:
-            return float(tasa_directa)
-
-    except Exception as e:
-        logger.error(f"Error al obtener tasa P2P de Redis: {e}")
-
+        logger.error(f"Error al leer CACHE_TASAS_STORAGE de Redis: {e}")
     return None
 
 
+def obtener_tasa_p2p_por_rango(cache_data, monto_usd):
+    """
+    Mapea el monto en USD del usuario al rango correspondiente guardado en cache_data['rangos']
+    """
+    if not cache_data or "rangos" not in cache_data:
+        return 890.0  # Respaldo si Redis falla
+
+    rangos = cache_data.get("rangos", {})
+
+    # Seleccionar clave de rango según el monto en USD
+    if monto_usd < 100:
+        key_rango = "50.0"
+    elif monto_usd < 500:
+        key_rango = "150.0"
+    else:
+        key_rango = "500.0"
+
+    # Buscar en las llaves del dict (pueden venir como string o float)
+    datos_rango = rangos.get(key_rango) or rangos.get(float(key_rango)) or {}
+    tasa_venta = datos_rango.get("venta", 0.0)
+
+    return float(tasa_venta) if tasa_venta > 0 else 890.0
+
+
 def calcular_arbitraje_reposicion(monto_usd, comision_banco, tasa_bcv_hoy, tasa_bcv_manana, tasa_p2p_venta):
-    """
-    Realiza los cálculos matemáticos completos de arbitraje + reposición por devaluación.
-    """
-    # 1. Tasa Intervención (+0.5%)
+    # 1. Compra de Hoy en Intervención (BCV + 0.5%)
     tasa_interv_hoy = tasa_bcv_hoy * 1.005
     bs_invertidos_hoy = monto_usd * tasa_interv_hoy
 
-    # 2. Descuento de Comisiones hacia Binance
+    # 2. Llegada a Binance
     usd_tras_banco = monto_usd * (1 - comision_banco)
     usdt_netos_binance = usd_tras_banco * (1 - COMISION_PASARELA_BINANCE)
 
-    # 3. Escenario A: Recuperar Capital Exacto gastado hoy
+    # 3. Recuperar Capital Hoy
     usdt_recuperar_hoy = bs_invertidos_hoy / tasa_p2p_venta
     ganancia_usdt_hoy = usdt_netos_binance - usdt_recuperar_hoy
     ganancia_bs_hoy = ganancia_usdt_hoy * tasa_p2p_venta
 
-    # 4. Escenario B: Reposición para el día siguiente (si el BCV subió/cambió)
+    # 4. Reposición para Mañana (si actualizó el BCV por la tarde)
     tasa_interv_manana = (tasa_bcv_manana if tasa_bcv_manana else tasa_bcv_hoy) * 1.005
     bs_necesarios_manana = monto_usd * tasa_interv_manana
     usdt_recuperar_manana = bs_necesarios_manana / tasa_p2p_venta
@@ -95,14 +76,12 @@ def calcular_arbitraje_reposicion(monto_usd, comision_banco, tasa_bcv_hoy, tasa_
     ganancia_bs_manana = ganancia_usdt_manana * tasa_p2p_venta
 
     return {
-        "monto_usd": monto_usd,
         "tasa_interv_hoy": tasa_interv_hoy,
         "bs_invertidos_hoy": bs_invertidos_hoy,
         "usdt_netos_binance": usdt_netos_binance,
         "usdt_recuperar_hoy": usdt_recuperar_hoy,
         "ganancia_usdt_hoy": ganancia_usdt_hoy,
         "ganancia_bs_hoy": ganancia_bs_hoy,
-        "tasa_bcv_manana": tasa_bcv_manana,
         "tasa_interv_manana": tasa_interv_manana,
         "bs_necesarios_manana": bs_necesarios_manana,
         "usdt_recuperar_manana": usdt_recuperar_manana,
@@ -112,30 +91,27 @@ def calcular_arbitraje_reposicion(monto_usd, comision_banco, tasa_bcv_hoy, tasa_
 
 
 def registrar_handlers_arbitraje(bot, redis_client):
-    """
-    Registra los comandos, botones inline y filtros de mensajes para la calculadora de arbitraje.
-    """
+
     @bot.message_handler(func=lambda message: message.text == "📊 Arbitraje & Reposición")
     @bot.callback_query_handler(func=lambda call: call.data == "calc_arbitraje")
     def iniciar_arbitraje(event):
-        # Validar si el evento viene de un botón Inline (call) o del teclado principal (message)
         if hasattr(event, 'data'):
             bot.answer_callback_query(event.id)
             chat_id = event.message.chat.id
         else:
             chat_id = event.chat.id
-        
+
         markup = InlineKeyboardMarkup(row_width=1)
         markup.add(
             InlineKeyboardButton("🏛️ BBVA Provincial (0%)", callback_data="arb_banco_provincial"),
             InlineKeyboardButton("🏛️ BDV Masterdebit (1.5%)", callback_data="arb_banco_bdv_debit"),
-            InlineKeyboardButton("🏛️ BDV Credit / Tesoro / Otros (2.5%)", callback_data="arb_banco_bdv_credit"),
+            InlineKeyboardButton("🏛️ BDV Credit / Tesoro / Otros (2.5%)", callback_data="arb_banco_bdv_credit")
         )
 
         bot.send_message(
             chat_id,
             "📊 *Calculadora de Arbitraje & Reposición*\n\n"
-            "Selecciona el *banco / método de pago* utilizado para la compra de divisas en Intervención:",
+            "Selecciona el *banco / método de pago* utilizado para la compra en Intervención:",
             parse_mode="Markdown",
             reply_markup=markup
         )
@@ -155,7 +131,6 @@ def registrar_handlers_arbitraje(bot, redis_client):
             "banco_key": banco_key,
             "comision_banco": COMISIONES_BANCOS[banco_key]["comision"],
             "nombre_banco": COMISIONES_BANCOS[banco_key]["nombre"],
-            "esperando_monto": True,
         }
 
         msg = bot.send_message(
@@ -163,91 +138,132 @@ def registrar_handlers_arbitraje(bot, redis_client):
             f"✅ Selección: *{COMISIONES_BANCOS[banco_key]['nombre']}*\n\n"
             "💵 *Escribe el monto en USD* que compraste en el banco:\n"
             "_(Ejemplo: 500 o 300)_",
+            parse_mode="Markdown"
+        )
+        bot.register_next_step_handler(msg, solicitar_tasa_p2p, bot, redis_client, user_id)
+
+
+    def solicitar_tasa_p2p(message, bot, redis_client, user_id):
+        chat_id = message.chat.id
+        text = message.text.strip().replace(",", ".")
+
+        try:
+            monto_usd = float(text)
+            if monto_usd <= 0: raise ValueError()
+        except ValueError:
+            msg = bot.send_message(chat_id, "❌ *Monto inválido.* Ingresa un número en USD (ejemplo: `500`):", parse_mode="Markdown")
+            bot.register_next_step_handler(msg, solicitar_tasa_p2p, bot, redis_client, user_id)
+            return
+
+        USER_ARBITRAJE_DATA[user_id]["monto_usd"] = monto_usd
+
+        # Leer cache de Redis
+        cache_data = obtener_datos_cache_redis(redis_client)
+        tasa_p2p_auto = obtener_tasa_p2p_por_rango(cache_data, monto_usd)
+        
+        USER_ARBITRAJE_DATA[user_id]["tasa_p2p_auto"] = tasa_p2p_auto
+        USER_ARBITRAJE_DATA[user_id]["cache_data"] = cache_data
+
+        markup = InlineKeyboardMarkup()
+        markup.add(InlineKeyboardButton(f"🟢 Usar Tasa Monitor ({tasa_p2p_auto:.2f} Bs)", callback_data="arb_p2p_auto"))
+
+        msg = bot.send_message(
+            chat_id,
+            f"🔴 *Tasa de Venta P2P (USDT)*\n\n"
+            f"Escribe manualmente la *tasa a la que vas a vender* (Ej: `890` o `892.5`):\n\n"
+            f"_O presiona el botón si deseas usar la tasa detectada por el monitor para tu rango:_",
             parse_mode="Markdown",
+            reply_markup=markup
+        )
+        # Registramos handler para entrada manual
+        bot.register_next_step_handler(msg, procesar_tasa_p2p_manual, bot, redis_client, user_id)
+
+
+    @bot.callback_query_handler(func=lambda call: call.data == "arb_p2p_auto")
+    def usar_p2p_auto(call):
+        bot.answer_callback_query(call.id)
+        chat_id = call.message.chat.id
+        user_id = call.from_user.id
+
+        # Limpiamos el handler de texto activo para no enredar la conversación
+        bot.clear_step_handler_by_chat_id(chat_id)
+
+        if user_id in USER_ARBITRAJE_DATA:
+            tasa_auto = USER_ARBITRAJE_DATA[user_id].get("tasa_p2p_auto", 890.0)
+            generar_y_enviar_resultado(chat_id, user_id, tasa_auto, bot, redis_client)
+
+
+    def procesar_tasa_p2p_manual(message, bot, redis_client, user_id):
+        if message.text and message.text.startswith("/"): return
+
+        chat_id = message.chat.id
+        text = message.text.strip().replace(",", ".")
+
+        try:
+            tasa_p2p = float(text)
+            if tasa_p2p <= 0: raise ValueError()
+        except ValueError:
+            msg = bot.send_message(chat_id, "❌ *Tasa inválida.* Ingresa un número de tasa válido (ej: `890`):", parse_mode="Markdown")
+            bot.register_next_step_handler(msg, procesar_tasa_p2p_manual, bot, redis_client, user_id)
+            return
+
+        generar_y_enviar_resultado(chat_id, user_id, tasa_p2p, bot, redis_client)
+
+
+    def generar_y_enviar_resultado(chat_id, user_id, tasa_p2p_venta, bot, redis_client):
+        data_user = USER_ARBITRAJE_DATA.get(user_id, {})
+        monto_usd = data_user.get("monto_usd", 0)
+        comision_banco = data_user.get("comision_banco", 0)
+        cache_data = data_user.get("cache_data") or obtener_datos_cache_redis(redis_client) or {}
+
+        # Tasas BCV de la memoria
+        tasa_bcv_actual = float(cache_data.get("bcv_tasa", 756.71))
+        tasa_bcv_anterior = float(cache_data.get("bcv_tasa_anterior", tasa_bcv_actual))
+
+        # Compra de hoy = Tasa anterior (con la que compró en la mañana)
+        # Reposición mañana = Tasa actual (actualizada en la tarde)
+        tasa_bcv_hoy = tasa_bcv_anterior
+        tasa_bcv_manana = tasa_bcv_actual if tasa_bcv_actual != tasa_bcv_anterior else None
+
+        res = calcular_arbitraje_reposicion(
+            monto_usd=monto_usd,
+            comision_banco=comision_banco,
+            tasa_bcv_hoy=tasa_bcv_hoy,
+            tasa_bcv_manana=tasa_bcv_manana,
+            tasa_p2p_venta=tasa_p2p_venta
         )
 
-        # Registrar el siguiente paso para leer el texto ingresado por el usuario
-        bot.register_next_step_handler(msg, procesar_monto_usd, bot, redis_client, user_id)
-
-
-def procesar_monto_usd(message, bot, redis_client, user_id):
-    chat_id = message.chat.id
-
-    if user_id not in USER_ARBITRAJE_DATA or not USER_ARBITRAJE_DATA[user_id].get("esperando_monto"):
-        return
-
-    text = message.text.strip().replace(",", ".")
-
-    try:
-        monto_usd = float(text)
-        if monto_usd <= 0:
-            raise ValueError()
-    except ValueError:
-        msg = bot.send_message(chat_id, "❌ *Monto inválido.* Ingresa un número válido en USD (ejemplo: `500`):", parse_mode="Markdown")
-        bot.register_next_step_handler(msg, procesar_monto_usd, bot, redis_client, user_id)
-        return
-
-    data_user = USER_ARBITRAJE_DATA[user_id]
-    data_user["esperando_monto"] = False
-
-    # 1. Obtener Tasas BCV desde Redis
-    tasa_bcv_hoy, tasa_bcv_manana = obtener_tasas_redis(redis_client)
-
-    if not tasa_bcv_hoy:
-        bot.send_message(chat_id, "⚠️ *Error:* No se pudo obtener la tasa BCV actual desde Redis.", parse_mode="Markdown")
-        return
-
-    # 2. Calcular Bolívares necesarios para buscar el rango en P2P
-    tasa_interv_temp = tasa_bcv_hoy * 1.005
-    bs_est_invertidos = monto_usd * tasa_interv_temp
-
-    # 3. Obtener Tasa P2P Venta 🔴 desde Redis según el rango
-    tasa_p2p_venta = obtener_tasa_p2p_redis(redis_client, bs_est_invertidos)
-
-    if not tasa_p2p_venta:
-        # Tasa fallback en caso de que no haya data en Redis
-        tasa_p2p_venta = 890.00
-
-    # 4. Generar Cálculos
-    res = calcular_arbitraje_reposicion(
-        monto_usd=monto_usd,
-        comision_banco=data_user["comision_banco"],
-        tasa_bcv_hoy=tasa_bcv_hoy,
-        tasa_bcv_manana=tasa_bcv_manana,
-        tasa_p2p_venta=tasa_p2p_venta,
-    )
-
-    # 5. Formatear Mensaje de Salida
-    msj = (
-        f"📊 *RESULTADO DE ARBITRAJE & REPOSICIÓN*\n\n"
-        f"🏛️ *Banco:* {data_user['nombre_banco']}\n"
-        f"💵 *Monto Comprado:* ${monto_usd:,.2f} USD\n"
-        f"🏦 *Tasa BCV + 0.5% (Hoy):* {res['tasa_interv_hoy']:,.2f} Bs/USD\n"
-        f"🔴 *Tasa Venta P2P:* {tasa_p2p_venta:,.2f} Bs/USDT\n\n"
-        f"📥 *USDT Líquidos en Binance:* `{res['usdt_netos_binance']:,.2f} USDT`\n"
-        f"💸 *Total Invertido Hoy:* `{res['bs_invertidos_hoy']:,.2f} Bs`\n"
-        f"───────────────────────────\n"
-        f"1️⃣ *RECUPERAR CAPITAL HOY*\n"
-        f"• Vender en P2P: `{res['usdt_recuperar_hoy']:,.2f} USDT`\n"
-        f"🎉 *Ganancia Net:* `+{res['ganancia_usdt_hoy']:,.2f} USDT` (~{res['ganancia_bs_hoy']:,.2f} Bs)\n"
-    )
-
-    if tasa_bcv_manana and tasa_bcv_manana != tasa_bcv_hoy:
-        diferencia_bcv = tasa_bcv_manana - tasa_bcv_hoy
-        msj += (
-            f"\n2️⃣ *REPOSICIÓN PARA MAÑANA (BCV Actualizado)*\n"
-            f"📌 *Nueva Tasa BCV Mañana:* {tasa_bcv_manana:,.2f} Bs (+{diferencia_bcv:,.2f} Bs)\n"
-            f"• Bs necesarios mañana: `{res['bs_necesarios_manana']:,.2f} Bs`\n"
-            f"• Vender en P2P: `{res['usdt_recuperar_manana']:,.2f} USDT`\n"
-            f"🛡️ *Ganancia Real Aislada:* `+{res['ganancia_usdt_manana']:,.2f} USDT` (~{res['ganancia_bs_manana']:,.2f} Bs)\n"
+        msj = (
+            f"📊 *RESULTADO DE ARBITRAJE & REPOSICIÓN*\n\n"
+            f"🏛️ *Banco:* {data_user.get('nombre_banco')}\n"
+            f"💵 *Monto Comprado:* ${monto_usd:,.2f} USD\n"
+            f"🏦 *Tasa Compra (Hoy):* {res['tasa_interv_hoy']:,.2f} Bs/USD\n"
+            f"🔴 *Tasa Venta P2P:* {tasa_p2p_venta:,.2f} Bs/USDT\n\n"
+            f"📥 *USDT Líquidos Binance:* `{res['usdt_netos_binance']:,.2f} USDT`\n"
+            f"💸 *Inversión de Hoy:* `{res['bs_invertidos_hoy']:,.2f} Bs`\n"
+            f"───────────────────────────\n"
+            f"1️⃣ *RECUPERAR CAPITAL HOY*\n"
+            f"• Vender en P2P: `{res['usdt_recuperar_hoy']:,.2f} USDT`\n"
+            f"🎉 *Ganancia:* `+{res['ganancia_usdt_hoy']:,.2f} USDT` (~{res['ganancia_bs_hoy']:,.2f} Bs)\n"
         )
-    else:
-        msj += "\n💡 _Aún no hay actualización del BCV para mañana en Redis. La ganancia mostrada mantiene el capital de hoy._\n"
 
-    msj += "───────────────────────────"
+        if tasa_bcv_manana and tasa_bcv_manana > tasa_bcv_hoy:
+            diferencia_bcv = tasa_bcv_manana - tasa_bcv_hoy
+            msj += (
+                f"\n2️⃣ *REPOSICIÓN PARA MAÑANA (BCV Actualizado)*\n"
+                f"📌 *Nueva Tasa BCV (+0.5%):* {res['tasa_interv_manana']:,.2f} Bs/USD (+{diferencia_bcv:,.2f} Bs)\n"
+                f"• Bs necesarios mañana: `{res['bs_necesarios_manana']:,.2f} Bs`\n"
+                f"• Vender en P2P: `{res['usdt_recuperar_manana']:,.2f} USDT`\n"
+                f"🛡️ *Ganancia Real Aislada:* `+{res['ganancia_usdt_manana']:,.2f} USDT` (~{res['ganancia_bs_manana']:,.2f} Bs)\n"
+            )
 
-    bot.send_message(chat_id, msj, parse_mode="Markdown")
+        msj += "───────────────────────────"
 
-    # Limpiar estado del usuario
-    if user_id in USER_ARBITRAJE_DATA:
-        del USER_ARBITRAJE_DATA[user_id]
+        markup = InlineKeyboardMarkup()
+        markup.add(InlineKeyboardButton("🔄 Calcular otro monto", callback_data="calc_arbitraje"))
+
+        bot.send_message(chat_id, msj, parse_mode="Markdown", reply_markup=markup)
+
+        if user_id in USER_ARBITRAJE_DATA:
+            del USER_ARBITRAJE_DATA[user_id]
+        

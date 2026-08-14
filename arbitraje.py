@@ -48,18 +48,30 @@ def obtener_tasa_p2p_por_rango(cache_data, monto_usd):
     return float(tasa_venta) if tasa_venta > 0 else 890.0
 
 
-def obtener_precio_spot_usdt_usd():
+def obtener_precio_spot_usdt_usd(cache_data=None):
     """
-    Obtiene el precio del par Spot Binance USDT/USD.
+    Lee el precio del par USDT/USD directo de la caché de Redis.
+    Si no está disponible, realiza un fallback a la API de Binance Spot.
     """
+    # 1. Intentar leer desde la caché de Redis
+    if cache_data and "usdt_usd_spot" in cache_data:
+        try:
+            val = float(cache_data["usdt_usd_spot"])
+            if val > 0:
+                return val
+        except (ValueError, TypeError):
+            pass
+
+    # 2. Fallback: Consulta directa en vivo si no venía en Redis
     try:
         url = "https://api.binance.com/api/v3/ticker/price?symbol=USDTUSD"
         response = requests.get(url, timeout=3)
         if response.status_code == 200:
-            data = response.json()
-            return float(data.get("price", 0.9987))
+            return float(response.json().get("price", 0.9987))
     except Exception as e:
         logger.warning(f"No se pudo consultar Binance Spot USDTUSD: {e}")
+
+    # 3. Respaldo estático final
     return 0.9987
 
 
@@ -272,11 +284,10 @@ def generar_y_enviar_resultado(chat_id, user_id, tasa_p2p_venta, bot, redis_clie
     monto_usd = data_user.get("monto_usd", 0)
     comision_banco = data_user.get("comision_banco", 0)
     cache_data = data_user.get("cache_data") or obtener_datos_cache_redis(redis_client) or {}
+    tasa_usd_usdt = obtener_precio_spot_usdt_usd(cache_data)
 
     tasa_bcv_actual = float(cache_data.get("bcv_tasa", 756.71))
     tasa_bcv_anterior = float(cache_data.get("bcv_tasa_anterior", tasa_bcv_actual))
-
-    tasa_usd_usdt = obtener_precio_spot_usdt_usd()
 
     hay_nueva_tasa_publicada = (tasa_bcv_actual != tasa_bcv_anterior) and (tasa_bcv_actual > tasa_bcv_anterior)
 

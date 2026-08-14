@@ -11,30 +11,59 @@ USER_ARBITRAJE_DATA = {}
 # --- DICCIONARIO DE EMOJIS ANIMADOS (Telegram Premium HTML) ---
 # Puedes ajustar los IDs aquí si deseas cambiar alguno en el futuro
 TG_EMOJIS = {
-    "calc": '<tg-emoji emoji-id="5229064374403998351">🧮</tg-emoji>',
-    "pin": '<tg-emoji emoji-id="5409048419211682843">📍</tg-emoji>',
-    "check": '<tg-emoji emoji-id="5206607081334906820">✅</tg-emoji>',
-    "pencil": '<tg-emoji emoji-id="5206607081334906821">✏️</tg-emoji>',
-    "bank": '<tg-emoji emoji-id="5206607081334906822">🏦</tg-emoji>',
-    "dollar": '<tg-emoji emoji-id="5206607081334906823">💲</tg-emoji>',
-    "percent": '<tg-emoji emoji-id="5206607081334906824">🏽%</tg-emoji>',
-    "chart": '<tg-emoji emoji-id="5206607081334906825">📈</tg-emoji>',
-    "red_circle": '<tg-emoji emoji-id="5206607081334906826">🔴</tg-emoji>',
-    "usdt": '<tg-emoji emoji-id="5206607081334906827">🪙</tg-emoji>',
-    "binance": '<tg-emoji emoji-id="5206607081334906828">🔶</tg-emoji>',
-    "hand": '<tg-emoji emoji-id="5206607081334906829">🫱</tg-emoji>',
-    "briefcase": '<tg-emoji emoji-id="5206607081334906830">💼</tg-emoji>',
-    "party": '<tg-emoji emoji-id="5206607081334906831">🎉</tg-emoji>',
-    "bcv": '<tg-emoji emoji-id="5206607081334906832">🏛️</tg-emoji>',
+    "calc": '<tg-emoji emoji-id="5303214794336125778">🧮</tg-emoji>',
+    "usdt1": '<tg-emoji emoji-id="5843796824367832872">🪙</tg-emoji>',
+    "check": '<tg-emoji emoji-id="5206607081334906820">✔️</tg-emoji>',
+    "pencil": '<tg-emoji emoji-id="5395444784611480792">✏️</tg-emoji>',
+    "bank": '<tg-emoji emoji-id="5332455502917949981">🏦</tg-emoji>',
+    "dollar": '<tg-emoji emoji-id="5409048419211682843">💵</tg-emoji>',
+    "percent": '<tg-emoji emoji-id="5229064374403998351">🛍</tg-emoji>',
+    "chart": '<tg-emoji emoji-id="5197503331215361533">📈</tg-emoji>',
+    "red_circle": '<tg-emoji emoji-id="5411225014148014586">🔴</tg-emoji>',
+    "usdt": '<tg-emoji emoji-id="5814556334829343625">🪙</tg-emoji>',
+    "binance": '<tg-emoji emoji-id="5830062858985018281">🪙</tg-emoji>',
+    "hand": '<tg-emoji emoji-id="5264713049637409446">🪙</tg-emoji>',
+    "briefcase": '<tg-emoji emoji-id="5445221832074483553">💼</tg-emoji>',
+    "party": '<tg-emoji emoji-id="5461151367559141950">🎉</tg-emoji>',
+    "bcv": '<tg-emoji emoji-id="5143558232739940356">🪛</tg-emoji>',
+    "pro": '<tg-emoji emoji-id="4949492420392781701">🕘</tg-emoji>',
+    "bdv1": '<tg-emoji emoji-id="4949813911579788830">🔉</tg-emoji>',
+    "bdv2": '<tg-emoji emoji-id="4949567234428110351">🌁</tg-emoji>',
+    "teso": '<tg-emoji emoji-id="4949973031528170774">🕥</tg-emoji>',
+    "clic": '<tg-emoji emoji-id="5310278924616356636">🎯</tg-emoji>',
 }
 
 COMISIONES_BANCOS = {
-    "provincial": {"nombre": "BBVA Provincial (0%)", "comision": 0.00},
-    "bdv_debit": {"nombre": "BDV Masterdebit (1.5%)", "comision": 0.015},
-    "otros_1_5": {"nombre": "Otros Bancos (1.5%)", "comision": 0.015},
-    "bdv_master": {"nombre": "BDV MASTERCARD (2.5%)", "comision": 0.025},
-    "tesoro": {"nombre": "BANCO TESORO (2.5%)", "comision": 0.025},
-    "otros_2_5": {"nombre": "otros bancos (2.5%)", "comision": 0.025},
+    "provincial": {
+        "emoji": TG_EMOJIS["pro"],
+        "nombre": "BBVA Provincial (0%)",
+        "comision": 0.00,
+    },
+    "bdv_debit": {
+        "emoji": TG_EMOJIS["bdv1"],
+        "nombre": "BDV Masterdebit (1.5%)",
+        "comision": 0.015,
+    },
+    "otros_1_5": {
+        "emoji": TG_EMOJIS["clic"],
+        "nombre": "Otros Bancos (1.5%)",
+        "comision": 0.015,
+    },
+    "bdv_master": {
+        "emoji": TG_EMOJIS["bdv2"],
+        "nombre": "BDV MASTERCARD (2.5%)",
+        "comision": 0.025,
+    },
+    "tesoro": {
+        "emoji": TG_EMOJIS["teso"],
+        "nombre": "BANCO TESORO (2.5%)",
+        "comision": 0.025,
+    },
+    "otros_2_5": {
+        "emoji": TG_EMOJIS["clic"],
+        "nombre": "otros bancos (2.5%)",
+        "comision": 0.025,
+    },
 }
 
 COMISION_PASARELA_BINANCE = 0.041  # 4.1% fija
@@ -175,7 +204,7 @@ def registrar_handlers_arbitraje(bot, redis_client):
 
         msg_text = (
             f"{TG_EMOJIS['calc']} <b>Calculadora de Arbitraje & Reposición</b>\n\n"
-            f"Selecciona el banco {TG_EMOJIS['pin']} / método de pago utilizado para la compra en Intervención:"
+            f"Selecciona el banco {TG_EMOJIS['bank']} / método de pago utilizado para la compra en Intervención:"
         )
 
         bot.send_message(
@@ -261,7 +290,7 @@ def registrar_handlers_arbitraje(bot, redis_client):
         )
 
         msg_text = (
-            f"{TG_EMOJIS['red_circle']} <b>Tasa de Venta P2P ({TG_EMOJIS['usdt']})</b>\n\n"
+            f"{TG_EMOJIS['red_circle']} <b>Tasa de Venta P2P ({TG_EMOJIS['usdt1']})</b>\n\n"
             f"{TG_EMOJIS['pencil']} Escribe manualmente la tasa a la que vas a vender <i>(Ej: 890 o 892.5)</i>:\n"
             f"O presiona el botón si deseas usar la tasa detectada por el monitor para tu rango:"
         )
@@ -362,11 +391,11 @@ def generar_y_enviar_resultado(chat_id, user_id, tasa_p2p_venta, bot, redis_clie
         f"{TG_EMOJIS['dollar']} <b>Monto Comprado:</b> ${monto_usd:,.2f} USD\n"
         f"{TG_EMOJIS['bcv']} <b>Tasa Compra (Hoy):</b> {res['tasa_interv_hoy']:,.2f} Bs/USD\n"
         f"{TG_EMOJIS['red_circle']} <b>Tasa Venta P2P:</b> {tasa_p2p_venta:,.2f} Bs/USDT\n\n"
-        f"{TG_EMOJIS['usdt']} <b>USDT Líquidos Binance:</b> <code>{res['usdt_netos_binance']:,.2f} USDT</code> <i>(Par Spot: {tasa_usd_usdt:.5f})</i>\n"
+        f"{TG_EMOJIS['usdt']} <b>USDT Líquidos ({TG_EMOJIS['binance']}) Binance:</b> <code>{res['usdt_netos_binance']:,.2f} USDT</code> <i>(Par Spot: {tasa_usd_usdt:.5f})</i>\n"
         f"{TG_EMOJIS['hand']} <b>Inversión de Hoy:</b> <code>{res['bs_invertidos_hoy']:,.2f} Bs</code>\n"
         f"───────────────────────────\n"
         f"{TG_EMOJIS['briefcase']} <b>RECUPERAR CAPITAL HOY</b>\n"
-        f"📲 <b>Vender en P2P:</b> <code>{res['usdt_recuperar_hoy']:,.2f} USDT</code>\n"
+        f"{TG_EMOJIS['binance']} <b>Vender en P2P:</b> <code>{res['usdt_recuperar_hoy']:,.2f} USDT</code>\n"
         f"{TG_EMOJIS['party']} <b>Ganancia:</b> <code>+{res['ganancia_usdt_hoy']:,.2f} USDT</code> <i>(~{res['ganancia_bs_hoy']:,.2f} Bs)</i>\n"
     )
 
@@ -379,10 +408,10 @@ def generar_y_enviar_resultado(chat_id, user_id, tasa_p2p_venta, bot, redis_clie
     if tasa_bcv_manana:
         diferencia_bcv = tasa_bcv_manana - tasa_bcv_hoy
         msj += (
-            f"\n{TG_EMOJIS['pin']} <b>REPOSICIÓN PARA EL {proximo_dia.upper()} (BCV Actualizado)</b>\n"
+            f"\n{TG_EMOJIS['clic']} <b>REPOSICIÓN PARA EL {proximo_dia.upper()} (BCV Actualizado)</b>\n"
             f"{TG_EMOJIS['bcv']} <b>Nueva Tasa BCV (+0.5%):</b> {res['tasa_interv_manana']:,.2f} Bs/USD (+{diferencia_bcv:,.2f} Bs)\n"
             f"{TG_EMOJIS['dollar']} <b>Bs necesarios {proximo_dia}:</b> {res['bs_necesarios_manana']:,.2f} Bs\n"
-            f"{TG_EMOJIS['briefcase']} <b>Vender en P2P:</b> {res['usdt_recuperar_manana']:,.2f} USDT\n"
+            f"{TG_EMOJIS['binance']} <b>Vender en P2P:</b> {res['usdt_recuperar_manana']:,.2f} USDT\n"
             f"{TG_EMOJIS['party']} <b>Ganancia Real Aislada:</b> +{res['ganancia_usdt_manana']:,.2f} USDT (~{res['ganancia_bs_manana']:,.2f} Bs)\n"
         )
     else:

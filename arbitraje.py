@@ -333,20 +333,26 @@ def generar_y_enviar_resultado(chat_id, user_id, tasa_p2p_venta, bot, redis_clie
         f"🎉 *Ganancia:* `+{res['ganancia_usdt_hoy']:,.2f} USDT` (~{res['ganancia_bs_hoy']:,.2f} Bs)\n"
     )
 
+    # 🗓️ Cálculo dinámico del próximo día hábil para el mensaje
+    dias_semana = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
+    dia_num = datetime.now().weekday()
+    proximo_dia = "lunes" if dia_num in [4, 5, 6] else dias_semana[dia_num + 1]
+
     if tasa_bcv_manana:
         diferencia_bcv = tasa_bcv_manana - tasa_bcv_hoy
         msj += (
-            f"\n2️⃣ *REPOSICIÓN PARA MAÑANA (BCV Actualizado)*\n"
-            f"📌 *Nueva Tasa BCV (+0.5%):* {res['tasa_interv_manana']:,.2f} Bs/USD (+{diferencia_bcv:,.2f} Bs)\n"
-            f"• Bs necesarios mañana: `{res['bs_necesarios_manana']:,.2f} Bs`\n"
-            f"• Vender en P2P: `{res['usdt_recuperar_manana']:,.2f} USDT`\n"
-            f"🛡️ *Ganancia Real Aislada:* `+{res['ganancia_usdt_manana']:,.2f} USDT` (~{res['ganancia_bs_manana']:,.2f} Bs)\n"
+            f"\n2️⃣ *REPOSICIÓN PARA EL {proximo_dia.upper()} (BCV Actualizado)*\n"
+            f"📌 *Nueva Tasa BCV (+0.5%):* {res['tasa_interv_manana']:.2f} Bs/USD (+{diferencia_bcv:.2f} Bs)\n"
+            f"• *Bs necesarios {proximo_dia}:* {res['bs_necesarios_manana']:,.2f} Bs\n"
+            f"• *Vender en P2P:* {res['usdt_recuperar_manana']:,.2f} USDT\n"
+            f"🛡️ *Ganancia Real Aislada:* +{res['ganancia_usdt_manana']:,.2f} USDT (~{res['ganancia_bs_manana']:,.2f} Bs)\n"
         )
     else:
         msj += (
-            f"\nℹ️ _Tasa BCV de mañana aún no publicada por el BCV. "
-            f"Usa este cálculo para tu operación de hoy._\n"
+            f"\nℹ️ _Tasa BCV del *{proximo_dia}* aún no publicada por el BCV._\n"
+            f"_Usa este cálculo para tu operación de hoy._\n"
         )
+        
 
     msj += "───────────────────────────"
 

@@ -226,7 +226,7 @@ def registrar_handlers_arbitraje(bot, redis_client):
         chat_id = message.chat.id
         text = message.text.strip().replace(",", ".")
 
-        if text in ["🔴 P2P-USDT 🟢", "📊 Intervención 📊", "📟 Calculadora", "⚙️ Soporte", "🤖 IA Consulta", "📊 Arbitraje & Reposición"]:
+        if text in ["🟢 P2P-USDT 🔴", "📊 Intervencion 📊", "📟 Calculadora", "⚙️ Soporte", "🤖 IA Consulta", "📊 Arbitraje & Reposición"]:
             bot.clear_step_handler_by_chat_id(chat_id)
             return
 
@@ -293,7 +293,7 @@ def registrar_handlers_arbitraje(bot, redis_client):
         chat_id = message.chat.id
         text = message.text.strip().replace(",", ".")
 
-        if text in ["🔴 P2P-USDT 🟢", "📊 Intervención 📊", "📟 Calculadora", "⚙️ Soporte", "🤖 IA Consulta", "📊 Arbitraje & Reposición"]:
+        if text in ["🟢 P2P-USDT 🔴", "📊 Intervencion 📊", "📟 Calculadora", "⚙️ Soporte", "🤖 IA Consulta", "📊 Arbitraje & Reposición"]:
             bot.clear_step_handler_by_chat_id(chat_id)
             return
 

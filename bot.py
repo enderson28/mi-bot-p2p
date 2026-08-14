@@ -663,7 +663,13 @@ def construir_intervencion_texto_html(user=None, porcentaje=None):
     
 # ==========================================
 #     MANEJADORES DE COMANDOS Y BOTONES
-# ==========================================
+# ========================================== 
+
+# Manejador para borrar teclado / Menu desplegable en el grupo para administrador
+@bot.message_handler(commands=['borrar_teclado'])
+def borrar_teclado(message):
+    bot.reply_to(message, "Limpiando teclado...", reply_markup=types.ReplyKeyboardRemove())
+    
 
 # Manejador para ejecutar /tasas en grupos permitidos y privados
 @bot.message_handler(commands=['tasas', 'tasa'])

@@ -108,12 +108,16 @@ def registrar_handlers_arbitraje(bot, redis_client):
     """
     Registra los comandos, botones inline y filtros de mensajes para la calculadora de arbitraje.
     """
-
+    @bot.message_handler(func=lambda message: message.text == "📊 Arbitraje & Reposición")
     @bot.callback_query_handler(func=lambda call: call.data == "calc_arbitraje")
-    def iniciar_arbitraje(call):
-        bot.answer_callback_query(call.id)
-        chat_id = call.message.chat.id
-
+    def iniciar_arbitraje(event):
+        # Validar si el evento viene de un botón Inline (call) o del teclado principal (message)
+        if hasattr(event, 'data'):
+            bot.answer_callback_query(event.id)
+            chat_id = event.message.chat.id
+        else:
+            chat_id = event.chat.id
+        
         markup = InlineKeyboardMarkup(row_width=1)
         markup.add(
             InlineKeyboardButton("🏛️ BBVA Provincial (0%)", callback_data="arb_banco_provincial"),
@@ -126,7 +130,7 @@ def registrar_handlers_arbitraje(bot, redis_client):
             "📊 *Calculadora de Arbitraje & Reposición*\n\n"
             "Selecciona el *banco / método de pago* utilizado para la compra de divisas en Intervención:",
             parse_mode="Markdown",
-            reply_markup=markup,
+            reply_markup=markup
         )
 
     @bot.callback_query_handler(func=lambda call: call.data.startswith("arb_banco_"))

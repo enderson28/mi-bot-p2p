@@ -50,7 +50,7 @@ def registrar_solicitud_pendiente(bot, user_id, chat_id):
 def setup_verification_handlers(bot, target_channel_id=None, funcion_menu=None, funcion_esta_unido=None):
 
     # 1. Comando /start y /verificar
-    @bot.message_handler(commands=['verificar', 'start'])
+    @bot.message_handler(commands=['verificar', 'start'], chat_types=['private'])
     def start_verification(message):
         user = message.from_user
         user_id = user.id

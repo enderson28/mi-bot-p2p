@@ -288,15 +288,24 @@ def generar_y_enviar_resultado(chat_id, user_id, tasa_p2p_venta, bot, redis_clie
 
     tasa_bcv_actual = float(cache_data.get("bcv_tasa", 756.71))
     tasa_bcv_anterior = float(cache_data.get("bcv_tasa_anterior", tasa_bcv_actual))
+    fecha_cache = str(cache_data.get("fecha", ""))
 
-    hay_nueva_tasa_publicada = (tasa_bcv_actual != tasa_bcv_anterior) and (tasa_bcv_actual > tasa_bcv_anterior)
+    # Verificamos si la fecha de Redis coincide con el día de hoy
+    dia_actual = str(datetime.now().day)
 
-    if hay_nueva_tasa_publicada:
-        tasa_bcv_hoy = tasa_bcv_anterior
-        tasa_bcv_manana = tasa_bcv_actual
-    else:
+    if dia_actual in fecha_cache:
+        # Si hoy es 14 y la fecha en Redis es 14, la tasa_bcv_actual YA es la de hoy
         tasa_bcv_hoy = tasa_bcv_actual
         tasa_bcv_manana = None
+    else:
+        # Si las fechas no coinciden (ej. es de tarde y en Redis dice día 15)
+        if (tasa_bcv_actual != tasa_bcv_anterior) and (tasa_bcv_actual > tasa_bcv_anterior):
+            tasa_bcv_hoy = tasa_bcv_anterior
+            tasa_bcv_manana = tasa_bcv_actual
+        else:
+            tasa_bcv_hoy = tasa_bcv_actual
+            tasa_bcv_manana = None
+            
 
     res = calcular_arbitraje_reposicion(
         monto_usd=monto_usd,

@@ -1,6 +1,7 @@
 import json
 import logging
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardRemove
+from datetime import datetime, time
 
 logger = logging.getLogger(__name__)
 
@@ -252,7 +253,6 @@ def registrar_handlers_arbitraje(bot, redis_client):
 
         generar_y_enviar_resultado(chat_id, user_id, tasa_p2p, bot, redis_client)
 
-
     def generar_y_enviar_resultado(chat_id, user_id, tasa_p2p_venta, bot, redis_client):
         data_user = USER_ARBITRAJE_DATA.get(user_id, {})
         monto_usd = data_user.get("monto_usd", 0)
@@ -262,8 +262,20 @@ def registrar_handlers_arbitraje(bot, redis_client):
         tasa_bcv_actual = float(cache_data.get("bcv_tasa", 756.71))
         tasa_bcv_anterior = float(cache_data.get("bcv_tasa_anterior", tasa_bcv_actual))
 
-        tasa_bcv_hoy = tasa_bcv_anterior
-        tasa_bcv_manana = tasa_bcv_actual if tasa_bcv_actual != tasa_bcv_anterior else None
+        # --- LÓGICA DE DETECCIÓN DE FECHA Y HORA DE REPOSICIÓN ---
+        # Revisamos si la tasa actual cambió respecto a la anterior
+        hay_nueva_tasa_publicada = (tasa_bcv_actual != tasa_bcv_anterior) and (tasa_bcv_actual > tasa_bcv_anterior)
+
+        # Si hay nueva tasa publicada (usualmente después de las 4:00 PM - 5:00 PM):
+        # La compra del día se hizo a la tasa anterior y la nueva tasa aplica para reposición de mañana.
+        if hay_nueva_tasa_publicada:
+            tasa_bcv_hoy = tasa_bcv_anterior
+            tasa_bcv_manana = tasa_bcv_actual
+        else:
+            # Durante la mañana / tarde (antes del reporte del BCV):
+            # La compra de hoy es con la tasa actual y aún no hay proyección para mañana.
+            tasa_bcv_hoy = tasa_bcv_actual
+            tasa_bcv_manana = None
 
         res = calcular_arbitraje_reposicion(
             monto_usd=monto_usd,
@@ -287,7 +299,8 @@ def registrar_handlers_arbitraje(bot, redis_client):
             f"🎉 *Ganancia:* `+{res['ganancia_usdt_hoy']:,.2f} USDT` (~{res['ganancia_bs_hoy']:,.2f} Bs)\n"
         )
 
-        if tasa_bcv_manana and tasa_bcv_manana > tasa_bcv_hoy:
+        # Solo muestra la sección de "Reposición para Mañana" si el BCV ya publicó el nuevo cambio en la tarde
+        if tasa_bcv_manana:
             diferencia_bcv = tasa_bcv_manana - tasa_bcv_hoy
             msj += (
                 f"\n2️⃣ *REPOSICIÓN PARA MAÑANA (BCV Actualizado)*\n"
@@ -295,6 +308,11 @@ def registrar_handlers_arbitraje(bot, redis_client):
                 f"• Bs necesarios mañana: `{res['bs_necesarios_manana']:,.2f} Bs`\n"
                 f"• Vender en P2P: `{res['usdt_recuperar_manana']:,.2f} USDT`\n"
                 f"🛡️ *Ganancia Real Aislada:* `+{res['ganancia_usdt_manana']:,.2f} USDT` (~{res['ganancia_bs_manana']:,.2f} Bs)\n"
+            )
+        else:
+            msj += (
+                f"\nℹ️ _Tasa BCV de mañana aún no publicada por el BCV. "
+                f"Usa este cálculo para tu operación de hoy._\n"
             )
 
         msj += "───────────────────────────"
@@ -309,4 +327,8 @@ def registrar_handlers_arbitraje(bot, redis_client):
 
         if user_id in USER_ARBITRAJE_DATA:
             del USER_ARBITRAJE_DATA[user_id]
-        
+
+
+
+
+

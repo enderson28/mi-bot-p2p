@@ -19,21 +19,28 @@ COMISION_PASARELA_BINANCE = 0.041  # 4.1% fija
 
 def obtener_tasas_redis(redis_client):
     """
-    Obtiene las tasas BCV (hoy y mañana si existe) de la memoria Redis.
-    Ajusta las claves 'bcv:tasa_actual' y 'bcv:tasa_manana' según las guarde tu ejecutor.
+    Extrae la tasa actual y la anterior directamente del JSON en CACHE_TASAS_STORAGE
     """
     try:
-        tasa_hoy_raw = redis_client.get("bcv:tasa_actual") or redis_client.get("tasa_bcv")
-        tasa_manana_raw = redis_client.get("bcv:tasa_manana")
+        data_raw = redis_client.get("CACHE_TASAS_STORAGE")
+        if data_raw:
+            # Si viene como bytes en Redis, lo decodificamos a string
+            if isinstance(data_raw, bytes):
+                data_raw = data_raw.decode('utf-8')
+                
+            dato = json.loads(data_raw) if isinstance(data_raw, str) else data_raw
+            
+            # Extraemos la tasa actual
+            tasa_hoy = float(dato.get("bcv_tasa")) if dato.get("bcv_tasa") else None
+            
+            # Extraemos la tasa anterior (o si tienes otra clave para la de mañana)
+            tasa_manana = float(dato.get("bcv_tasa_anterior")) if dato.get("bcv_tasa_anterior") else None
 
-        tasa_hoy = float(tasa_hoy_raw) if tasa_hoy_raw else None
-        tasa_manana = float(tasa_manana_raw) if tasa_manana_raw else None
-
-        return tasa_hoy, tasa_manana
+            return tasa_hoy, tasa_manana
     except Exception as e:
-        logger.error(f"Error al obtener tasas BCV de Redis: {e}")
-        return None, None
-
+        logger.error(f"Error al obtener tasa de CACHE_TASAS_STORAGE: {e}")
+        
+    return None, None
 
 def obtener_tasa_p2p_redis(redis_client, monto_bs):
     """

@@ -351,12 +351,24 @@ def obtener_tasa_binance_p2p(tipo_operacion, monto_bs):
         print(f"⚠️ Error conectando con Binance P2P: {e}")
 
     return None
+
+def obtener_tasa_binance_spot_usdt():
+    """Obtiene el precio del par Spot USDT/USD desde Binance"""
+    try:
+        url = "https://api.binance.com/api/v3/ticker/price?symbol=USDTUSD"
+        r = requests.get(url, timeout=3.0)
+        if r.status_code == 200:
+            return float(r.json().get("price", 0.9987))
+    except Exception as e:
+        print(f"⚠️ Error obteniendo Spot USDT/USD: {e}")
+    return 0.9987
                     
 # --- CACHÉ GLOBAL DE TASAS ---
 CACHE_TASAS = {
     "bcv_tasa": 756.71,
     "bcv_tasa_anterior": 755.90,
     "bcv_fecha": "2026-08-06",
+    "usdt_usd_spot": 0.9987,  # 👈 AGREGAR ESTA LÍNEA
     "rangos": {} # Guardará las tasas calculadas por rango
 }
 
@@ -389,6 +401,9 @@ def actualizar_cache_segundo_plano():
     global CACHE_TASAS
     while True:
         try:
+            # 📌 AGREGAR AQUÍ (Actualiza el precio spot en cada ciclo)
+            CACHE_TASAS["usdt_usd_spot"] = obtener_tasa_binance_spot_usdt()
+            
             # Leemos la tasa BCV actual almacenada en memoria (la que envía el cazador)
             tasa_bcv = CACHE_TASAS.get("bcv_tasa", 756.71)
             tasa_bcv_ajustada = tasa_bcv * 1.005

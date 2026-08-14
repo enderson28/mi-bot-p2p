@@ -150,7 +150,7 @@ def registrar_handlers_arbitraje(bot, redis_client):
         )
 
     # --- PASO 1: SELECCIONAR BANCO ---
-    @bot.message_handler(func=lambda message: message.text in ["🧮 Arbitraje & Reposición", "Arbitraje & Reposición"])
+    @bot.message_handler(func=lambda message: message.text in ["📊 Arbitraje & Reposición", "Arbitraje & Reposición"])
     @bot.callback_query_handler(func=lambda call: call.data == "calc_arbitraje")
     def iniciar_arbitraje(event):
         if hasattr(event, 'data'):

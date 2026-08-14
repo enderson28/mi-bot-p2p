@@ -15,6 +15,7 @@ from seguridad import limpiar_comandos_chat, registrar_filtro_anti_raid, registr
 from calculadora import registrar_calculadora
 from ia_consulta import registrar_ia_consulta
 from anuncios import iniciar_modulo_anuncios, setup_comando_aviso
+from arbitraje import registrar_handlers_arbitraje
 import re
 import urllib3
 from bs4 import BeautifulSoup
@@ -33,6 +34,7 @@ TOKEN_TELEGRAM = os.getenv("TOKEN_TELEGRAM")
 bot = telebot.TeleBot(TOKEN_TELEGRAM)
 
 registrar_filtro_anti_raid(bot)
+
 registrar_limpiador_servicio(bot)
 
 BOT_USERNAME = "BancoIDV_bot" # Reemplaza con el alias de tu bot sin el @
@@ -87,7 +89,7 @@ def obtener_teclado_privado(user=None):
         markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
         markup.add(KeyboardButton("🟢 P2P-USDT 🔴"), KeyboardButton("📊 Intervencion 📊"))
         markup.add(KeyboardButton("📟 Calculadora"), KeyboardButton("⚙️ Soporte"))
-        markup.add(KeyboardButton("🤖 IA Consulta"))
+        markup.add(KeyboardButton("🤖 IA Consulta"), KeyboardButton("📊 Arbitraje & Reposición"))
         return markup
 
     markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
@@ -99,15 +101,19 @@ def obtener_teclado_privado(user=None):
     btn_calculadora = KeyboardButton("📟 Calculadora")
     btn_soporte = KeyboardButton("⚙️ Soporte")
     btn_ia = KeyboardButton("🤖 IA Consulta")
+    btn_arbitraje = KeyboardButton("📊 Arbitraje & Reposición")
 
     markup.add(btn_precio, btn_intervencion)
     markup.add(btn_regla, btn_calculadora)
     markup.add(btn_bpay, btn_gpay)
     markup.add(btn_soporte)
     markup.add(btn_ia)
+    markup.add(btn_arbitraje)
     return markup
 
 solicitar_ia_consulta = registrar_ia_consulta(bot, r, obtener_teclado_privado)
+
+registrar_handlers_arbitraje(bot, r)
 
 def obtener_boton_actualizar_inline():
     markup = InlineKeyboardMarkup()

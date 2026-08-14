@@ -254,7 +254,7 @@ def enviar_menu_principal(bot, user, chat_id):
         markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
         markup.add(KeyboardButton("🟢 P2P-USDT 🔴"), KeyboardButton("📊 Intervencion 📊"))
         markup.add(KeyboardButton("📟 Calculadora"), KeyboardButton("⚙️ Soporte"))
-        markup.add(KeyboardButton("🤖 IA Consulta"))
+        markup.add(KeyboardButton("🤖 IA Consulta"), KeyboardButton("📊 Arbitraje & Reposición"))
         
         texto_vip = (
             f"<b>👑 ¡Hola, {user.first_name}!</b>\n\n"

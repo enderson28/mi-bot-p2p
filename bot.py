@@ -353,14 +353,38 @@ def obtener_tasa_binance_p2p(tipo_operacion, monto_bs):
     return None
 
 def obtener_tasa_binance_spot_usdt():
-    """Obtiene el precio del par Spot USDT/USD desde Binance"""
+    """Obtiene el precio spot de USDT/USD evitando bloqueos de IP en EE. UU."""
+    # 1. Intento por Coinbase API (no bloquea servidores en US West)
     try:
-        url = "https://api.binance.com/api/v3/ticker/price?symbol=USDTUSD"
-        r = requests.get(url, timeout=3.0)
+        url_cb = "https://api.coinbase.com/v2/prices/USDT-USD/spot"
+        r = requests.get(url_cb, timeout=3.0)
+        if r.status_code == 200:
+            precio = float(r.json()["data"]["amount"])
+            if precio > 0:
+                return precio
+    except Exception:
+        pass
+
+    # 2. Intento por CryptoCompare API
+    try:
+        url_cc = "https://min-api.cryptocompare.com/data/price?fsym=USDT&tsyms=USD"
+        r = requests.get(url_cc, timeout=3.0)
+        if r.status_code == 200:
+            precio = float(r.json().get("USD", 0))
+            if precio > 0:
+                return precio
+    except Exception:
+        pass
+
+    # 3. Fallback a Binance Spot
+    try:
+        url_binance = "https://api.binance.com/api/v3/ticker/price?symbol=USDTUSD"
+        r = requests.get(url_binance, timeout=3.0)
         if r.status_code == 200:
             return float(r.json().get("price", 0.9987))
-    except Exception as e:
-        print(f"⚠️ Error obteniendo Spot USDT/USD: {e}")
+    except Exception:
+        pass
+
     return 0.9987
                     
 # --- CACHÉ GLOBAL DE TASAS ---

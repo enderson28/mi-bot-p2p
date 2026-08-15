@@ -190,8 +190,8 @@ TEXTO_REGLA_ORO_HTML = (
 TEXTO_SOPORTE = (
     f"<b>⚙️ Soporte y Colaboraciones</b>\n\n"
     f"Cualquier duda sobre el uso de la herramienta implementada, "
-    f"puedes consultar directamente a Soporte:\n"
-    f"{e('github', '🐱')} <a href=\"tg://user?id=5073264705\">Enderson García</a>\n\n"
+    f"puedes consultar directamente a Soporte: {e('github', '🐱')}\n"
+    f"😶‍🌫️ <a href=\"tg://user?id=5073264705\">Enderson García</a>\n\n"
     f"<i>Para mantener la funcionalidad y eficiencia de la herramienta, "
     f"puedes colaborar de forma voluntaria:</i>\n\n"
     f"<b>Donaciones:</b>\n"
@@ -491,43 +491,6 @@ def refrescar_tasas_en_vivo():
 
     CACHE_TASAS["rangos"] = nuevos_rangos
 
-
-# DICCIONARIO DE EMOJIS ANIMADOS DE TELEGRAM (IDs)
-TG_EMOJIS = {
-    "MONITOR": "5193177581888755275",      # 💻 / 😀
-    "CALENDARIO": "5413879192267805083",   # 🗓
-    "BCV": "5183805009766123191",          # 🏦 (Logo BCV)
-    "BALANZA": "5400250414929041085",      # ⚖️
-    "ETIQUETA": "5222444124698853913",     # 🔖
-    "BOMBILLA": "5262844652964303985",     # 💡
-    "CHINCHE": "5397782960512444700",      # 📌
-    "RANGO_1": "5440539497383087970",      # 🥇 (Oro)
-    "RANGO_2": "5447203607294265305",      # 🥈 (Plata)
-    "RANGO_3": "5453902265922376865",      # 🥉 (Bronce)
-    "USDT": "5814556334829343625",         # 🪙 (Logo USDT)
-    "VERDE": "5416081784641168838",        # 🟢 (Compra)
-    "ROJO": "5411225014148014586",         # 🔴 (Venta)
-    "SUBIDA": "5244837092042750681",       # 📈
-    "BAJADA": "5246762912428603768",       # 📉
-    "MUNDO": "5224450179368767019",        # 🌎
-    "FLECHA_DERECHA": "5416117059207572332", # ➡️
-    "DINERO": "5197434882321567830",       # 💵
-    "BINANCE_P2P": "5832421268476924783",  # 🪙
-    "GUIAS": "5282843764451195532",        # 🖥️
-    "CALCULADORA": "5303214794336125778",  # 🧮
-    "ROBOT": "5323772371830588991",         # 🤖
-    "RELOJERA": "5382194935057372936",      # ⏱
-    "CONSULTA1": "5197503331215361533",     # 📈
-    "ESCUDO": "5197288647275071607",        # 🛡
-    "PROGRAMADOR": "5417836094098007862",   # 🐱
-    "ESTRELLA": "5267500801240092311"       # ⭐
-}
-
-def e(key, fallback=""):
-    emoji_id = TG_EMOJIS.get(key, "")
-    if emoji_id:
-        return f'<tg-emoji emoji-id="{emoji_id}">{fallback}</tg-emoji>'
-    return fallback
 
 def construir_monitor_canal_html():
     """Genera la ficha resumen simplificada para el Canal Principal con Custom Emojis dinámicos"""

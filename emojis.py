@@ -27,10 +27,10 @@ TG_EMOJIS = {
     "PROGRAMADOR": "5841415793283175975",
     "ESTRELLA": "5370784581341422520",
     
-    # --- Comando /bot ---
+    # --- Comando /bot (de bot.py) ---
     "GUIAS": "5282843764451195532",
     "CALCULADORA": "5303214794336125778",
-    "ROBOT": "532377237183058991",
+    "ROBOTICO": "4942823933909926751",
     "RELOJERA": "5382194935057372936",
     "CONSULTA1": "5197503331215361533",
     "ESCUDO": "5197288647275071607",
@@ -53,4 +53,5 @@ def e(key, fallback=""):
     if emoji_id:
         return f'<tg-emoji emoji-id="{emoji_id}">{fallback}</tg-emoji>'
     return fallback
+
     

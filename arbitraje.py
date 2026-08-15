@@ -408,7 +408,7 @@ def generar_y_enviar_resultado(chat_id, user_id, tasa_p2p_venta, bot, redis_clie
         f"───────────────────────────\n"
         f"{TG_EMOJIS['briefcase']} <b>RECUPERAR CAPITAL HOY</b>\n"
         f"{TG_EMOJIS['binance']} <b>Vender en P2P:</b> <code>{res['usdt_recuperar_hoy']:,.2f}</code> {TG_EMOJIS['usdt']}\n"
-        f"{TG_EMOJIS['party']} <b>Ganancia:</b> <code>+{res['ganancia_usdt_hoy']:,.2f}</code> {TG_EMOJIS['usdt']}   <i>({res['ganancia_bs_hoy']:,.2f} Bs)</i>\n"
+        f"{TG_EMOJIS['party']} <b>Ganancia Actual:</b> <code>+{res['ganancia_usdt_hoy']:,.2f}</code> {TG_EMOJIS['usdt']} <i>({res['ganancia_bs_hoy']:,.2f} Bs)</i>\n"
     )
 
     # Cálculo dinámico del próximo día hábil

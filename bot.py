@@ -832,7 +832,7 @@ def handle_invitacion_comando(message):
         
         texto_invitacion = (
             f"<blockquote>{e('ROBOTICO', '👏🏼')} <b>¡Aprovecha al máximo las herramientas del Bot!</b> </blockquote>\n\n"
-            f"{e( 'CONSULTA1', '💾)} Consulta en privado {e( 'ESCUDO', '🛡')} , sin límites y sin esperar {e( 'RELOJERA', '⏱')} tiempos de enfriamiento:\n"
+            f"{e( 'CONSULTA1', '💾')} Consulta en privado {e( 'ESCUDO', '🛡')} , sin límites y sin esperar {e( 'RELOJERA', '⏱')} tiempos de enfriamiento:\n"
             f"<blockquote>{e('MONITOR', '💻')} Monitor ~ {e('USDT', '🪙')} P2P / {e('CALENDARIO', '🗓')} BCV en tiempo real</blockquote>\n"
             f"{e( 'CALCULADORA', '🧮')} Calculadora 🇻🇪 BS y {e('DINERO', '💵')} USD / {e('BCV', '🏦')} Intervención\n"
             f"{e( 'GUIAS', '🖥️')} Guías paso a paso\n\n"

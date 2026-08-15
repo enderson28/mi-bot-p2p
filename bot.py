@@ -188,15 +188,15 @@ TEXTO_REGLA_ORO_HTML = (
 )
 
 TEXTO_SOPORTE = (
-    f"<b>⚙️ Soporte y Colaboraciones</b>\n\n"
+    f"{e('PROGRAMADOR', '🐱')} <b>⚙️ Soporte y Colaboraciones</b>\n\n"
     f"Cualquier duda sobre el uso de la herramienta implementada, "
     f"puedes consultar directamente a Soporte: {e('github', '🐱')}\n"
-    f"😶‍🌫️ <a href=\"tg://user?id=5073264705\">Enderson García</a>\n\n"
+    f" <a href=\"tg://user?id=5073264705\">Enderson García</a>\n\n"
     f"<i>Para mantener la funcionalidad y eficiencia de la herramienta, "
     f"puedes colaborar de forma voluntaria:</i>\n\n"
     f"<b>Donaciones:</b>\n"
     f"{e('BINANCE_ESPEJO', '💵')} <b>Binance ID:</b> <code>214109465</code>\n"
-    f"🇻🇪 {e('bdv1', '🔉')} <b>Pago Móvil BDV 0102:</b> <code>04145057892</code> <code>23007945</code>\n"
+    f"{e('pago_movil', '💳')} {e('bdv1', '🔉')} <b>Pago Móvil BDV 0102:</b> <code>04145057892</code> <code>23007945</code>\n"
     f"{e('pro', '🕘')} <b>BBVA 0108:</b> <code>04145057892</code>\n"
     f"{e('paypal', '🌐')} <b>PayPal:</b> <code>@ender310</code>\n"
     f"{e('BCV', '🤝')} <b>Transferencia Bancaria:</b>\n"
@@ -848,9 +848,9 @@ def handle_invitacion_comando(message):
         # 3. Si no es autorizado (usuario normal u otro admin), desintegra el aviso en 5 segundos
         aviso = bot.send_message(
             message.chat.id,
-            f'⚠️ <b>Comando exclusivo de los administradores principales 🤓:</b>\n'
-            f'• <a href="tg://user?id=5073264705">{e('PROGRAMADOR', '🐱')} Enderson</a>\n'
-            f'• <a href="tg://user?id=791436853">{e('ESTRELLA', '⭐')} Sarita</a>',
+            f'⚠️ <b>Comando exclusivo de los administradores principales:</b> Ender {e('PROGRAMADOR', '🐱')} Sarita {e('ESTRELLA', '⭐')}\n'
+            f'✨ <a href="tg://user?id=5073264705">Enderson</a>\n'
+            f'⭐ <a href="tg://user?id=791436853">Sarita</a>',
             parse_mode="HTML",
             disable_web_page_preview=True
         )

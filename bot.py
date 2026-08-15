@@ -191,19 +191,20 @@ TEXTO_SOPORTE = (
     f"<b>⚙️ Soporte y Colaboraciones</b>\n\n"
     f"Cualquier duda sobre el uso de la herramienta implementada, "
     f"puedes consultar directamente a Soporte:\n"
-    f"{e('github', '🐱')} <a href='tg://user?id=5073264705'>Enderson García</a>\n\n"
+    f"{e('github', '🐱')} <a href=\"tg://user?id=5073264705\">Enderson García</a>\n\n"
     f"<i>Para mantener la funcionalidad y eficiencia de la herramienta, "
     f"puedes colaborar de forma voluntaria:</i>\n\n"
     f"<b>Donaciones:</b>\n"
     f"{e('BINANCE_ESPEJO', '💵')} <b>Binance ID:</b> <code>214109465</code>\n"
-    f"🇻🇪 <b>Pago Móvil: {e('bdv1', '🔉')} BDV 0102 {e('pro', '🕘')} BBVA 0108</b> <code>04145057892</code> <code>23007945</code>\n"
+    f"🇻🇪 {e('bdv1', '🏦')} <b>Pago Móvil BDV 0102:</b> <code>04145057892</code> <code>23007945</code>\n"
+    f"{e('pro', '⚪')} <b>BBVA 0108:</b> <code>04145057892</code>\n"
     f"{e('paypal', '🌐')} <b>PayPal:</b> <code>@ender310</code>\n"
-    f"{e('BCV', '🤝')} <b>Transferencia Bancaria:</b> {e('pro', '🕘')} <code>01080066810100257971</code>\n"
-    f"{e('bdv1', '🔉')} <code>01020435610001901072</code>\n"
-    f"{e('clic', '🎯')} <i>(Toca sobre los datos para copiarlos)</i>\n"
-    f"-----------------------------------------\n\n"
+    f"{e('BCV', '🤝')} <b>Transferencia Bancaria:</b>\n"
+    f"{e('bdv1', '🏦')} <code>01020435610001901072</code>\n"
+    f"{e('pro', '⚪')} <code>01080066810100257971</code>\n"
+    f"{e('clic', '👆')} <i>(Toca sobre los datos para copiarlos)</i>\n"
+    f"-----------------------------------------\n"
 )
-
 
 # ==========================================
 #  LÓGICA DE PROCESAMIENTO Y APIS

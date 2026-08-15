@@ -1,38 +1,56 @@
 # ==========================================
-# emojis.py - CENTRAL DE EMOJIS ANIMADOS
+# emojis.py - CENTRAL UNIFICADA DE EMOJIS
 # ==========================================
 
 TG_EMOJIS = {
-    # --- Emojis para Monitores y Avisos ---
-    "MONITOR": "5193177581088755275", # 💻
-    "CALENDARIO": "5413879192267805083", # 🗓
-    "BCV": "5183805089766123191", # 🤝
-    "BINANCE_P2P": "5032421268470924703", # 🟡
-    "BINANCE_ESPEJO": "5384321407725358581", # 💵
-  
-    # --- Emojis para Arbitraje y Calculadora ---
-    "calc": "5303214794236125778",
+    # --- Monitores, Tasas y Rangos (de bot.py) ---
+    "MONITOR": "5193177581888755275",
+    "CALENDARIO": "5413879192267805083",
+    "BCV": "5183805009766123191",
+    "BALANZA": "5400250414929041085",
+    "ETIQUETA": "5222444124698853913",
+    "BOMBILLA": "5262844652964303985",
+    "CHINCHE": "5397782960512444700",
+    "RANGO_1": "5440539497383087970",
+    "RANGO_2": "5447203607294265305",
+    "RANGO_3": "5453902265922376865",
+    "USDT": "5814556334829343625",
+    "VERDE": "5416081784641168838",
+    "ROJO": "5411225014148014586",
+    "SUBIDA": "5244837092042750681",
+    "BAJADA": "5246762912428603768",
+    "MUNDO": "5224450179368767019",
+    "FLECHA_DERECHA": "5416117059207572332",
+    "DINERO": "5409048419211682843",
+    "BINANCE_P2P": "5832421268476924783",
+    "BINANCE_ESPEJO": "5384321407725358581",
+    "PROGRAMADOR": "5841415793283175975",
+    "ESTRELLA": "5370784581341422520",
+    
+    # --- Comando /bot ---
+    "GUIAS": "5282843764451195532",
+    "CALCULADORA": "5303214794336125778",
+    "ROBOT": "532377237183058991",
+    "RELOJERA": "5382194935057372936",
+    "CONSULTA1": "5197503331215361533",
+    "ESCUDO": "5197288647275071607",
+
+    # --- Arbitraje, Pagos y Calculadora ---
     "usdt1": "5843796824367832872",
     "check": "5206607081334906820",
-    "pro": "4949492420392781701", # 🕘
-    "bdv1": "4945813911579788830", # 🔉
-    "bdv2": "4949567234420110351",
+    "pro": "4949492420392781701",
+    "bdv1": "4949813911579788830",
+    "bdv2": "4949567234428110351",
     "teso": "4949973031528170774",
-    "clic": "5310278924616356636", # 🎯
-    "dolar": "5409048419211682843", # 💵
-    
-    # --- Emojis para Soporte / Pagos ---
-    "paypal": "6318565240866867228", # 🌐
-    "github": "5417836094098007862", # 🐱
+    "clic": "5310278924616356636",
+    "paypal": "5357361983907700546",
+    "github": "5417836094098007862",
+    "pago_movil": "6142977369964547308"
 }
 
 def e(key, fallback=""):
-    """
-    Retorna la etiqueta HTML <tg-emoji> lista para concatenar.
-    Si la clave no existe, devuelve solo el fallback.
-    """
     emoji_id = TG_EMOJIS.get(key, "")
     if emoji_id:
         return f'<tg-emoji emoji-id="{emoji_id}">{fallback}</tg-emoji>'
     return fallback
-  
+    

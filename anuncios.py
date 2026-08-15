@@ -11,12 +11,12 @@ def obtener_texto_anuncio():
     """Construye el texto enriquecido de forma 100% compatible con HTML de Telegram."""
     return (
         f"{e('ESCUDO', '🛡️')} <b>¡SISTEMA DE VERIFICACIÓN Y SEGURIDAD!</b> 🛡️\n\n"
-        f"🚨 Para mantener la comunidad libre de spam, bots y cuentas falsas, tenemos activo un captcha de entrada.\n\n"
+        f"{e('ALERTA', '🚧')} Para mantener la comunidad libre de spam, bots y cuentas falsas, tenemos activo un captcha de entrada.\n\n"
         f"Si solicitaste ingreso y tu solicitud sigue <b>pendiente</b>, sigue estos pasos:\n"
-        f"1️⃣ {e('ROBOTICO', '👏🏼')} Entra al chat privado de nuestro bot: @BancoIDV_bot\n"
-        f"2️⃣ ⚡ Presiona el botón <b>INICIAR</b> o envía <code>/start</code>.\n"
-        f"{e('check', '✔️')} Resuelve la suma matemática súper sencilla.\n\n"
-        f"⏳ <b>¡IMPORTANTE!</b> Dispones de <b>1 hora</b> desde que solicitas tu entrada para resolver la verificación o la solicitud será rechazada automáticamente(puedes volver a hacer la solicitud cuando gustes).\n\n"
+        f"{e('NUMERO1', '1️⃣')} {e('ROBOTICO', '👏🏼')} Entra al chat privado de nuestro bot: @BancoIDV_bot\n"
+        f"{e('NUMERO2', '2️⃣')} {e('clic', '🎯')} Presiona el botón <b>INICIAR</b> o envía <code>/start</code>.\n"
+        f"{e('NUMERO3', '3️⃣')} {e('check', '✔️')} Resuelve la suma matemática súper sencilla.\n\n"
+        f"{e('ARENITA', '☄️')} <b>¡IMPORTANTE!</b> Dispones de <b>1 hora</b> desde que solicitas tu entrada para resolver la verificación o la solicitud será rechazada automáticamente(puedes volver a hacer la solicitud cuando gustes).\n\n"
         f"{e('BOMBILLA', '💡')} <i>Este mensaje se autodestruirá en 15 minutos para mantener el chat limpio.</i>\n"
         f"-----------------------------------------------------------\n"
     )

@@ -16,6 +16,7 @@ from calculadora import registrar_calculadora
 from ia_consulta import registrar_ia_consulta
 from anuncios import iniciar_modulo_anuncios, setup_comando_aviso
 from arbitraje import registrar_handlers_arbitraje
+from emojis import TG_EMOJIS, e
 import re
 import urllib3
 from bs4 import BeautifulSoup
@@ -187,19 +188,19 @@ TEXTO_REGLA_ORO_HTML = (
 )
 
 TEXTO_SOPORTE = (
-    "<b>⚙️ Soporte y Colaboraciones</b>\n\n"
-    "Cualquier duda sobre el uso de la herramienta implementada, "
-    "puedes consultar directamente a Soporte:\n"
-    "👤 <a href='tg://user?id=5073264705'>Enderson García</a>\n\n"
-    "<i>Para mantener la funcionalidad y eficiencia de la herramienta, "
-    "puedes colaborar de forma voluntaria:</i>\n\n"
-    "<b>Donaciones:</b>\n"
-    "🔸 <b>Binance ID:</b> <code>214109465</code>\n"
-    "🇻🇪 <b>Pago Móvil: BDV 0102 BBVA 0108</b> <code>04145057892</code> <code>23007945</code>\n"
-    "🔵 <b>PayPal:</b> <code>@ender310</code>\n"
-    "🟡 <b>Transferencia Bancaria:</b> <code>01080066810100257971</code>\n"
-    "🇻🇪 <code>01020435610001901072</code>\n"
-    "<i>(Toca sobre los datos para copiarlos)</i>"
+    f"<b>⚙️ Soporte y Colaboraciones</b>\n\n"
+    f"Cualquier duda sobre el uso de la herramienta implementada, "
+    f"puedes consultar directamente a Soporte:\n"
+    f"👤 <a href='tg://user?id=5073264705'>Enderson García</a>\n\n"
+    f"<i>Para mantener la funcionalidad y eficiencia de la herramienta, "
+    f"puedes colaborar de forma voluntaria:</i>\n\n"
+    f"<b>Donaciones:</b>\n"
+    f"{e('BINANCE_ESPEJO', '💵')} <b>Binance ID:</b> <code>214109465</code>\n"
+    f"🇻🇪 <b>Pago Móvil: {e('bdv1', '🔉')} BDV 0102 {e('pro', '🕘')} BBVA 0108</b> <code>04145057892</code> <code>23007945</code>\n"
+    f"{e('paypal', '🌐')} <b>PayPal:</b> <code>@ender310</code>\n"
+    f"{e('bcv', '🤝')} <b>Transferencia Bancaria:</b> {e('pro', '🕘')} <code>01080066810100257971</code>\n"
+    f"{e('bdv1', '🔉')} <code>01020435610001901072</code>\n"
+    f"{e('clic', '🎯')} <i>(Toca sobre los datos para copiarlos)</i>"
 )
 
 

@@ -1,5 +1,6 @@
 import time
 import threading
+from emojis import TG_EMOJIS, e
 
 # ⏱️ Configuración de tiempos
 INTERVALO_HORAS = 2          # Frecuencia del anuncio automático (2 horas)
@@ -9,14 +10,15 @@ DURACION_VISIBLE_MIN = 15     # Minutos visible antes de borrarse
 def obtener_texto_anuncio():
     """Construye el texto enriquecido de forma 100% compatible con HTML de Telegram."""
     return (
-        "🛡️ <b>¡SISTEMA DE VERIFICACIÓN Y SEGURIDAD!</b> 🛡️\n\n"
-        "🚨 Para mantener la comunidad libre de spam, bots y cuentas falsas, tenemos activo un captcha de entrada.\n\n"
-        "Si solicitaste ingreso y tu solicitud sigue <b>pendiente</b>, sigue estos pasos:\n"
-        "1️⃣ 🤖 Entra al chat privado de nuestro bot: @BancoIDV_bot\n"
-        "2️⃣ ⚡ Presiona el botón <b>INICIAR</b> o envía <code>/start</code>.\n"
-        "3️⃣ ✔️ Resuelve la suma matemática súper sencilla.\n\n"
-        "⏳ <b>¡IMPORTANTE!</b> Dispones de <b>1 hora</b> desde que solicitas tu entrada para resolver la verificación o la solicitud será rechazada automáticamente(puedes volver a hacer la solicitud cuando gustes).\n\n"
-        "<i>💡 Este mensaje se autodestruirá en 15 minutos para mantener el chat limpio.</i>"
+        f"{e('ESCUDO', '🛡️')} <b>¡SISTEMA DE VERIFICACIÓN Y SEGURIDAD!</b> 🛡️\n\n"
+        f"🚨 Para mantener la comunidad libre de spam, bots y cuentas falsas, tenemos activo un captcha de entrada.\n\n"
+        f"Si solicitaste ingreso y tu solicitud sigue <b>pendiente</b>, sigue estos pasos:\n"
+        f"1️⃣ {e('ROBOTICO', '👏🏼')} Entra al chat privado de nuestro bot: @BancoIDV_bot\n"
+        f"2️⃣ ⚡ Presiona el botón <b>INICIAR</b> o envía <code>/start</code>.\n"
+        f"{e('check', '✔️')} Resuelve la suma matemática súper sencilla.\n\n"
+        f"⏳ <b>¡IMPORTANTE!</b> Dispones de <b>1 hora</b> desde que solicitas tu entrada para resolver la verificación o la solicitud será rechazada automáticamente(puedes volver a hacer la solicitud cuando gustes).\n\n"
+        f"{e('BOMBILLA', '💡')} <i>Este mensaje se autodestruirá en 15 minutos para mantener el chat limpio.</i>\n"
+        f"-----------------------------------------------------------\n"
     )
 
 

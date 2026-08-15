@@ -36,32 +36,38 @@ TG_EMOJIS = {
 COMISIONES_BANCOS = {
     "provincial": {
         "emoji": TG_EMOJIS["pro"],
-        "nombre": "BBVA Provincial (0%)",
+        "nombre": "BBVA Provincial",
+        "porcentaje_str": f"0{TG_EMOJIS['percent']}",
         "comision": 0.00,
     },
     "bdv_debit": {
         "emoji": TG_EMOJIS["bdv1"],
-        "nombre": "BDV Masterdebit (1.5%)",
+        "nombre": "BDV Masterdebit",
+        "porcentaje_str": f"1.5{TG_EMOJIS['percent']}",
         "comision": 0.015,
     },
     "otros_1_5": {
         "emoji": TG_EMOJIS["clic"],
-        "nombre": "Otros Bancos (1.5%)",
+        "nombre": "Otros Bancos",
+        "porcentaje_str": f"1.5{TG_EMOJIS['percent']}",
         "comision": 0.015,
     },
     "bdv_master": {
         "emoji": TG_EMOJIS["bdv2"],
-        "nombre": "BDV MASTERCARD (2.5%)",
+        "nombre": "BDV MASTERCARD",
+        "porcentaje_str": f"2.5{TG_EMOJIS['percent']}",
         "comision": 0.025,
     },
     "tesoro": {
         "emoji": TG_EMOJIS["teso"],
-        "nombre": "BANCO TESORO (2.5%)",
+        "nombre": "BANCO TESORO",
+        "porcentaje_str": f"2.5{TG_EMOJIS['percent']}",
         "comision": 0.025,
     },
     "otros_2_5": {
         "emoji": TG_EMOJIS["clic"],
-        "nombre": "otros bancos (2.5%)",
+        "nombre": "otros bancos",
+        "porcentaje_str": f"2.5{TG_EMOJIS['percent']}",
         "comision": 0.025,
     },
 }
@@ -226,17 +232,22 @@ def registrar_handlers_arbitraje(bot, redis_client):
             bot.send_message(chat_id, "❌ Opción no válida.")
             return
 
+        banco_info = COMISIONES_BANCOS[banco_key]
+        
+        # Armamos la etiqueta visual con emojis animados (Banco + Nombre + Porcentaje Animado)
+        nombre_completo_animado = f"{banco_info['emoji']} {banco_info['nombre']} ({banco_info['porcentaje_str']})"
+
         USER_ARBITRAJE_DATA[user_id] = {
             "banco_key": banco_key,
-            "comision_banco": COMISIONES_BANCOS[banco_key]["comision"],
-            "nombre_banco": COMISIONES_BANCOS[banco_key]["nombre"],
+            "comision_banco": banco_info["comision"],
+            "nombre_banco": nombre_completo_animado,
         }
 
         markup = InlineKeyboardMarkup()
         markup.add(InlineKeyboardButton("⬅️ Salir al menú", callback_data="arb_salir_menu"))
 
         msg_text = (
-            f"{TG_EMOJIS['check']} <b>Selección:</b> {COMISIONES_BANCOS[banco_key]['nombre']}\n\n"
+            f"{TG_EMOJIS['check']} <b>Selección:</b> {nombre_completo_animado}\n\n"
             f"{TG_EMOJIS['pencil']} Escribe el monto en {TG_EMOJIS['dollar']} <b>USD</b> que compraste en el "
             f"{TG_EMOJIS['bank']} Banco: <i>(Ejemplo: 500 o 300)</i>"
         )
@@ -249,6 +260,7 @@ def registrar_handlers_arbitraje(bot, redis_client):
         )
 
         bot.register_next_step_handler(msg, solicitar_tasa_p2p, bot, redis_client, user_id)
+        
 
     # --- PASO 3: SOLICITAR TASA DE VENTA / MOSTRAR BOTÓN DE MONITOR ---
     def solicitar_tasa_p2p(message, bot, redis_client, user_id):
@@ -290,9 +302,9 @@ def registrar_handlers_arbitraje(bot, redis_client):
         )
 
         msg_text = (
-            f"{TG_EMOJIS['red_circle']} <b>Tasa de Venta P2P ({TG_EMOJIS['usdt1']})</b>\n\n"
+            f"{TG_EMOJIS['red_circle']} <b>Tasa de Venta P2P {TG_EMOJIS['usdt1']}</b>\n\n"
             f"{TG_EMOJIS['pencil']} Escribe manualmente la tasa a la que vas a vender <i>(Ej: 890 o 892.5)</i>:\n"
-            f"O presiona el botón si deseas usar la tasa detectada por el monitor para tu rango:"
+            f"O presiona {TG_EMOJIS['clic']} el botón si deseas usar la {TG_EMOJIS['red_circle']} tasa detectada por el monitor para tu rango:"
         )
 
         msg = bot.send_message(
@@ -386,13 +398,13 @@ def generar_y_enviar_resultado(chat_id, user_id, tasa_p2p_venta, bot, redis_clie
 
     # --- BLOQUE 1: RESULTADO PRINCIPAL HOY ---
     msj = (
-        f"{TG_EMOJIS['chart']} <b>RESULTADO DE ARBITRAJE & REPOSICIÓN</b>\n"
+        f"<blockquote>{TG_EMOJIS['chart']} <b>RESULTADO DE ARBITRAJE & {TG_EMOJIS['clic']} REPOSICIÓN</b></blockquote>\n"
         f"<b>Banco:</b> {data_user.get('nombre_banco', 'Banco')}\n"
         f"{TG_EMOJIS['dollar']} <b>Monto Comprado:</b> ${monto_usd:,.2f} USD\n"
-        f"{TG_EMOJIS['bcv']} <b>Tasa Compra (Hoy):</b> {res['tasa_interv_hoy']:,.2f} Bs/USD\n"
+        f"<blockquote>{TG_EMOJIS['bcv']} <b>Tasa Compra (Hoy):</b> {res['tasa_interv_hoy']:,.2f} Bs/USD</blockquote>\n"
         f"{TG_EMOJIS['red_circle']} <b>Tasa Venta P2P:</b> {tasa_p2p_venta:,.2f} Bs/USDT\n\n"
-        f"{TG_EMOJIS['usdt']} <b>USDT Líquidos ({TG_EMOJIS['binance']}) Binance:</b> <code>{res['usdt_netos_binance']:,.2f} USDT</code> <i>(Par Spot: {tasa_usd_usdt:.5f})</i>\n"
-        f"{TG_EMOJIS['hand']} <b>Inversión de Hoy:</b> <code>{res['bs_invertidos_hoy']:,.2f} Bs</code>\n"
+        f"{TG_EMOJIS['usdt']} <b>USDT Líquidos {TG_EMOJIS['binance']} Binance:</b> <code>{res['usdt_netos_binance']:,.2f} USDT</code> <i>(Par Spot: {tasa_usd_usdt:.5f})</i>\n"
+        f"<blockquote>{TG_EMOJIS['hand']} <b>Inversión de Hoy:</b> <code>{res['bs_invertidos_hoy']:,.2f}</code> Bs</blockquote>\n"
         f"───────────────────────────\n"
         f"{TG_EMOJIS['briefcase']} <b>RECUPERAR CAPITAL HOY</b>\n"
         f"{TG_EMOJIS['binance']} <b>Vender en P2P:</b> <code>{res['usdt_recuperar_hoy']:,.2f} USDT</code>\n"
@@ -410,7 +422,7 @@ def generar_y_enviar_resultado(chat_id, user_id, tasa_p2p_venta, bot, redis_clie
         msj += (
             f"\n{TG_EMOJIS['clic']} <b>REPOSICIÓN PARA EL {proximo_dia.upper()} (BCV Actualizado)</b>\n"
             f"{TG_EMOJIS['bcv']} <b>Nueva Tasa BCV (+0.5%):</b> {res['tasa_interv_manana']:,.2f} Bs/USD (+{diferencia_bcv:,.2f} Bs)\n"
-            f"{TG_EMOJIS['dollar']} <b>Bs necesarios {proximo_dia}:</b> {res['bs_necesarios_manana']:,.2f} Bs\n"
+            f"{TG_EMOJIS['dollar']} <b>Bs necesarios {proximo_dia}:</b> <code>{res['bs_necesarios_manana']:,.2f}</code> Bs\n"
             f"{TG_EMOJIS['binance']} <b>Vender en P2P:</b> {res['usdt_recuperar_manana']:,.2f} USDT\n"
             f"{TG_EMOJIS['party']} <b>Ganancia Real Aislada:</b> +{res['ganancia_usdt_manana']:,.2f} USDT (~{res['ganancia_bs_manana']:,.2f} Bs)\n"
         )

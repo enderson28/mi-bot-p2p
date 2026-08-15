@@ -831,8 +831,8 @@ def handle_invitacion_comando(message):
     if user_identifier in USUARIOS_AUTORIZADOS or message.from_user.id in USUARIOS_AUTORIZADOS:
         
         texto_invitacion = (
-            f"<blockquote>{e('ROBOT', '🤖')} <b>¡Aprovecha al máximo las herramientas del Bot!</b> </blockquote>\n\n"
-            f"{e( 'CONSULTA1', '📈')} Consulta en privado {e( 'ESCUDO', '🛡')} , sin límites y sin esperar {e( 'RELOJERA', '⏱')} tiempos de enfriamiento:\n"
+            f"<blockquote>{e('ROBOTICO', '👏🏼')} <b>¡Aprovecha al máximo las herramientas del Bot!</b> </blockquote>\n\n"
+            f"{e( 'CONSULTA1', '💾)} Consulta en privado {e( 'ESCUDO', '🛡')} , sin límites y sin esperar {e( 'RELOJERA', '⏱')} tiempos de enfriamiento:\n"
             f"<blockquote>{e('MONITOR', '💻')} Monitor ~ {e('USDT', '🪙')} P2P / {e('CALENDARIO', '🗓')} BCV en tiempo real</blockquote>\n"
             f"{e( 'CALCULADORA', '🧮')} Calculadora 🇻🇪 BS y {e('DINERO', '💵')} USD / {e('BCV', '🏦')} Intervención\n"
             f"{e( 'GUIAS', '🖥️')} Guías paso a paso\n\n"
@@ -848,7 +848,7 @@ def handle_invitacion_comando(message):
         # 3. Si no es autorizado (usuario normal u otro admin), desintegra el aviso en 5 segundos
         aviso = bot.send_message(
             message.chat.id,
-            f'{e('PROGRAMADOR', '🐱')} Enderson <b>Comando exclusivo de los administradores principales:</b>\n'
+            f'👮🏼‍♀️ <b>Comando exclusivo de los administradores principales:</b>\n'
             f'✨ <a href="tg://user?id=5073264705">Enderson</a>\n'
             f'⭐ <a href="tg://user?id=791436853">Sarita</a>',
             parse_mode="HTML",

@@ -1,4 +1,5 @@
 from telebot.types import ReplyKeyboardMarkup, KeyboardButton
+from emojis import TG_EMOJIS, e
 
 def registrar_calculadora(bot, obtener_cache_func, obtener_teclado_func):
     """
@@ -24,21 +25,21 @@ def registrar_calculadora(bot, obtener_cache_func, obtener_teclado_func):
         bot.clear_step_handler_by_chat_id(message.chat.id)
 
         texto_indicacion = (
-            "📠 **CALCULADORA AUTOMÁTICA BCV (+0.5% Intervención)**\n\n"
-            "✅ **Modo actual:** 💲 ⏩ 🇻🇪 Bolívares\n"
-            "Escribe la cifra en **USD** directamente (Ejemplo: `5`, `12.5`, `100`):\n\n"
-            "⏳ _Esperando tu monto..._"
+            f"<blockquote>{e('CALCULADORA', '📠')} CALCULADORA AUTOMÁTICA {e('BCV', '👏')} (+0.5%)</blockquote>\n\n"
+            f"{e('check', '✔️')} Modo actual: {e('DINERO', '💵')} {e('FLECHA_DERECHA', '➡️')} 🇻🇪 Bolívares\n"
+            f"{e('clic', '🎯')} Escribe la cifra en (USD) directamente (Ejemplo: 5, 12.5, 100):\n\n"
+            f"{e('ARENITA', '⏳')} _Esperando tu monto..._\n"
         ) if modo == "USD_BS" else (
-            "📠 **CALCULADORA DIVISAS AL BCV (+0.5% Intervención)**\n\n"
-            "✅ **Modo actual:** 🇻🇪 Bolívares ⏩ 💲\n"
-            "Escribe la cifra en **Bs** directamente (Ejemplo: `500`, `1500.50`):\n\n"
-            "⏳ _Esperando tu monto..._"
+            f"<blockquote>{e('CALCULADORA', '📠')} CALCULADORA DIVISAS AL {e('BCV', '👏')} (+0.5%)</blockquote>\n\n"
+            f"{e('check', '✔️')} Modo actual: 🇻🇪 Bolívares {e('FLECHA_DERECHA', '➡️')} {e('DINERO', '💵')}\n"
+            f"{e('clic', '🎯')} Escribe la cifra en (Bs) directamente (Ejemplo: 500, 1500.50):\n\n"
+            f"{e('ARENITA', '⏳')} _Esperando tu monto..._\n"
         )
 
         msg = bot.send_message(
             message.chat.id,
             texto_indicacion,
-            parse_mode="Markdown",
+            parse_mode="HTML",
             reply_markup=obtener_teclado_calc()
         )
         
@@ -100,33 +101,35 @@ def registrar_calculadora(bot, obtener_cache_func, obtener_teclado_func):
             monto_bolivares = monto_usd * tasa_con_intervencion
             
             respuesta = (
-                "🖨️ *RESULTADO DE CÁLCULO BCV*\n\n"
-                f"💲 *Monto en USD:* `${monto_usd:,.2f}`\n"
-                f"🏦 *Tasa BCV oficial:* `{tasa_bcv:,.2f}` Bs.\n"
-                f"⚖️ *Tasa + 0.5% Intervención:* `{tasa_con_intervencion:,.4f}` Bs.\n\n"
-                f"💳 *Total a pagar en Bolívares:*\n"
-                f"👉 `{monto_bolivares:,.2f}` *Bs.*\n\n"
-                "📌 _Puedes seguir escribiendo montos en $ o cambiar de modo abajo._"
+                f"<blockquote>{e('CONSULTA1', '🗯️')} RESULTADO DE CÁLCULO {e('BCV', '👏')}</blockquote>\n\n"
+                f" Monto en {e('DINERO', '💵')} : $<code>{monto_usd:,.2f}</code>\n"
+                f"{e('BCV', '👏')} Tasa BCV oficial: {tasa_bcv:,.2f} Bs.\n"
+                f"<blockquote>{e('BALANZA', '⚖️')} Tasa + 0.5% : {tasa_con_intervencion:,.2f} Bs.</blockquote>\n\n"
+                f"{e('pago_movil', '😶‍🌫️')} Total a pagar en Bolívares:\n"
+                f"<blockquote>{e('FLECHA_DERECHA', '👏')} <code>{monto_bolivares:,.2f}</code> Bs.</blockquote>\n\n"
+                f"{e('CHINCHE', '📌')} Puedes seguir escribiendo montos en $ o cambiar de modo abajo.\n"
+                f"----------------------------------------------------------\n"
             )
         else: # Modo BS_USD (Inverso)
             monto_bolivares = monto_entrada
             monto_usd = monto_bolivares / tasa_con_intervencion
             
             respuesta = (
-                "💸 *RESULTADO DE CÁLCULO DIVISAS AL BCV*\n\n"
-                f"🇻🇪 *Monto disponible en Bs:* `{monto_bolivares:,.2f}` Bs.\n"
-                f"🏦 *Tasa BCV oficial:* `{tasa_bcv:,.2f}` Bs.\n"
-                f"⚖️ *Tasa + 0.5% Intervención:* `{tasa_con_intervencion:,.4f}` Bs.\n\n"
-                f"💵 *Puedes comprar un total de:*\n"
-                f"👉 `{monto_usd:,.2f}` *USD*\n\n"
-                "📌 _Puedes seguir escribiendo montos en Bs o cambiar de modo abajo._"
+                f"<blockquote>{e('CONSULTA1', '🗯️')} RESULTADO DE CÁLCULO DIVISAS AL {e('BCV', '👏')}</blockquote>\n\n"
+                f"🇻🇪 Monto disponible en Bs: {monto_bolivares:,.2f}\n"
+                f"{e('BCV', '👏')} Tasa BCV oficial: {tasa_bcv:,.2f} Bs.\n"
+                f"<blockquote>{e('BALANZA', '⚖️')} Tasa + 0.5% : <code>{tasa_con_intervencion:,.2f}</code> Bs.</blockquote>\n\n"
+                f"Puedes comprar un total de:\n"
+                f"<blockquote>{e('FLECHA_DERECHA', '➡️')} <code>{monto_usd:,.2f}</code> {e('DINERO', '💵')}</blockquote>\n\n"
+                f"{e('CHINCHE', '📌')} Puedes seguir escribiendo montos en Bs o cambiar de modo abajo.\n"
+                f"----------------------------------------------------------\n"
             )
 
         # 6. Enviar respuesta y mantener escucha para el siguiente número
         msg_res = bot.send_message(
             message.chat.id,
             respuesta,
-            parse_mode="Markdown",
+            parse_mode="HTML",
             reply_markup=obtener_teclado_calc()
         )
 

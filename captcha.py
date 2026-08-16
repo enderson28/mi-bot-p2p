@@ -17,7 +17,7 @@ def rechazar_solicitud_expirada(bot, chat_id, user_id):
                     user_id,
                     "⏳ <b>Tiempo agotado</b>\n\n"
                     "Tu solicitud de ingreso ha caducado por no completar la verificación en 1 hora.\n"
-                    "Si deseas ingresar, por favor vuelve a presionar el enlace de unirte o solicitud al canal 👉🏼 @COMUNIDADAS04 .",
+                    "Si deseas ingresar, por favor vuelve a presionar el enlace de unirte o solicitud al grupo 👉🏼 @COMUNIDV .",
                     parse_mode="HTML"
                 )
             except Exception:

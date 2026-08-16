@@ -93,6 +93,7 @@ def registrar_calculadora(bot, obtener_cache_func, obtener_teclado_func):
         # 4. Obtener tasa BCV
         cache = obtener_cache_func()
         tasa_bcv = cache.get("bcv_tasa", 766.86)
+        fecha_valor_bcv = cache.get("bcv_fecha", "BCV")
         tasa_con_intervencion = tasa_bcv * 1.005
 
         # 5. Cálculo según el modo
@@ -106,7 +107,7 @@ def registrar_calculadora(bot, obtener_cache_func, obtener_teclado_func):
                 f"{e('BCV', '👏')} Tasa BCV oficial: {tasa_bcv:,.2f} Bs.\n"
                 f"<blockquote>{e('BALANZA', '⚖️')} Tasa + 0.5% : {tasa_con_intervencion:,.3f} Bs.</blockquote>\n\n"
                 f"{e('pago_movil', '😶‍🌫️')} Total a pagar en Bolívares:\n"
-                f"<blockquote>{e('FLECHA_DERECHA', '👏')} <code>{monto_bolivares:,.0f}</code> Bs.</blockquote>\n\n"
+                f"<blockquote>{e('FLECHA_DERECHA', '👏')} <code>{monto_bolivares:,.0f}</code> Bs. <i>({fecha_valor_bcv})</i></blockquote>\n\n"
                 f"{e('CHINCHE', '📌')} Puedes seguir escribiendo montos en $ o cambiar de modo abajo.\n"
                 f"----------------------------------------------------------\n"
             )
@@ -120,7 +121,7 @@ def registrar_calculadora(bot, obtener_cache_func, obtener_teclado_func):
                 f"{e('BCV', '👏')} Tasa BCV oficial: {tasa_bcv:,.2f} Bs.\n"
                 f"<blockquote>{e('BALANZA', '⚖️')} Tasa + 0.5% : <code>{tasa_con_intervencion:,.3f}</code> Bs.</blockquote>\n\n"
                 f"Puedes comprar un total de:\n"
-                f"<blockquote>{e('FLECHA_DERECHA', '➡️')} <code>{monto_usd:,.2f}</code> {e('DINERO', '💵')}</blockquote>\n\n"
+                f"<blockquote>{e('FLECHA_DERECHA', '➡️')} <code>{monto_usd:,.2f}</code> {e('DINERO', '💵')} <i>({fecha_valor_bcv})</i></blockquote>\n\n"
                 f"{e('CHINCHE', '📌')} Puedes seguir escribiendo montos en Bs o cambiar de modo abajo.\n"
                 f"----------------------------------------------------------\n"
             )

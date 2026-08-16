@@ -103,10 +103,10 @@ def registrar_calculadora(bot, obtener_cache_func, obtener_teclado_func):
             respuesta = (
                 f"{e('CONSULTA1', '🗯️')} RESULTADO DE CÁLCULO BCV\n\n"
                 f"{e('DINERO', '💵')} Monto en USD: `{monto_usd:,.2f}`\n"
-                f"{e('BCV' '👏')} Tasa BCV oficial: `{tasa_bcv:,.2f}` Bs.\n"
-                f"{e('BALANZA' '⚖️')} Tasa + 0.5% : `{tasa_con_intervencion:,.4f}` Bs.\n\n"
-                f"{e('pago_movil' '😶‍🌫️')} Total a pagar en Bolívares:\n"
-                f"{e('FLECHA_DERECHA', '👏')} `{monto_bolivares:,.2f}` *Bs.*\n\n"
+                f"{e('BCV', '👏')} Tasa BCV oficial: `{tasa_bcv:,.2f}` Bs.\n"
+                f"{e('BALANZA', '⚖️')} Tasa + 0.5% : `{tasa_con_intervencion:,.4f}` Bs.\n\n"
+                f"{e('pago_movil', '😶‍🌫️')} Total a pagar en Bolívares:\n"
+                f"{e('FLECHA_DERECHA', '👏')} `{monto_bolivares:,.2f}` Bs.\n\n"
                 f"{e('CHINCHE', '📌')} Puedes seguir escribiendo montos en $ o cambiar de modo abajo._"
             )
         else: # Modo BS_USD (Inverso)
@@ -116,11 +116,11 @@ def registrar_calculadora(bot, obtener_cache_func, obtener_teclado_func):
             respuesta = (
                 f"{e('CONSULTA1', '🗯️')} RESULTADO DE CÁLCULO DIVISAS AL BCV\n\n"
                 f"🇻🇪 Monto disponible en Bs: `{monto_bolivares:,.2f}` Bs.\n"
-                f"{e('BCV' '👏')} Tasa BCV oficial: `{tasa_bcv:,.2f}` Bs.\n"
-                f"{e('BALANZA' '⚖️')} Tasa + 0.5% Intervención: `{tasa_con_intervencion:,.4f}` Bs.\n\n"
-                f"{e('DINERO' '💵')} Puedes comprar un total de:\n"
-                f"{e('FLECHA_DERECHA' '➡️')} `{monto_usd:,.2f}` USD\n\n"
-                f"{e('CHINCHE' '📌')} Puedes seguir escribiendo montos en Bs o cambiar de modo abajo.\n"
+                f"{e('BCV', '👏')} Tasa BCV oficial: `{tasa_bcv:,.2f}` Bs.\n"
+                f"{e('BALANZA', '⚖️')} Tasa + 0.5% Intervención: `{tasa_con_intervencion:,.4f}` Bs.\n\n"
+                f"{e('DINERO', '💵')} Puedes comprar un total de:\n"
+                f"{e('FLECHA_DERECHA', '➡️')} `{monto_usd:,.2f}` USD\n\n"
+                f"{e('CHINCHE', '📌')} Puedes seguir escribiendo montos en Bs o cambiar de modo abajo.\n"
             )
 
         # 6. Enviar respuesta y mantener escucha para el siguiente número

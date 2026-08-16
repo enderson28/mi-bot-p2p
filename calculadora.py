@@ -101,12 +101,12 @@ def registrar_calculadora(bot, obtener_cache_func, obtener_teclado_func):
             monto_bolivares = monto_usd * tasa_con_intervencion
             
             respuesta = (
-                f"<blockquote>{e('CONSULTA1', '🗯️')} RESULTADO DE CÁLCULO BCV</blockquote>\n\n"
-                f"{e('DINERO', '💵')} Monto en USD: {monto_usd:,.2f}\n"
+                f"<blockquote>{e('CONSULTA1', '🗯️')} RESULTADO DE CÁLCULO {e('BCV', '👏')}</blockquote>\n\n"
+                f" Monto en {e('DINERO', '💵')} : $<code>{monto_usd:,.2f}</code>\n"
                 f"{e('BCV', '👏')} Tasa BCV oficial: {tasa_bcv:,.2f} Bs.\n"
                 f"<blockquote>{e('BALANZA', '⚖️')} Tasa + 0.5% : {tasa_con_intervencion:,.4f} Bs.</blockquote>\n\n"
                 f"{e('pago_movil', '😶‍🌫️')} Total a pagar en Bolívares:\n"
-                f"{e('FLECHA_DERECHA', '👏')} <code>{monto_bolivares:,.2f}</code> Bs.\n\n"
+                f"<blockquote>{e('FLECHA_DERECHA', '👏')} <code>{monto_bolivares:,.2f}</code> Bs.</blockquote>\n\n"
                 f"{e('CHINCHE', '📌')} Puedes seguir escribiendo montos en $ o cambiar de modo abajo.\n"
                 f"----------------------------------------------------------\n"
             )
@@ -115,12 +115,12 @@ def registrar_calculadora(bot, obtener_cache_func, obtener_teclado_func):
             monto_usd = monto_bolivares / tasa_con_intervencion
             
             respuesta = (
-                f"<blockquote>{e('CONSULTA1', '🗯️')} RESULTADO DE CÁLCULO DIVISAS AL BCV</blockquote>\n\n"
+                f"<blockquote>{e('CONSULTA1', '🗯️')} RESULTADO DE CÁLCULO DIVISAS AL {e('BCV', '👏')}</blockquote>\n\n"
                 f"🇻🇪 Monto disponible en Bs: {monto_bolivares:,.2f} Bs.\n"
                 f"{e('BCV', '👏')} Tasa BCV oficial: {tasa_bcv:,.2f} Bs.\n"
                 f"<blockquote>{e('BALANZA', '⚖️')} Tasa + 0.5% : <code>{tasa_con_intervencion:,.4f}</code> Bs.</blockquote>\n\n"
-                f"{e('DINERO', '💵')} Puedes comprar un total de:\n"
-                f"{e('FLECHA_DERECHA', '➡️')} <code>{monto_usd:,.2f}</code> USD\n\n"
+                f"Puedes comprar un total de:\n"
+                f"<blockquote>{e('FLECHA_DERECHA', '➡️')} <code>{monto_usd:,.2f}</code> {e('DINERO', '💵')}</blockquote>\n\n"
                 f"{e('CHINCHE', '📌')} Puedes seguir escribiendo montos en Bs o cambiar de modo abajo.\n"
                 f"----------------------------------------------------------\n"
             )

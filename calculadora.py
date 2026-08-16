@@ -106,7 +106,7 @@ def registrar_calculadora(bot, obtener_cache_func, obtener_teclado_func):
                 f"{e('BCV', '👏')} Tasa BCV oficial: {tasa_bcv:,.2f} Bs.\n"
                 f"<blockquote>{e('BALANZA', '⚖️')} Tasa + 0.5% : {tasa_con_intervencion:,.2f} Bs.</blockquote>\n\n"
                 f"{e('pago_movil', '😶‍🌫️')} Total a pagar en Bolívares:\n"
-                f"<blockquote>{e('FLECHA_DERECHA', '👏')} <code>{monto_bolivares:,.2f}</code> Bs.</blockquote>\n\n"
+                f"<blockquote>{e('FLECHA_DERECHA', '👏')} <code>{monto_bolivares:,.0f}</code> Bs.</blockquote>\n\n"
                 f"{e('CHINCHE', '📌')} Puedes seguir escribiendo montos en $ o cambiar de modo abajo.\n"
                 f"----------------------------------------------------------\n"
             )
@@ -116,7 +116,7 @@ def registrar_calculadora(bot, obtener_cache_func, obtener_teclado_func):
             
             respuesta = (
                 f"<blockquote>{e('CONSULTA1', '🗯️')} RESULTADO DE CÁLCULO DIVISAS AL {e('BCV', '👏')}</blockquote>\n\n"
-                f"🇻🇪 Monto disponible en Bs: {monto_bolivares:,.2f}\n"
+                f"🇻🇪 Monto disponible en Bs: {monto_bolivares:,.0f}\n"
                 f"{e('BCV', '👏')} Tasa BCV oficial: {tasa_bcv:,.2f} Bs.\n"
                 f"<blockquote>{e('BALANZA', '⚖️')} Tasa + 0.5% : <code>{tasa_con_intervencion:,.2f}</code> Bs.</blockquote>\n\n"
                 f"Puedes comprar un total de:\n"

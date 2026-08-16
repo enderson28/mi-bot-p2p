@@ -1,4 +1,5 @@
 from telebot.types import ReplyKeyboardMarkup, KeyboardButton
+from emojis import TG_EMOJIS, e
 
 def registrar_calculadora(bot, obtener_cache_func, obtener_teclado_func):
     """
@@ -24,21 +25,21 @@ def registrar_calculadora(bot, obtener_cache_func, obtener_teclado_func):
         bot.clear_step_handler_by_chat_id(message.chat.id)
 
         texto_indicacion = (
-            "📠 **CALCULADORA AUTOMÁTICA BCV (+0.5% Intervención)**\n\n"
-            "✅ **Modo actual:** 💲 ⏩ 🇻🇪 Bolívares\n"
-            "Escribe la cifra en **USD** directamente (Ejemplo: `5`, `12.5`, `100`):\n\n"
-            "⏳ _Esperando tu monto..._"
+            f"{e('CALCULADORA', '📠')} **CALCULADORA AUTOMÁTICA BCV (+0.5%)**\n\n"
+            f"{e('check', '✔️')} **Modo actual:** {e('DINERO', '💵')} {e('FLECHA_DERECHA', '➡️')} 🇻🇪 Bolívares\n"
+            f"{e('clic', '🎯')} Escribe la cifra en **USD** directamente (Ejemplo: `5`, `12.5`, `100`):\n\n"
+            f"{e('ARENITA', '⏳')} _Esperando tu monto..._\n"
         ) if modo == "USD_BS" else (
-            "📠 **CALCULADORA DIVISAS AL BCV (+0.5% Intervención)**\n\n"
-            "✅ **Modo actual:** 🇻🇪 Bolívares ⏩ 💲\n"
-            "Escribe la cifra en **Bs** directamente (Ejemplo: `500`, `1500.50`):\n\n"
-            "⏳ _Esperando tu monto..._"
+            f"{e('CALCULADORA', '📠')} **CALCULADORA DIVISAS AL BCV (+0.5%)**\n\n"
+            f"{e('check', '✔️')} **Modo actual:** 🇻🇪 Bolívares {e('FLECHA_DERECHA', '➡️')} {e('DINERO', '💵')}\n"
+            f"{e('clic', '🎯')} Escribe la cifra en **Bs** directamente (Ejemplo: `500`, `1500.50`):\n\n"
+            f"{e('ARENITA', '⏳')} _Esperando tu monto..._\n"
         )
 
         msg = bot.send_message(
             message.chat.id,
             texto_indicacion,
-            parse_mode="Markdown",
+            parse_mode="HTML",
             reply_markup=obtener_teclado_calc()
         )
         

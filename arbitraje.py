@@ -79,8 +79,6 @@ COMISIONES_BANCOS = {
         "porcentaje_str": f"2.5{TG_EMOJIS['percent']}",
         "comision": 0.025,
     },
-
-    },
     "activo": {
         "emoji": TG_EMOJIS["bancoactivo"],
         "nombre": "BANCO ACTIVO",

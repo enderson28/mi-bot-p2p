@@ -649,15 +649,11 @@ def construir_monitor_zinli_html():
     """Genera la ficha desglosada por rangos para Zinli USD / USDT"""
     
     # Configuración de rangos (Monto, Etiqueta, Emoji)
-    emojis_rangos = {
-        50.0: (e("RANGO_3", "🥉"), "Rango Menor (50 - 100)"),
-        150.0: (e("RANGO_2", "🥈"), "Rango Medio (100 - 300)"),
-        500.0: (e("RANGO_1", "🥇"), "Rango Mayor (500+)")
-    }
-
-    for usd_ref in [50.0, 150.0, 500.0]:
-        emoji_rango, nombre_def = emojis_rangos.get(usd_ref, (e("RANGO_3", "🥉"), "Rango"))
-
+    emojis_rangos = [
+        (50.0, e("RANGO_3", "🥉"), "Rango Menor (50 - 100)"),
+        (150.0, e("RANGO_2", "🥈"), "Rango Medio (100 - 300)"),
+        (500.0, e("RANGO_1", "🥇"), "Rango Mayor (500+)")
+    ]
     
     hora_actual = (datetime.now() - timedelta(hours=4)).strftime("%I:%M:%S %p")
     
@@ -667,7 +663,7 @@ def construir_monitor_zinli_html():
         f"-----------------------------------------\n\n"
     )
 
-    for monto_ref, nombre_rango, emoji_rango in emojis_rangos:
+    for monto_ref, emoji_rango, nombre_rango in emojis_rangos:
         compra = obtener_tasa_binance_zinli("buy", monto_ref)
         venta = obtener_tasa_binance_zinli("sell", monto_ref)
         
@@ -677,7 +673,7 @@ def construir_monitor_zinli_html():
         emoji_spread = e("SUBIDA", "📈") if spread >= 0 else e("BAJADA", "📉")
         
         texto += (
-            f"{emoji_rango}<b>{nombre_rango}</b>\n"
+            f"{emoji_rango} <b>{nombre_rango}</b>\n"
             f"{e('USDT', '🪙')} {e('VERDE', '🟢')} <b>Compra:</b> <code>${compra:.3f}</code>\n"
             f"{e('USDT', '🪙')} {e('ROJO', '🔴')} <b>Venta:</b> <code>${venta:.3f}</code>\n\n"
             f"{emoji_spread} <b>Spread:</b> <code>${spread:+.3f}</code> (<code>{porcentaje_spread:+.2f}%</code>)\n"

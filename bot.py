@@ -650,10 +650,14 @@ def construir_monitor_zinli_html():
     
     # Configuración de rangos (Monto, Etiqueta, Emoji)
     config_rangos = [
-        (50.0, "Rango Menor ($50 - $100)", "RANGO_3"),
-        (150.0, "Rango Medio ($100 - $300)", "RANGO_2"),
-        (500.0, "Rango Mayor ($500+)", "RANGO_1")
+        50.0: (e("RANGO_3", "🥉"), "Rango Menor (50 - 100)"),
+        150.0: (e("RANGO_2", "🥈"), "Rango Medio (100 - 300)"),
+        500.0: (e("RANGO_1", "🥇"), "Rango Mayor (500+)")
     ]
+
+    for usd_ref in [50.0, 150.0, 500.0]:
+        emoji_rango, nombre_def = config_rangos.get(usd_ref, (e("RANGO_3", "🥉"), "Rango"))
+
     
     hora_actual = (datetime.now() - timedelta(hours=4)).strftime("%I:%M:%S %p")
     
@@ -673,7 +677,7 @@ def construir_monitor_zinli_html():
         emoji_spread = e("SUBIDA", "📈") if spread >= 0 else e("BAJADA", "📉")
         
         texto += (
-            f"{e('zinli', '🔹')} <b>{nombre_rango}</b>\n"
+            f"{emoji_rango}<b>{nombre_rango}</b>\n"
             f"{e('USDT', '🪙')} {e('VERDE', '🟢')} <b>Compra:</b> <code>${compra:.3f}</code>\n"
             f"{e('USDT', '🪙')} {e('ROJO', '🔴')} <b>Venta:</b> <code>${venta:.3f}</code>\n\n"
             f"{emoji_spread} <b>Spread:</b> <code>${spread:+.3f}</code> (<code>{porcentaje_spread:+.2f}%</code>)\n"

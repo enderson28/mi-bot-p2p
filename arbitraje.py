@@ -86,7 +86,7 @@ COMISIONES_BANCOS = {
         "comision": 0.030,
     },    
     "amiga": {
-        "emoji": TG_EMOJIS["bancamiga"],
+        "emoji": TG_EMOJIS["bancaamiga"],
         "nombre": "BANCO BANCAMIGA",
         "porcentaje_str": f"5{TG_EMOJIS['percent']}",
         "comision": 0.050,

@@ -30,7 +30,16 @@ TG_EMOJIS = {
     "bdv1": '<tg-emoji emoji-id="4949813911579788830">🔉</tg-emoji>',
     "bdv2": '<tg-emoji emoji-id="4949567234428110351">🌁</tg-emoji>',
     "teso": '<tg-emoji emoji-id="4949973031528170774">🕥</tg-emoji>',
+    "bancaamiga": '<tg-emoji emoji-id="4947747894871460151">😶‍🌫️</tg-emoji>',
+    "bancoactivo": '<tg-emoji emoji-id="4949649440102156194">☄️</tg-emoji>',
+    "zinli": '<tg-emoji emoji-id="4949657248352700116">😛</tg-emoji>',
+    "banesco": '<tg-emoji emoji-id="4949457545258338260">👎</tg-emoji>',
+    "mercantil": '<tg-emoji emoji-id="4949779543251486291">😀</tg-emoji>',
+    "bfc": '<tg-emoji emoji-id="4949958450114201616">😁</tg-emoji>',
+    "bnc": '<tg-emoji emoji-id="5100832907396646323">😃</tg-emoji>',
+    "bancoexterior": '<tg-emoji emoji-id="4949665988611146999">😉</tg-emoji>',
     "clic": '<tg-emoji emoji-id="5310278924616356636">🎯</tg-emoji>',
+    
 }
 
 COMISIONES_BANCOS = {
@@ -69,6 +78,14 @@ COMISIONES_BANCOS = {
         "nombre": "otros bancos",
         "porcentaje_str": f"2.5{TG_EMOJIS['percent']}",
         "comision": 0.025,
+    },
+
+    },
+    "banco_activo": {
+        "emoji": TG_EMOJIS["bancoactivo"],
+        "nombre": "BANCO ACTIVO",
+        "porcentaje_str": f"2.5{TG_EMOJIS['percent']}",
+        "comision": 0.030,
     },
 }
 
@@ -205,6 +222,7 @@ def registrar_handlers_arbitraje(bot, redis_client):
             InlineKeyboardButton("4. 💳 BDV MASTERCARD (2.5%)", callback_data="arb_banco_bdv_master"),
             InlineKeyboardButton("5. 🏛️ BANCO TESORO (2.5%)", callback_data="arb_banco_tesoro"),
             InlineKeyboardButton("6. 📲 otros bancos (2.5%)", callback_data="arb_banco_otros_2_5"),
+            InlineKeyboardButton("7. 🏦 BANCO ACTIVO (3%)", callback_data="arb_banco_activo"),
             InlineKeyboardButton("⬅️ Salir al Menu", callback_data="arb_salir_menu")
         )
 

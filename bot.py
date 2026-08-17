@@ -828,6 +828,101 @@ def handle_tasas_comando(message):
             except Exception:
                 pass
 
+# Manejador para ejecutar /zinli en grupos permitidos y privados
+@bot.message_handler(commands=['zinli'])
+def handle_zinli_comando(message):
+    user_id = message.from_user.id if message.from_user else None
+    chat_id = message.chat.id
+
+    # --- FILTRO DE SEGURIDAD GENERAL ---
+    if not es_chat_permitido(bot, message, CHATS_PERMITIDOS, USUARIOS_AUTORIZADOS, CREADOR_ID):
+        return
+
+    # --- 1. CHAT PRIVADO ---
+    if message.chat.type == 'private':
+        if message.text and message.text.strip().startswith('/'):
+            try:
+                bot.delete_message(chat_id, message.message_id)
+            except Exception:
+                pass
+
+        if not usuario_esta_unido(user_id):
+            bot.reply_to(message, "❌ No tienes acceso. Debes unirte al canal oficial para usar el bot.")
+            return
+
+        try:
+            texto_resultado = construir_monitor_zinli_html()
+            markup_tasas = InlineKeyboardMarkup()
+            markup_tasas.add(InlineKeyboardButton("🔄 Actualizar Tasas", callback_data="refrescar_canal_zinli"))
+
+            enviar_o_reemplazar_privado(chat_id, user_id, texto_resultado, reply_markup=markup_tasas)
+            return
+        except Exception as e:
+            print(f"Error en zinli privado: {e}")
+            bot.send_message(chat_id, "❌ Error temporal al obtener tasas. Inténtalo de nuevo en unos segundos.")
+            return
+
+    # --- 2. EN GRUPOS ---
+    if getattr(message, 'is_automatic_forward', False):
+        try:
+            bot.edit_message_reply_markup(chat_id=chat_id, message_id=message.message_id, reply_markup=None)
+        except Exception:
+            pass
+        return
+
+    try:
+        bot.delete_message(chat_id, message.message_id)
+    except Exception:
+        pass
+
+    es_admin_g = False
+    try:
+        es_admin_g = es_administrador(bot, chat_id, user_id, message.from_user)
+    except Exception:
+        es_admin_g = False
+
+    if str(user_id) == str(CREADOR_ID) or es_admin_vip(bot, message.from_user) or es_admin_g:
+        try:
+            markup_tasas = None
+
+            if str(chat_id) == str(CANAL_PRUEBA):
+                markup_tasas = InlineKeyboardMarkup()
+                markup_tasas.row(
+                    InlineKeyboardButton("🔄 Actualizar Tasas", callback_data="refrescar_canal_zinli"),
+                    InlineKeyboardButton("🗑️ Borrar", callback_data="borrar_mensaje")
+                )
+
+            msg_enviado = bot.send_message(
+                chat_id,
+                construir_monitor_zinli_html(),
+                parse_mode="HTML",
+                reply_markup=markup_tasas
+            )
+
+            borrar_mensaje_luego(chat_id, msg_enviado.message_id, TIEMPO_VIDA_TABLA)
+
+        except Exception as e:
+            print(f"Error enviando tasas zinli en grupo: {e}")
+
+    else:
+        ahora = time.time()
+        ultima_vez_aviso = grupos_tiempo_aviso.get(chat_id, 0)
+
+        if ahora - ultima_vez_aviso > RATE_LIMIT_AVISO:
+            try:
+                aviso = bot.send_message(
+                    chat_id,
+                    f"❌ <b>Comando exclusivo para Administradores.</b>\n\n"
+                    f"Hola @{message.from_user.username or message.from_user.first_name}. Para mantener el orden, "
+                    f"📌 Consulta todas las tasas libremente en mi chat privado: @{BOT_USERNAME}",
+                    parse_mode="HTML"
+                )
+                grupos_tiempo_aviso[chat_id] = ahora
+                borrar_mensaje_luego(chat_id, aviso.message_id, 10)
+            except Exception:
+                pass
+                
+
 
 # Manejador para /p y el botón P2P
 @bot.message_handler(commands=['p', 'p2p'])

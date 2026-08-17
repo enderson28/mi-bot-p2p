@@ -84,7 +84,7 @@ COMISIONES_BANCOS = {
     "banco_activo": {
         "emoji": TG_EMOJIS["bancoactivo"],
         "nombre": "BANCO ACTIVO",
-        "porcentaje_str": f"2.5{TG_EMOJIS['percent']}",
+        "porcentaje_str": f"3{TG_EMOJIS['percent']}",
         "comision": 0.030,
     },
 }
@@ -222,7 +222,7 @@ def registrar_handlers_arbitraje(bot, redis_client):
             InlineKeyboardButton("4. 💳 BDV MASTERCARD (2.5%)", callback_data="arb_banco_bdv_master"),
             InlineKeyboardButton("5. 🏛️ BANCO TESORO (2.5%)", callback_data="arb_banco_tesoro"),
             InlineKeyboardButton("6. 📲 otros bancos (2.5%)", callback_data="arb_banco_otros_2_5"),
-            InlineKeyboardButton("7. 🏦 BANCO ACTIVO (3%)", callback_data="arb_banco_activo"),
+            InlineKeyboardButton("7. 🏦 BANCO ACTIVO (3%)", callback_data="arb_banco_banco_activo"),
             InlineKeyboardButton("⬅️ Salir al Menu", callback_data="arb_salir_menu")
         )
 

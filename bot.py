@@ -649,14 +649,14 @@ def construir_monitor_zinli_html():
     """Genera la ficha desglosada por rangos para Zinli USD / USDT"""
     
     # Configuración de rangos (Monto, Etiqueta, Emoji)
-    config_rangos = [
+    emojis_rangos = {
         50.0: (e("RANGO_3", "🥉"), "Rango Menor (50 - 100)"),
         150.0: (e("RANGO_2", "🥈"), "Rango Medio (100 - 300)"),
         500.0: (e("RANGO_1", "🥇"), "Rango Mayor (500+)")
-    ]
+    }
 
     for usd_ref in [50.0, 150.0, 500.0]:
-        emoji_rango, nombre_def = config_rangos.get(usd_ref, (e("RANGO_3", "🥉"), "Rango"))
+        emoji_rango, nombre_def = emojis_rangos.get(usd_ref, (e("RANGO_3", "🥉"), "Rango"))
 
     
     hora_actual = (datetime.now() - timedelta(hours=4)).strftime("%I:%M:%S %p")
@@ -667,7 +667,7 @@ def construir_monitor_zinli_html():
         f"-----------------------------------------\n\n"
     )
 
-    for monto_ref, nombre_rango, emoji_key in config_rangos:
+    for monto_ref, nombre_rango, emoji_rango in emojis_rangos:
         compra = obtener_tasa_binance_zinli("buy", monto_ref)
         venta = obtener_tasa_binance_zinli("sell", monto_ref)
         

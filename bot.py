@@ -355,6 +355,63 @@ def obtener_tasa_binance_p2p(tipo_operacion, monto_bs):
 
     return None
 
+def obtener_tasa_binance_zinli(tipo_operacion, monto_usd=0):
+    """
+    Obtiene la tasa P2P de Binance para Zinli (USD).
+    tipo_operacion: 'BUY' o 'SELL'
+    monto_usd: 50, 150, 500, etc.
+    """
+    url = "https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search"
+    headers = {
+        "Accept": "*/*",
+        "Content-Type": "application/json",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+    }
+    
+    payload = {
+        "asset": "USDT",
+        "fiat": "USD",
+        "merchantCheck": True,
+        "publisherType": "merchant",
+        "payTypes": ["Zinli"],
+        "page": 1,
+        "rows": 10,
+        "tradeType": tipo_operacion.upper(),
+        "transAmount": str(int(monto_usd)) if monto_usd > 0 else "",
+        "filterType": "tradable",
+        "additionalKycVerifyFilter": 0,
+        "periods": []
+    }
+
+    try:
+        r = requests.post(url, json=payload, headers=headers, timeout=(5.0, 5.0))
+        if r.status_code == 200:
+            datos = r.json().get('data', [])
+            precios_validos = []
+            for elemento in datos:
+                adv = elemento.get('adv', {})
+                advertiser = elemento.get('advertiser', {})
+                
+                # Descartar bloqueados e inactivos
+                if advertiser.get('userStatus') in ["BLOCKED", "INACTIVE"]:
+                    continue
+                # Descartar anuncios con condiciones especiales/restricciones
+                if adv.get('isRestricted') or bool(adv.get('tradeConditions')) or bool(adv.get('classConditions')) or bool(adv.get('advConditions')):
+                    continue
+                
+                precio = adv.get('price')
+                if precio:
+                    precios_validos.append(float(precio))
+            
+            if precios_validos:
+                return precios_validos[0]
+    except Exception as e:
+        print(f"⚠️ Error al obtener P2P Zinli: {e}")
+    
+    return 0.0
+    
+
+
 def obtener_tasa_binance_spot_usdt():
     """Obtiene el precio spot de USDT/USD evitando bloqueos de IP en EE. UU."""
     # 1. Intento por Coinbase API (no bloquea servidores en US West)
@@ -587,6 +644,46 @@ def construir_monitor_texto_html():
 
     return texto
 
+
+def construir_monitor_zinli_html():
+    """Genera la ficha desglosada por rangos para Zinli USD / USDT"""
+    
+    # Configuración de rangos (Monto, Etiqueta, Emoji)
+    emojis_rangos = [
+        (50.0, e("RANGO_3", "🥉"), "Rango Menor (50 - 100)"),
+        (150.0, e("RANGO_2", "🥈"), "Rango Medio (100 - 300)"),
+        (500.0, e("RANGO_1", "🥇"), "Rango Mayor (500+)")
+    ]
+    
+    hora_actual = (datetime.now() - timedelta(hours=4)).strftime("%I:%M:%S %p")
+    
+    texto = (
+        f"<blockquote>{e('MONITOR', '💻')} Monitor {e('zinli', '🔹')} Zinli / {e('USDT', '🪙')}</blockquote>\n\n"
+        f"{e('ETIQUETA', '🔖')} <b>Filtros Activos:</b> Verificados | Comercializables {e('BOMBILLA', '💡')} | Pago :{e('zinli', '🔹')} {e('CHINCHE', '📌')}\n"
+        f"-----------------------------------------\n\n"
+    )
+
+    for monto_ref, emoji_rango, nombre_rango in emojis_rangos:
+        compra = obtener_tasa_binance_zinli("buy", monto_ref)
+        venta = obtener_tasa_binance_zinli("sell", monto_ref)
+        
+        spread = round(venta - compra, 3)
+        porcentaje_spread = round((spread / compra) * 100, 2) if compra > 0 else 0.0
+        
+        emoji_spread = e("SUBIDA", "📈") if spread >= 0 else e("BAJADA", "📉")
+        
+        texto += (
+            f"{emoji_rango} <b>{nombre_rango}</b>\n"
+            f"{e('USDT', '🪙')} {e('VERDE', '🟢')} <b>Compra:</b> <code>${compra:.3f}</code>\n"
+            f"{e('USDT', '🪙')} {e('ROJO', '🔴')} <b>Venta:</b> <code>${venta:.3f}</code>\n\n"
+            f"{emoji_spread} <b>Spread:</b> <code>${spread:+.3f}</code> (<code>{porcentaje_spread:+.2f}%</code>)\n"
+            f"-----------------------------------------\n"
+        )
+
+    texto += f"\n{e('MUNDO', '🌐')} <i>Última actualización: {hora_actual}</i>"
+    return texto
+    
+
 def construir_intervencion_texto_html(user=None, porcentaje=None):
     if porcentaje is None:
         if user and es_admin_especial(user):
@@ -731,73 +828,101 @@ def handle_tasas_comando(message):
             except Exception:
                 pass
 
+# Manejador para ejecutar /zinli en grupos permitidos y privados
+@bot.message_handler(commands=['zinli'])
+def handle_zinli_comando(message):
+    user_id = message.from_user.id if message.from_user else None
+    chat_id = message.chat.id
 
-# =============================================================
-# 📢 PUBLICADOR AL CANAL CON COPY_MESSAGE (Emojis + Botones)
-# =============================================================
-@bot.message_handler(commands=['p_canal', 'i_canal', 'tasas_canal'])
-def publicar_con_copia_canal(message):
-    user_id = message.from_user.id
-    user_name = f"@{message.from_user.username}" if message.from_user.username else user_id
-
-    # 1. Filtro de seguridad para administradores
-    if user_id not in USUARIOS_AUTORIZADOS and user_name not in USUARIOS_AUTORIZADOS:
+    # --- FILTRO DE SEGURIDAD GENERAL ---
+    if not es_chat_permitido(bot, message, CHATS_PERMITIDOS, USUARIOS_AUTORIZADOS, CREADOR_ID):
         return
 
-    # Borrar el comando escrito en el grupo
+    # --- 1. CHAT PRIVADO ---
+    if message.chat.type == 'private':
+        if message.text and message.text.strip().startswith('/'):
+            try:
+                bot.delete_message(chat_id, message.message_id)
+            except Exception:
+                pass
+
+        if not usuario_esta_unido(user_id):
+            bot.reply_to(message, "❌ No tienes acceso. Debes unirte al canal oficial para usar el bot.")
+            return
+
+        try:
+            texto_resultado = construir_monitor_zinli_html()
+            markup_tasas = InlineKeyboardMarkup()
+            markup_tasas.add(InlineKeyboardButton("🔄 Actualizar Tasas", callback_data="refrescar_canal_zinli"))
+
+            enviar_o_reemplazar_privado(chat_id, user_id, texto_resultado, reply_markup=markup_tasas)
+            return
+        except Exception as e:
+            print(f"Error en zinli privado: {e}")
+            bot.send_message(chat_id, "❌ Error temporal al obtener tasas. Inténtalo de nuevo en unos segundos.")
+            return
+
+    # --- 2. EN GRUPOS ---
+    if getattr(message, 'is_automatic_forward', False):
+        try:
+            bot.edit_message_reply_markup(chat_id=chat_id, message_id=message.message_id, reply_markup=None)
+        except Exception:
+            pass
+        return
+
     try:
-        bot.delete_message(message.chat.id, message.message_id)
+        bot.delete_message(chat_id, message.message_id)
     except Exception:
         pass
 
-    cmd = message.text.strip().lower()
-    callback_data_str = ""
-
-    # 2. Seleccionar el texto y callback según el comando
-    if cmd.startswith('/p_canal'):
-        texto = construir_monitor_texto_html()
-        callback_data_str = "refrescar_tasas"
-    elif cmd.startswith('/i_canal'):
-        texto = construir_intervencion_texto_html(user=message.from_user)
-        callback_data_str = "refrescar_intervencion"
-    elif cmd.startswith('/tasas_canal'):
-        texto = construir_monitor_canal_html()
-        callback_data_str = "refrescar_canal_tasas"
-    else:
-        return
-
+    es_admin_g = False
     try:
-        # Paso A: Creamos un teclado temporal para el mensaje base
-        markup_base = InlineKeyboardMarkup()
-        markup_base.add(InlineKeyboardButton("🔄 Actualizar", callback_data=callback_data_str))
+        es_admin_g = es_administrador(bot, chat_id, user_id, message.from_user)
+    except Exception:
+        es_admin_g = False
 
-        # Enviamos primero al grupo de administración (aquí se renderizan los tg-emojis perfectos)
-        msg_grupo = bot.send_message(
-            chat_id=message.chat.id,
-            text=texto,
-            parse_mode='HTML',
-            reply_markup=markup_base
-        )
+    if str(user_id) == str(CREADOR_ID) or es_admin_vip(bot, message.from_user) or es_admin_g:
+        try:
+            markup_tasas = None
 
-        # Paso B: Preparamos los botones finales para el Canal Oficial
-        markup_canal = InlineKeyboardMarkup()
-        markup_canal.add(InlineKeyboardButton("🔄 Actualizar Tasas", callback_data=callback_data_str))
+            if str(chat_id) == str(CANAL_PRUEBA):
+                markup_tasas = InlineKeyboardMarkup()
+                markup_tasas.row(
+                    InlineKeyboardButton("🔄 Actualizar Tasas", callback_data="refrescar_canal_zinli"),
+                    InlineKeyboardButton("🗑️ Borrar", callback_data="borrar_mensaje")
+                )
 
-        # Paso C: Copiamos el mensaje exacto al Canal Principal con copy_message
-        bot.copy_message(
-            chat_id=CANAL_PRINCIPAL_IDV,
-            from_chat_id=message.chat.id,
-            message_id=msg_grupo.message_id,
-            reply_markup=markup_canal
-        )
+            msg_enviado = bot.send_message(
+                chat_id,
+                construir_monitor_zinli_html(),
+                parse_mode="HTML",
+                reply_markup=markup_tasas
+            )
 
-        # Opcional: Notificar en el grupo
-        aviso = bot.send_message(message.chat.id, "✅ <b>¡Publicado en el canal con tg-emojis y botones!</b>", parse_mode='HTML')
-        borrar_mensaje_luego(message.chat.id, aviso.message_id, 4)
+            borrar_mensaje_luego(chat_id, msg_enviado.message_id, TIEMPO_VIDA_TABLA)
 
-    except Exception as e:
-        bot.send_message(message.chat.id, f"❌ <b>Error al copiar al canal:</b> {e}", parse_mode='HTML')
-        
+        except Exception as e:
+            print(f"Error enviando tasas zinli en grupo: {e}")
+
+    else:
+        ahora = time.time()
+        ultima_vez_aviso = grupos_tiempo_aviso.get(chat_id, 0)
+
+        if ahora - ultima_vez_aviso > RATE_LIMIT_AVISO:
+            try:
+                aviso = bot.send_message(
+                    chat_id,
+                    f"❌ <b>Comando exclusivo para Administradores.</b>\n\n"
+                    f"Hola @{message.from_user.username or message.from_user.first_name}. Para mantener el orden, "
+                    f"📌 Consulta todas las tasas libremente en mi chat privado: @{BOT_USERNAME}",
+                    parse_mode="HTML"
+                )
+                grupos_tiempo_aviso[chat_id] = ahora
+                borrar_mensaje_luego(chat_id, aviso.message_id, 10)
+            except Exception:
+                pass
+                
+
 
 # Manejador para /p y el botón P2P
 @bot.message_handler(commands=['p', 'p2p'])
@@ -1292,8 +1417,54 @@ def refrescar_canal_tasas_callback(call):
         bot.answer_callback_query(call.id, "✅ Tasas actualizadas")
     except Exception:
         bot.answer_callback_query(call.id, "Las tasas ya están al día")
-        
 
+
+
+@bot.callback_query_handler(func=lambda call: call.data == "refrescar_canal_zinli")
+def refrescar_canal_zinli_callback(call):
+    chat_id = call.message.chat.id
+    user_id = call.from_user.id if call.from_user else None
+
+    # 🚨 BLINDAJE EN GRUPOS Y CANALES
+    if call.message.chat.type != "private":
+        es_admin_o_vip = (
+            str(user_id) == str(CREADOR_ID)
+            or es_admin_vip(bot, call.from_user)
+            or es_administrador(bot, chat_id, user_id, call.from_user)
+        )
+        if not es_admin_o_vip:
+            bot.answer_callback_query(
+                call.id,
+                text=f"❌ Solo Administradores pueden actualizar la tasa aquí.👉 Usa mi chat privado: @{BOT_USERNAME}",
+                show_alert=True
+            )
+            return
+
+    # Si es Admin o es en privado, se ejecuta la actualización normal:
+    texto_resultado = construir_monitor_zinli_html()
+
+    markup = InlineKeyboardMarkup()
+    if str(chat_id) == str(CANAL_PRUEBA):
+        markup.row(
+            InlineKeyboardButton("🔄 Actualizar Tasas", callback_data="refrescar_canal_zinli"),
+            InlineKeyboardButton("🗑️ Borrar", callback_data="borrar_mensaje")
+        )
+    else:
+        markup.add(InlineKeyboardButton("🔄 Actualizar Tasas", callback_data="refrescar_canal_zinli"))
+
+    try:
+        bot.edit_message_text(
+            chat_id=chat_id,
+            message_id=call.message.message_id,
+            text=texto_resultado,
+            parse_mode="HTML",
+            reply_markup=markup
+        )
+        bot.answer_callback_query(call.id, "🔄 Tasas actualizadas")
+    except Exception:
+        bot.answer_callback_query(call.id, "Las tasas ya están al día")
+        
+    
 # ==========================================
 #    MANEJADOR DEL BOTÓN INLINE (REFRESCAR)
 # ==========================================

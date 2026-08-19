@@ -1641,9 +1641,10 @@ def filtro_seguridad_chat(message):
     if validar_copia_pega(bot, message, es_admin):
         return
             
-# ==========================================
+
+# ==================================
 # RECEPTOR WEBHOOK PARA EL CAZADOR
-# ==========================================
+# ==================================
 
 CLAVE_SECRETA_BCV = os.getenv("CLAVE_SECRETA_BCV")
 
@@ -1662,99 +1663,114 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
                 if clave != CLAVE_SECRETA_BCV:
                     self.send_response(403)
                     self.end_headers()
-                    self.wfile.write(b'{"status":"error","message":"No autorizado"}')
+                    self.wfile.write(b'{"status":"error", "message":"No autorizado"}')
                     return
 
                 if tasa and fecha:
                     tasa_nueva = float(tasa)
                     tasa_actual = CACHE_TASAS.get("bcv_tasa", tasa_nueva)
+                    fecha_nueva = str(fecha).strip()
 
-                    # Solo procesamos si la tasa raspada es diferente a la actual
-                    if tasa_nueva != tasa_actual:
-                        CACHE_TASAS["bcv_tasa_anterior"] = tasa_actual
-                        CACHE_TASAS["bcv_tasa"] = tasa_nueva
-                        CACHE_TASAS["bcv_fecha"] = str(fecha)
+                    # Obtenemos la lista de fechas que ya han sido publicadas
+                    fechas_procesadas = CACHE_TASAS.get("fechas_procesadas", [])
 
-                        # Recalculamos rangos P2P inmediatamente
-                        tasa_ajustada = tasa_nueva * 1.005
-                        ranges_def = [
-                            ("Rango Menor ($50 - $100)", 50.0),
-                            ("Rango Medio ($100 - $300)", 150.0),
-                            ("Rango Mayor ($500+)", 500.0),
-                        ]
-
-                        nuevos_rangos = {}
-                        for nombre, usd_ref in ranges_def:
-                            monto_bs = usd_ref * tasa_ajustada
-                            compra = obtener_tasa_binance_p2p("BUY", monto_bs) or 0.0
-                            venta = obtener_tasa_binance_p2p("SELL", monto_bs) or 0.0
-                            nuevos_rangos[usd_ref] = {"nombre": nombre, "compra": compra, "venta": venta}
-
-                        CACHE_TASAS["rangos"] = nuevos_rangos
-
-                        # Guardamos copia física en Redis
-                        guardar_cache_en_disco()
-                        print(f"🔥 [WEBHOOK] Tasa BCV actualizada por El Cazador: {tasa_nueva} | Fecha: {fecha}")
-
-                        # Anuncios automáticos sincronizados
-                        def enviar_reportes_sincronizados():
-                            try:
-                                # Lista de canales a los que quieres enviar la notificación
-                                canales_destino = [CANAL_PRUEBA, CANAL_SECUNDARIO]
-
-                                # 1. Envío de Tabla de Intervención
-                                texto_intervencion = construir_intervencion_texto_html()
-                                for canal in canales_destino:
-                                    if canal:
-                                        try:
-                                            bot.send_message(canal, texto_intervencion, parse_mode="HTML")
-                                        except Exception as e_canal:
-                                            print(f"⚠️ No se pudo enviar Intervención a {canal}: {e_canal}")
-                
-                                print("📢 [1/2] Tabla de Intervención enviada a los canales vía Webhook.")
-
-                                # Pausa de 15 segundos entre avisos
-                                time.sleep(15)
-
-                                # 2. Envío de Monitor P2P
-                                texto_monitor = construir_monitor_texto_html()
-                                for canal in canales_destino:
-                                    if canal:
-                                        try:
-                                            bot.send_message(canal, texto_monitor, parse_mode="HTML")
-                                        except Exception as e_canal:
-                                            print(f"⚠️ No se pudo enviar Monitor P2P a {canal}: {e_canal}")
-
-                                print("📢 [2/2] Monitor P2P enviado a los canales vía Webhook.")
-
-                            except Exception as e:
-                                print(f"⚠️ Error general al publicar anuncios desde el webhook: {e}")
-                
-
-                        
-                        # Se ejecuta en un hilo para responder rápido a GitHub Actions
-                        threading.Thread(target=enviar_reportes_sincronizados, daemon=True).start()
-
+                    # 🔒 CANDADO DE SEGURIDAD:
+                    # Si esta fecha ya fue procesada hoy o anteriormente, ignoramos el webhook por completo
+                    if fecha_nueva in fechas_procesadas:
+                        print(f"ℹ️ [WEBHOOK] La tasa para la fecha '{fecha_nueva}' ya fue procesada previamente. Sin cambios.")
                         self.send_response(200)
                         self.send_header('Content-Type', 'application/json')
                         self.end_headers()
-                        self.wfile.write(b'{"status":"success","message":"Tasa actualizada, guardada en Redis y anunciada"}')
+                        self.wfile.write(b'{"status":"ignored", "message":"Tasa ya registrada para esta fecha"}')
                         return
-                    else:
-                        print(f"😴 [WEBHOOK] Tasa recibida ({tasa_nueva}) es idéntica a la actual. Sin cambios.")
-                        self.send_response(200)
-                        self.send_header('Content-Type', 'application/json')
-                        self.end_headers()
-                        self.wfile.write(b'{"status":"ignored","message":"Sin cambios en la tasa"}')
-                        return
+
+                    # 🔥 Si llegamos aquí, es una FECHA NUEVA REAL publicada por el BCV:
+                    CACHE_TASAS["bcv_tasa_anterior"] = tasa_actual
+                    CACHE_TASAS["bcv_tasa"] = tasa_nueva
+                    CACHE_TASAS["bcv_fecha"] = fecha_nueva
+
+                    # Guardamos la fecha en el historial para no volver a repetirla
+                    if fecha_nueva not in fechas_procesadas:
+                        fechas_procesadas.append(fecha_nueva)
+                        # Mantenemos solo las últimas 10 fechas guardadas para no llenar la memoria
+                        CACHE_TASAS["fechas_procesadas"] = fechas_procesadas[-10:]
+
+                    # Recalculamos rangos P2P inmediatamente
+                    tasa_ajustada = tasa_nueva * 1.005
+                    ranges_def = [
+                        ("Rango Menor ($50 - $100)", 50.0),
+                        ("Rango Medio ($100 - $300)", 150.0),
+                        ("Rango Mayor ($500+)", 500.0)
+                    ]
+
+                    nuevos_rangos = {}
+                    for nombre, usd_ref in ranges_def:
+                        monto_bs = usd_ref * tasa_ajustada
+                        compra = obtener_tasa_binance_p2p("BUY", monto_bs) or 0.0
+                        venta = obtener_tasa_binance_p2p("SELL", monto_bs) or 0.0
+                        nuevos_rangos[usd_ref] = {"nombre": nombre, "compra": compra, "venta": venta}
+
+                    CACHE_TASAS["rangos"] = nuevos_rangos
+
+                    # Guardamos copia física en Redis
+                    guardar_cache_en_disco()
+                    print(f"🔥 [WEBHOOK] ¡FECHA NUEVA DETECTADA! Tasa BCV actualizada por El Cazador: {tasa_nueva} | Fecha: {fecha_nueva}")
+
+                    # Anuncios automáticos sincronizados
+                    def enviar_reportes_sincronizados():
+                        try:
+                            # Lista de canales a los que quieres enviar la notificación
+                            canales_destino = [CANAL_PRUEBA, CANAL_SECUNDARIO]
+
+                            # 1. Envío de Tabla de Intervención
+                            texto_intervencion = construir_intervencion_texto_html()
+                            for canal in canales_destino:
+                                if canal:
+                                    try:
+                                        bot.send_message(canal, texto_intervencion, parse_mode="HTML")
+                                    except Exception as e_canal:
+                                        print(f"⚠️ No se pudo enviar Intervención a {canal}: {e_canal}")
+
+                            print("📣 [1/2] Tabla de Intervención enviada a los canales vía Webhook.")
+
+                            # Pausa de 15 segundos entre avisos
+                            time.sleep(15)
+
+                            # 2. Envío de Monitor P2P
+                            texto_monitor = construir_monitor_texto_html()
+                            for canal in canales_destino:
+                                if canal:
+                                    try:
+                                        bot.send_message(canal, texto_monitor, parse_mode="HTML")
+                                    except Exception as e_canal:
+                                        print(f"⚠️ No se pudo enviar Monitor P2P a {canal}: {e_canal}")
+
+                            print("📣 [2/2] Monitor P2P enviado a los canales vía Webhook.")
+
+                        except Exception as e:
+                            print(f"⚠️ Error general al publicar anuncios desde el webhook: {e}")
+
+                    # Se ejecuta en un hilo para responder rápido a GitHub Actions
+                    threading.Thread(target=enviar_reportes_sincronizados, daemon=True).start()
+
+                    self.send_response(200)
+                    self.send_header('Content-Type', 'application/json')
+                    self.end_headers()
+                    self.wfile.write(b'{"status":"success", "message":"Tasa actualizada, guardada en Redis y anunciada"}')
+                    return
+                else:
+                    print(f"ℹ️ [WEBHOOK] Tasa recibida no contiene datos válidos. Sin cambios.")
+                    self.send_response(200)
+                    self.send_header('Content-Type', 'application/json')
+                    self.end_headers()
+                    self.wfile.write(b'{"status":"ignored", "message":"Sin cambios en la tasa"}')
+                    return
 
             except Exception as e:
                 print(f"Error procesando webhook: {e}")
-
-            self.send_response(400)
-            self.end_headers()
+                self.send_response(400)
+                self.end_headers()
                         
-
 
 def iniciar_servidor_receptor():
     port = int(os.getenv("PORT", 8080))

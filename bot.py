@@ -1662,37 +1662,45 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
 
                 if clave != CLAVE_SECRETA_BCV:
                     self.send_response(403)
+                    self.send_header('Content-Type', 'application/json')
                     self.end_headers()
-                    self.wfile.write(b'{"status":"error", "message":"No autorizado"}')
+                    self.wfile.write(b'{"status": "error", "message": "No autorizad@"}')
                     return
 
                 if tasa and fecha:
                     tasa_nueva = float(tasa)
-                    tasa_actual = CACHE_TASAS.get("bcv_tasa", tasa_nueva)
                     fecha_nueva = str(fecha).strip()
 
-                    # Obtenemos la lista de fechas que ya han sido publicadas
+                    # Leemos la tasa que realmente estuvo vigente en el cache
+                    tasa_previa_guardada = CACHE_TASAS.get("bcv_tasa")
+
+                    # Obtenemos la lista de fechas procesadas
                     fechas_procesadas = CACHE_TASAS.get("fechas_procesadas", [])
 
                     # 🔒 CANDADO DE SEGURIDAD:
                     # Si esta fecha ya fue procesada hoy o anteriormente, ignoramos el webhook por completo
                     if fecha_nueva in fechas_procesadas:
-                        print(f"ℹ️ [WEBHOOK] La tasa para la fecha '{fecha_nueva}' ya fue procesada previamente. Sin cambios.")
+                        print(f"🔒 [WEBHOOK] La tasa para la fecha '{fecha_nueva}' ya fue procesada previamente. Sin cambios.")
                         self.send_response(200)
                         self.send_header('Content-Type', 'application/json')
                         self.end_headers()
-                        self.wfile.write(b'{"status":"ignored", "message":"Tasa ya registrada para esta fecha"}')
+                        self.wfile.write(b'{"status": "Ignored", "message": "Tasa ya registrada para esta fecha"}')
                         return
 
-                    # 🔥 Si llegamos aquí, es una FECHA NUEVA REAL publicada por el BCV:
-                    CACHE_TASAS["bcv_tasa_anterior"] = tasa_actual
+                    # 🔥 SI LLEGAMOS AQUÍ, ES UNA FECHA NUEVA REAL publicada por el BCV:
+                    # Guardamos la tasa anterior para el Bloque 1 de arbitraje
+                    if tasa_previa_guardada is not None:
+                        CACHE_TASAS["bcv_tasa_anterior"] = float(tasa_previa_guardada)
+                    else:
+                        CACHE_TASAS["bcv_tasa_anterior"] = tasa_nueva
+
                     CACHE_TASAS["bcv_tasa"] = tasa_nueva
                     CACHE_TASAS["bcv_fecha"] = fecha_nueva
 
-                    # Guardamos la fecha en el historial para no volver a repetirla
+                    # Guardamos la fecha en el historial para no volver a mecerla
                     if fecha_nueva not in fechas_procesadas:
                         fechas_procesadas.append(fecha_nueva)
-                        # Mantenemos solo las últimas 10 fechas guardadas para no llenar la memoria
+                        # Mantener solo las últimas 10 fechas
                         CACHE_TASAS["fechas_procesadas"] = fechas_procesadas[-10:]
 
                     # Recalculamos rangos P2P inmediatamente
@@ -1719,7 +1727,6 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
                     # Anuncios automáticos sincronizados
                     def enviar_reportes_sincronizados():
                         try:
-                            # Lista de canales a los que quieres enviar la notificación
                             canales_destino = [CANAL_PRUEBA, CANAL_SECUNDARIO]
 
                             # 1. Envío de Tabla de Intervención
@@ -1756,20 +1763,21 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
                     self.send_response(200)
                     self.send_header('Content-Type', 'application/json')
                     self.end_headers()
-                    self.wfile.write(b'{"status":"success", "message":"Tasa actualizada, guardada en Redis y anunciada"}')
-                    return
+                    self.wfile.write(b'{"status": "success", "message": "Tasa actualizada, guardada en Redis y anunciada"}')
                 else:
-                    print(f"ℹ️ [WEBHOOK] Tasa recibida no contiene datos válidos. Sin cambios.")
+                    print("⚠️ [WEBHOOK] Tasa recibida no contiene datos válidos. Sin cambios.")
                     self.send_response(200)
                     self.send_header('Content-Type', 'application/json')
                     self.end_headers()
-                    self.wfile.write(b'{"status":"ignored", "message":"Sin cambios en la tasa"}')
-                    return
+                    self.wfile.write(b'{"status": "ignored", "message": "Sin cambios en la tasa"}')
 
             except Exception as e:
-                print(f"Error procesando webhook: {e}")
+                print(f"❌ Error procesando webhook: {e}")
                 self.send_response(400)
+                self.send_header('Content-Type', 'application/json')
                 self.end_headers()
+                
+
                         
 
 def iniciar_servidor_receptor():

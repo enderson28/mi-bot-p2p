@@ -421,19 +421,19 @@ def generar_y_enviar_resultado(chat_id, user_id, tasa_p2p_venta, bot, redis_clie
 
     # --- BLOQUE 1: RESULTADO PRINCIPAL HOY ---
     msj = (
-        f"<{TG_EMOJIS['chart']}> <b>RESULTADO DE ARBITRAJE & <{TG_EMOJIS['clic']}> REPOSICIÓN</b></quote>\n"
+        f"<{TG_EMOJIS['chart']}> <b>RESULTADO DE ARBITRAJE & <{TG_EMOJIS['clic']}> REPOSICIÓN</b>\n"
         f"<b>Banco:</b> {data_user.get('nombre_banco', 'Banco')}\n"
         f"<{TG_EMOJIS['dollar']}> <b>Monto Comprado:</b> ${monto_usd:,.2f} USD\n"
-        f"<{TG_EMOJIS['bcv']}> <b>Tasa Compra (0.5%):</b> {res['tasa_interv_hoy']:,.2f} Bs</quote>\n"
+        f"<{TG_EMOJIS['bcv']}> <b>Tasa Compra (0.5%):</b> {res['tasa_interv_hoy']:,.2f} Bs\n"
         f"<{TG_EMOJIS['red_circle']}> <b>Tasa Venta P2P:</b> {tasa_p2p_venta:,.2f} Bs/<{TG_EMOJIS['usdt']}>\n"
         f"<{TG_EMOJIS['usdt']}> <b>USDT Líquidos <{TG_EMOJIS['binance']}> Binance:</b> <code>{res['usdt_netos_binance']:,.2f}</code> <{TG_EMOJIS['usdt']}>\n"
-        f"<{TG_EMOJIS['hand']}> <b>Inversión de Hoy:</b> <code>{res['bs_invertidos_hoy']:,.2f}</code> Bs </quote>\n"
+        f"<{TG_EMOJIS['hand']}> <b>Inversión de Hoy:</b> <code>{res['bs_invertidos_hoy']:,.2f}</code> Bs\n"
         f"---------------------\n"
         f"<{TG_EMOJIS['briefcase']}> <b>RECUPERAR CAPITAL HOY</b>\n"
         f"<{TG_EMOJIS['binance']}> <b>Vender en P2P:</b> <code>{res['usdt_recuperar_hoy']:,.2f}</code> <{TG_EMOJIS['usdt']}>\n"
         f"<{TG_EMOJIS['party']}> <b>Ganancia Actual:</b> +<code>{res['ganancia_usdt_hoy']:,.2f}</code> <{TG_EMOJIS['usdt']}> (<code>{res['ganancia_bs_hoy']:,.2f}</code> Bs)\n"
     )
-
+    
     # Cálculo dinámico del próximo día hábil
     dias_semana = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
     dia_num = datetime.now().weekday()

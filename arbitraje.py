@@ -433,7 +433,7 @@ def generar_y_enviar_resultado(chat_id, user_id, tasa_p2p_venta, bot, redis_clie
         f"<{TG_EMOJIS['binance']}> <b>Vender en P2P:</b> <code>{res['usdt_recuperar_hoy']:,.2f}</code> <{TG_EMOJIS['usdt']}>\n"
         f"<{TG_EMOJIS['party']}> <b>Ganancia Actual:</b> +<code>{res['ganancia_usdt_hoy']:,.2f}</code> <{TG_EMOJIS['usdt']}> (<code>{res['ganancia_bs_hoy']:,.2f}</code> Bs)\n"
     )
-    
+
     # Cálculo dinámico del próximo día hábil
     dias_semana = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
     dia_num = datetime.now().weekday()
@@ -443,7 +443,7 @@ def generar_y_enviar_resultado(chat_id, user_id, tasa_p2p_venta, bot, redis_clie
     if tasa_bcv_manana:
         diferencia_bcv = tasa_bcv_manana - tasa_bcv_hoy
         msj += (
-            f"\n---------------------\n"
+            f"---------------------\n"
             f"<{TG_EMOJIS['clic']}> <b>REPOSICIÓN PARA EL {proximo_dia.upper()}</b> (BCV Actualizado)\n"
             f"<{TG_EMOJIS['bcv']}> <b>Tasa BCV (+0.5%):</b> {res['tasa_interv_manana']:,.2f} Bs (+{diferencia_bcv:,.2f} Bs)\n"
             f"<{TG_EMOJIS['bcv']}> <b>Bs necesarios:</b> {res['bs_necesarios_manana']:,.2f} Bs\n"
@@ -452,13 +452,11 @@ def generar_y_enviar_resultado(chat_id, user_id, tasa_p2p_venta, bot, redis_clie
         )
     else:
         msj += (
-            f"\n---------------------\n"
-            f"<{TG_EMOJIS['bcv']}> <i>Tasa BCV del *{proximo_dia}* aún no publicada por el <{TG_EMOJIS['bcv']}> BCV.</i>\n"
+            f"---------------------\n"
+            f"<{TG_EMOJIS['bcv']}> <i>Tasa BCV del {proximo_dia} aún no publicada por el <{TG_EMOJIS['bcv']}> BCV.</i>\n"
             f"<i>Usa este cálculo para tu operación de hoy.</i>\n"
         )
-
-    msj += "---------------------\n"
-
+        
     markup = InlineKeyboardMarkup(row_width=1)
     markup.add(
         InlineKeyboardButton("🔄 Calcular otro monto", callback_data="calc_arbitraje"),

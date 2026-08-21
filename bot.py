@@ -478,8 +478,30 @@ def cargar_cache_de_disco():
             if data:
                 CACHE_TASAS.update(json.loads(data))
                 print("💾 ¡Tasas recuperadas con éxito desde Redis!")
+                
+                # --- SEMILLA HISTÓRICA BASE BCV ---
+                if "bcv_historico_mes" not in CACHE_TASAS or not CACHE_TASAS["bcv_historico_mes"]:
+                    CACHE_TASAS["bcv_historico_mes"] = [
+                        {"fecha": "03/08", "porcentaje": "0.44%", "variacion": "3.31 Bs"},
+                        {"fecha": "04/08", "porcentaje": "0.41%", "variacion": "3.06 Bs"},
+                        {"fecha": "05/08", "porcentaje": "0.10%", "variacion": "0.75 Bs"},
+                        {"fecha": "06/08", "porcentaje": "0.11%", "variacion": "0.81 Bs"},
+                        {"fecha": "07/08", "porcentaje": "0.11%", "variacion": "0.83 Bs"},
+                        {"fecha": "10/08", "porcentaje": "0.49%", "variacion": "3.68 Bs"},
+                        {"fecha": "11/08", "porcentaje": "0.41%", "variacion": "3.13 Bs"},
+                        {"fecha": "12/08", "porcentaje": "0.33%", "variacion": "2.51 Bs"},
+                        {"fecha": "13/08", "porcentaje": "0.55%", "variacion": "4.21 Bs"},
+                        {"fecha": "14/08", "porcentaje": "0.19%", "variacion": "1.47 Bs"},
+                        {"fecha": "17/08", "porcentaje": "0.10%", "variacion": "0.77 Bs"},
+                        {"fecha": "18/08", "porcentaje": "0.26%", "variacion": "2.02 Bs"},
+                        {"fecha": "19/08", "porcentaje": "0.27%", "variacion": "2.08 Bs"},
+                        {"fecha": "21/08", "porcentaje": "0.33%", "variacion": "2.54 Bs"},
+                        {"fecha": "24/08", "porcentaje": "0.60%", "variacion": "4.71 Bs"}
+                    ]
+                    guardar_cache_en_disco()
     except Exception as e:
         print(f"Error leyendo caché desde Redis: {e}")
+        
             
 def actualizar_cache_segundo_plano():
     global CACHE_TASAS
@@ -922,7 +944,42 @@ def handle_zinli_comando(message):
             except Exception:
                 pass
                 
+# ==========================================
+# COMANDO EXCLUSIVO PROPIETARIO: /bcv_por
+# ==========================================
+@bot.message_handler(commands=['bcv_por'])
+def handle_bcv_porcentajes(message):
+    user_id = message.from_user.id
+    
+    # 🔒 Candado de seguridad exclusivo para ti
+    if str(user_id) != str(CREADOR_ID):
+        try:
+            bot.delete_message(message.chat.id, message.message_id)
+        except Exception:
+            pass
+        return
 
+    # Si eres tú, borramos el comando ejecutado para mantener la pulcritud del chat
+    try:
+        bot.delete_message(message.chat.id, message.message_id)
+    except Exception:
+        pass
+
+    historico = CACHE_TASAS.get("bcv_historico_mes", [])
+    
+    # Plantilla del mensaje
+    msj = (
+        f" <b>AGOSTO</b> {TG_EMOJIS.get('CALENDARIO', '📊')} <b>Aumentos diarios del</b> {TG_EMOJIS.get('BCV', '🏛️')}\n\n"
+    )
+    
+    emoji_flecha = TG_EMOJIS.get('FLECHA_DERECHA', '➡️')
+    for item in historico:
+        msj += f"{emoji_flecha} {item['fecha']}. {item['porcentaje']}. {item['variacion']}\n"
+        
+    msj += f"\n{TG_EMOJIS.get('BCV', '🏛️')} <b>@COMUNIDV</b> 🚀"
+
+    bot.send_message(message.chat.id, msj, parse_mode="HTML")
+    
 
 # Manejador para /p y el botón P2P
 @bot.message_handler(commands=['p', 'p2p'])
@@ -1650,7 +1707,7 @@ CLAVE_SECRETA_BCV = os.getenv("CLAVE_SECRETA_BCV")
 
 class WebhookHandler(http.server.BaseHTTPRequestHandler):
     def do_POST(self):
-        if self.path == "/actualizar_bcv":
+        if self.path == '/actualizar_bcv':
             content_length = int(self.headers.get('Content-Length', 0))
             post_data = self.rfile.read(content_length)
 
@@ -1664,7 +1721,7 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
                     self.send_response(403)
                     self.send_header('Content-Type', 'application/json')
                     self.end_headers()
-                    self.wfile.write(b'{"status": "error", "message": "No autorizad@"}')
+                    self.wfile.write(b'{"status": "error", "message": "No autorizado"}')
                     return
 
                 if tasa and fecha:
@@ -1677,30 +1734,45 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
                     # Obtenemos la lista de fechas procesadas
                     fechas_procesadas = CACHE_TASAS.get("fechas_procesadas", [])
 
-                    # 🔒 CANDADO DE SEGURIDAD:
-                    # Si esta fecha ya fue procesada hoy o anteriormente, ignoramos el webhook por completo
+                    # 🔒 CANDADO DE SEGURIDAD
                     if fecha_nueva in fechas_procesadas:
                         print(f"🔒 [WEBHOOK] La tasa para la fecha '{fecha_nueva}' ya fue procesada previamente. Sin cambios.")
                         self.send_response(200)
                         self.send_header('Content-Type', 'application/json')
                         self.end_headers()
-                        self.wfile.write(b'{"status": "Ignored", "message": "Tasa ya registrada para esta fecha"}')
+                        self.wfile.write(b'{"status": "ignored", "message": "Tasa ya registrada para esta fecha"}')
                         return
 
-                    # 🔥 SI LLEGAMOS AQUÍ, ES UNA FECHA NUEVA REAL publicada por el BCV:
-                    # Guardamos la tasa anterior para el Bloque 1 de arbitraje
-                    if tasa_previa_guardada is not None:
+                    # 🔥 SI LLEGAMOS AQUÍ, ES UNA FECHA NUEVA REAL PUBLICADA POR EL BCV:
+                    if tasa_previa_guardada is not None and float(tasa_previa_guardada) > 0:
                         CACHE_TASAS["bcv_tasa_anterior"] = float(tasa_previa_guardada)
+                        
+                        # CÁLCULO DE PORCENTAJE Y VARIACIÓN EN BS
+                        variacion_bs = tasa_nueva - float(tasa_previa_guardada)
+                        porcentaje_inc = (variacion_bs / float(tasa_previa_guardada)) * 100
+                        
+                        # Extraemos formato corto DD/MM de la fecha valor del BCV
+                        fecha_corta = fecha_nueva[:5] if len(fecha_nueva) >= 5 else fecha_nueva
+                        
+                        nuevo_registro = {
+                            "fecha": fecha_corta,
+                            "porcentaje": f"{porcentaje_inc:.2f}%",
+                            "variacion": f"{variacion_bs:.2f} Bs"
+                        }
+                        
+                        historico = CACHE_TASAS.get("bcv_historico_mes", [])
+                        if not any(x.get("fecha") == fecha_corta for x in historico):
+                            historico.append(nuevo_registro)
+                            CACHE_TASAS["bcv_historico_mes"] = historico[-20:]
                     else:
                         CACHE_TASAS["bcv_tasa_anterior"] = tasa_nueva
 
                     CACHE_TASAS["bcv_tasa"] = tasa_nueva
                     CACHE_TASAS["bcv_fecha"] = fecha_nueva
 
-                    # Guardamos la fecha en el historial para no volver a mecerla
+                    # Guardamos la fecha en el historial para no volver a meterla
                     if fecha_nueva not in fechas_procesadas:
                         fechas_procesadas.append(fecha_nueva)
-                        # Mantener solo las últimas 10 fechas
                         CACHE_TASAS["fechas_procesadas"] = fechas_procesadas[-10:]
 
                     # Recalculamos rangos P2P inmediatamente
@@ -1716,7 +1788,7 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
                         monto_bs = usd_ref * tasa_ajustada
                         compra = obtener_tasa_binance_p2p("BUY", monto_bs) or 0.0
                         venta = obtener_tasa_binance_p2p("SELL", monto_bs) or 0.0
-                        nuevos_rangos[usd_ref] = {"nombre": nombre, "compra": compra, "venta": venta}
+                        nuevos_rangos[str(usd_ref)] = {"nombre": nombre, "compra": compra, "venta": venta}
 
                     CACHE_TASAS["rangos"] = nuevos_rangos
 
@@ -1775,8 +1847,7 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
                 print(f"❌ Error procesando webhook: {e}")
                 self.send_response(400)
                 self.send_header('Content-Type', 'application/json')
-                self.end_headers()
-                
+                self.end_headers()  
 
                         
 
@@ -1787,101 +1858,6 @@ def iniciar_servidor_receptor():
         print(f"🚀 Receptor de tasas escuchando en el puerto {port}")
         httpd.serve_forever()
                 
-
-# =============================================================
-# 🛡️ MANEJADOR INLINE (Publicaciones con Emojis Animados)
-# =============================================================
-@bot.inline_handler(lambda query: True)
-def manejar_consultas_inline(inline_query):
-    try:
-        user_obj = inline_query.from_user
-        user_id = user_obj.id
-        user_name = f"@{user_obj.username}" if user_obj.username else user_id
-        
-        # 1. FILTRO DE SEGURIDAD EXCLUSIVO PARA ADMINS
-        if user_id not in USUARIOS_AUTORIZADOS and user_name not in USUARIOS_AUTORIZADOS:
-            bot.answer_inline_query(inline_query.id, [], cache_time=1)
-            return
-
-        texto_busqueda = inline_query.query.strip().lower()
-        resultados = []
-
-        # --- OPCIÓN 1: Escribe 'p' o '/p' ---
-        if texto_busqueda in ['p', '/p']:
-            texto_p = construir_monitor_texto_html()
-            resultados.append(
-                types.InlineQueryResultArticle(
-                    id='p2p_inline',
-                    title="📊 Reporte Monitor P2P",
-                    description="Publicar tabla P2P con rangos y emojis animados",
-                    input_message_content=types.InputTextMessageContent(
-                        message_text=texto_p,
-                        parse_mode='HTML'
-                    )
-                )
-            )
-
-        # --- OPCIÓN 2: Escribe 'i' o '/i' ---
-        elif texto_busqueda in ['i', '/i']:
-            texto_i = construir_intervencion_texto_html(user=user_obj)
-            resultados.append(
-                types.InlineQueryResultArticle(
-                    id='intervencion_inline',
-                    title="🏦 Reporte Intervención",
-                    description="Publicar calculador de intervención en el canal",
-                    input_message_content=types.InputTextMessageContent(
-                        message_text=texto_i,
-                        parse_mode='HTML'
-                    )
-                )
-            )
-
-        # --- OPCIÓN 3: Escribe 'tasas' o '/tasas' ---
-        elif texto_busqueda in ['tasas', '/tasas', 'tasa']:
-            texto_tasas = construir_monitor_canal_html()
-            resultados.append(
-                types.InlineQueryResultArticle(
-                    id='tasas_inline',
-                    title="📈 Resumen Tasas Vivo",
-                    description="Publicar ficha corta de Binance P2P",
-                    input_message_content=types.InputTextMessageContent(
-                        message_text=texto_tasas,
-                        parse_mode='HTML'
-                    )
-                )
-            )
-
-        # --- OPCIÓN POR DEFECTO ---
-        else:
-            texto_p = construir_monitor_texto_html()
-            texto_i = construir_intervencion_texto_html(user=user_obj)
-            texto_tasas = construir_monitor_canal_html()
-
-            resultados = [
-                types.InlineQueryResultArticle(
-                    id='p2p_default',
-                    title="📊 Monitor P2P Completo",
-                    description="Toca para publicar reporte completo P2P",
-                    input_message_content=types.InputTextMessageContent(message_text=texto_p, parse_mode='HTML')
-                ),
-                types.InlineQueryResultArticle(
-                    id='tasas_default',
-                    title="📈 Ficha Tasas en Vivo",
-                    description="Toca para publicar ficha corta Binance",
-                    input_message_content=types.InputTextMessageContent(message_text=texto_tasas, parse_mode='HTML')
-                ),
-                types.InlineQueryResultArticle(
-                    id='intervencion_default',
-                    title="🏦 Calculadora Intervención",
-                    description="Toca para publicar Intervención BCV",
-                    input_message_content=types.InputTextMessageContent(message_text=texto_i, parse_mode='HTML')
-                )
-            ]
-
-        bot.answer_inline_query(inline_query.id, resultados, cache_time=1)
-
-    except Exception as e:
-        print(f"Error en inline_query: {e}")
         
 
 # ==========================================

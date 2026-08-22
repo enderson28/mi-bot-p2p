@@ -499,7 +499,7 @@ def generar_y_enviar_resultado(chat_id, user_id, tasa_p2p_venta, bot, redis_clie
     # --- PARCHE DE SEGURIDAD ---
     # Si 'bcv_tasa_anterior' viene con la tasa vieja del mes (menor a 770 Bs),
     # forzamos que sea la tasa del día hábil anterior real (779.95 Bs)
-    if tasa_bcv_anterior < 770.0:
+    if tasa_bcv_anterior < 775.0:
         tasa_bcv_anterior = 779.95
 
     fecha_cache = str(cache_data.get("bcv_fecha") or cache_data.get("fecha") or "")

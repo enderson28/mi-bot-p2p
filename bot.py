@@ -716,7 +716,7 @@ def construir_intervencion_texto_html(user=None, porcentaje=None):
 
     porcentaje_txt = "1%" if porcentaje == 1.0 else "0.5%"
 
-        tasa_bcv = float(CACHE_TASAS.get("bcv_tasa", 784.66))
+    tasa_bcv = float(CACHE_TASAS.get("bcv_tasa", 784.66))
     tasa_anterior = float(CACHE_TASAS.get("bcv_tasa_anterior", 779.95))
     fecha_valor_bcv = CACHE_TASAS.get("bcv_fecha", "Lunes, 24 Agosto 2026")
 

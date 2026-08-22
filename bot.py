@@ -980,7 +980,7 @@ def handle_bcv_porcentajes(message):
     nombre_mes = meses_nombre.get(mes_num, "MES ACTUAL")
 
     msj = (
-        f"<blockquote><b>{nombre_mes}</b> {e('CALENDARIO', '📊')} <b>( © Lista de Porcentaje/Bs ) Aumentos diarios del</b> {e('BCV', '🏛️')}</blockquote>\n\n"
+        f"<blockquote>{e('CALENDARIO', '📊')} <b>{nombre_mes}</b> | <b>Lista de</b> ( {e('PORCENTAJE', '⚖️')}/{e('BOLIVAR', '😌')} ) {e('ESTADISTICA', '🫠')} <b>Aumentos diarios del</b> {e('BCV', '🏛️')}</blockquote>\n\n"
     )
     
     

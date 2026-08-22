@@ -450,9 +450,9 @@ def obtener_tasa_binance_spot_usdt():
                     
 # --- CACHÉ GLOBAL DE TASAS ---
 CACHE_TASAS = {
-    "bcv_tasa": 756.71,
-    "bcv_tasa_anterior": 755.90,
-    "bcv_fecha": "2026-08-06",
+    "bcv_tasa": 784.6633,
+    "bcv_tasa_anterior": 779.95,
+    "bcv_fecha": "2026-08-24",
     "usdt_usd_spot": 0.9987,  # 👈 AGREGAR ESTA LÍNEA
     "rangos": {} # Guardará las tasas calculadas por rango
 }
@@ -512,7 +512,7 @@ def actualizar_cache_segundo_plano():
             CACHE_TASAS["usdt_usd_spot"] = obtener_tasa_binance_spot_usdt()
             
             # Leemos la tasa BCV actual almacenada en memoria (la que envía el cazador)
-            tasa_bcv = CACHE_TASAS.get("bcv_tasa", 756.71)
+            tasa_bcv = CACHE_TASAS.get("bcv_tasa", 784.6633)
             tasa_bcv_ajustada = tasa_bcv * 1.005
 
             ranges_def = [
@@ -544,8 +544,8 @@ threading.Thread(target=actualizar_cache_segundo_plano, daemon=True).start()
 
 def refrescar_tasas_en_vivo():
     global CACHE_TASAS
-    tasa_bcv = CACHE_TASAS.get("bcv_tasa", 756.71)
-    fecha_bcv = CACHE_TASAS.get("bcv_fecha", "2026-08-06")
+    tasa_bcv = CACHE_TASAS.get("bcv_tasa", 784.6633)
+    fecha_bcv = CACHE_TASAS.get("bcv_fecha", "2026-08-24")
 
     tasa_bcv_ajustada = tasa_bcv * 1.005
     rangos_def = [
@@ -608,8 +608,8 @@ def construir_monitor_texto_html():
     texto = (
         f"{e('MONITOR', '💻')} <b>Monitor de Tasas Arbitraje P2P</b>\n\n"
         f"<blockquote>{e('CALENDARIO', '🗓')} <b>Vigencia BCV :</b> {fecha_valor_bcv}</blockquote>\n"
-        f"<blockquote>{e('BCV', '🏦')} <b>BCV Oficial :</b> <code>{tasa_bcv:.2f}</code> Bs</blockquote>\n"
-        f"<blockquote>{e('BALANZA', '⚖️')} <b>BCV + 0.5% :</b> <code>{tasa_intervencion:.2f}</code> Bs</blockquote>\n\n"
+        f"<blockquote>{e('BCV', '🏦')} <b>BCV Oficial :</b> <code>{tasa_bcv:.3f}</code> Bs</blockquote>\n"
+        f"<blockquote>{e('BALANZA', '⚖️')} <b>BCV + 0.5% :</b> <code>{tasa_intervencion:.3f}</code> Bs</blockquote>\n\n"
         f"{e('ETIQUETA', '🔖')} <b>Filtros Activos:</b> Verificados | Comerciables {e('BOMBILLA', '💡')} | Pago : Todos {e('CHINCHE', '📌')}\n"
         f"-----------------------------------------\n\n"
     )
@@ -716,27 +716,32 @@ def construir_intervencion_texto_html(user=None, porcentaje=None):
 
     porcentaje_txt = "1%" if porcentaje == 1.0 else "0.5%"
 
-    tasa_bcv = CACHE_TASAS.get("bcv_tasa", 756.71)
-    tasa_anterior = CACHE_TASAS.get("bcv_tasa_anterior", 755.90)
-    fecha_valor_bcv = CACHE_TASAS.get("bcv_fecha", "06 Agosto 2026")
+    tasa_bcv = float(CACHE_TASAS.get("bcv_tasa", 784.66))
+    tasa_anterior = float(CACHE_TASAS.get("bcv_tasa_anterior", 779.95))
+    fecha_valor_bcv = CACHE_TASAS.get("bcv_fecha", "Lunes, 24 Agosto 2026")
+
+    # Si la tasa anterior en Redis es muy vieja/baja (< 770 Bs), forzamos la tasa del día anterior real (779.95)
+    if tasa_anterior < 770.0:
+        tasa_anterior = 779.95
 
     diferencia = tasa_bcv - tasa_anterior
 
     if diferencia > 0:
-        texto_tendencia = f"{e('SUBIDA', '📈')} BCV AUMENTÓ {abs(diferencia):.2f} BS PARA SU FECHA VALOR BCV {e('CALENDARIO', '🗓')}"
+        texto_tendencia = f"{e('SUBIDA', '📈')} BCV AUMENTÓ {abs(diferencia):.2f} BS PARA SU FECHA VALOR BCV {e('CALENDARIO')}"
     elif diferencia < 0:
-        texto_tendencia = f"{e('BAJADA', '📉')} BCV BAJÓ {abs(diferencia):.2f} BS PARA SU FECHA VALOR BCV {e('CALENDARIO', '🗓')}"
+        texto_tendencia = f"{e('BAJADA','📉')} BCV BAJÓ {abs(diferencia):.2f} BS PARA SU FECHA VALOR BCV {e('CALENDARIO')}"
     else:
-        texto_tendencia = f"{e('BALANZA', '⚖️')} BCV MANTIENE SU TASA PARA SU FECHA VALOR BCV {e('CALENDARIO', '🗓')}"
+        texto_tendencia = f"{e('BALANZA', '⚖️')} BCV MANTIENE SU TASA PARA SU FECHA VALOR BCV {e('CALENDARIO')}"
 
+    # Mantenemos el cálculo del porcentaje de intervención
     tasa_intervencion = tasa_bcv * (1 + (porcentaje / 100))
-
+        
     texto = (
         f"{e('MONITOR', '💻')} <b>¿Cuántos bolívares necesitas para comprar en Intervención?</b>\n\n"
         f"<blockquote>{e('CALENDARIO', '🗓')} <b>Fecha Valor BCV:</b> {fecha_valor_bcv}</blockquote>\n"
         f"<blockquote>{texto_tendencia}</blockquote>\n"
-        f"<blockquote>{e('BCV', '🏦')} <b>Tasa BCV Oficial:</b> <code>{tasa_bcv:.2f}</code> Bs</blockquote>\n"
-        f"<blockquote>{e('BALANZA', '⚖️')} <b>Tasa Intervención:</b> <code>{tasa_intervencion:.2f}</code> Bs ({porcentaje_txt} Agregado)</blockquote>\n"
+        f"<blockquote>{e('BCV', '🏦')} <b>Tasa BCV Oficial:</b> <code>{tasa_bcv:.3f}</code> Bs</blockquote>\n"
+        f"<blockquote>{e('BALANZA', '⚖️')} <b>Tasa Intervención:</b> <code>{tasa_intervencion:.3f}</code> Bs ({porcentaje_txt} Agregado)</blockquote>\n"
         f"-----------------------------------------\n\n"
     )
 

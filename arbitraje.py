@@ -20,6 +20,7 @@ TG_EMOJIS = {
     "percent": '<tg-emoji emoji-id="5229064374403998351">🛍</tg-emoji>',
     "chart": '<tg-emoji emoji-id="5197503331215361533">📈</tg-emoji>',
     "red_circle": '<tg-emoji emoji-id="5411225014148014586">🔴</tg-emoji>',
+    "green_circle": '<tg-emoji emoji-id="5416081784641168838">🟢</tg-emoji>',
     "usdt": '<tg-emoji emoji-id="5814556334829343625">🪙</tg-emoji>',
     "usd": '<tg-emoji emoji-id="5325517150754986636">🪙</tg-emoji>',
     "binance": '<tg-emoji emoji-id="5830062858985018281">🪙</tg-emoji>',
@@ -92,6 +93,12 @@ COMISIONES_BANCOS = {
         "porcentaje_str": f"5{TG_EMOJIS['percent']}",
         "comision": 0.050,
     },
+    "mercantil": {
+        "emoji": TG_EMOJIS["mercantil"],
+        "nombre": "MERCANTIL",
+        "porcentaje_str": f"{TG_EMOJIS['zinli']}",
+        "comision": 0.0,
+    },   
 }
 
 COMISION_PASARELA_BINANCE = 0.041  # 4.1% fija
@@ -151,21 +158,26 @@ def obtener_precio_spot_usdt_usd(cache_data=None):
     return 0.9987
 
 
-def calcular_arbitraje_reposicion(monto_usd, comision_banco, tasa_bcv_hoy, tasa_bcv_manana, tasa_p2p_venta, tasa_usd_usdt=0.9987):
-    tasa_interv_hoy = tasa_bcv_hoy * 1.005
+def calcular_arbitraje_reposicion(monto_usd, comision_banco, tasa_bcv_hoy, tasa_bcv_manana, tasa_p2p_venta, tasa_usd_usdt=0.9987, tasa_zinli=None):
+    tasa_interv_hoy = tasa_bcv_hoy
     bs_invertidos_hoy = monto_usd * tasa_interv_hoy
 
     usd_tras_banco = monto_usd * (1 - comision_banco)
     usd_fiat_netos = usd_tras_banco * (1 - COMISION_PASARELA_BINANCE)
-
-    # Conversión Spot USD Fiat -> USDT Cripto
-    usdt_netos_binance = usd_fiat_netos / tasa_usd_usdt if tasa_usd_usdt > 0 else usd_fiat_netos
+    
+    # Si viene tasa_zinli se calcula la conversión Zinli -> USDT, si no, usa el cálculo de pasarela
+    if tasa_zinli and tasa_zinli > 0:
+        usdt_netos_binance = monto_usd / tasa_zinli
+    else:
+        usd_tras_banco = monto_usd * (1 - comision_banco)
+        usd_fiat_netos = usd_tras_banco * (1 - COMISION_PASARELA_BINANCE)
+        usdt_netos_binance = usd_fiat_netos / tasa_usd_usdt if tasa_usd_usdt > 0 else usd_fiat_netos
 
     usdt_recuperar_hoy = bs_invertidos_hoy / tasa_p2p_venta
     ganancia_usdt_hoy = usdt_netos_binance - usdt_recuperar_hoy
     ganancia_bs_hoy = ganancia_usdt_hoy * tasa_p2p_venta
 
-    tasa_interv_manana = (tasa_bcv_manana * 1.005) if tasa_bcv_manana else (tasa_bcv_hoy * 1.005)
+    tasa_interv_manana = tasa_bcv_manana if tasa_bcv_manana else tasa_bcv_hoy
     bs_necesarios_manana = monto_usd * tasa_interv_manana
     usdt_recuperar_manana = bs_necesarios_manana / tasa_p2p_venta
     ganancia_usdt_manana = usdt_netos_binance - usdt_recuperar_manana
@@ -229,6 +241,7 @@ def registrar_handlers_arbitraje(bot, redis_client):
             InlineKeyboardButton("6. 📲 otros bancos (2.5%)", callback_data="arb_banco_otros_2_5"),
             InlineKeyboardButton("7. 🏦 BANCO ACTIVO (3%)", callback_data="arb_banco_activo"),
             InlineKeyboardButton("8. 🏦 BANCO BANCAMIGA (5%)", callback_data="arb_banco_amiga"),
+            InlineKeyboardButton("9. 🏦 MERCANTIL", callback_data="arb_banco_mercantil"),
             InlineKeyboardButton("⬅️ Salir al Menu", callback_data="arb_salir_menu")
         )
 
@@ -284,7 +297,7 @@ def registrar_handlers_arbitraje(bot, redis_client):
         )
 
         bot.register_next_step_handler(msg, solicitar_tasa_p2p, bot, redis_client, user_id)
-        
+
 
     # --- PASO 3: SOLICITAR TASA DE VENTA / MOSTRAR BOTÓN DE MONITOR ---
     def solicitar_tasa_p2p(message, bot, redis_client, user_id):
@@ -314,10 +327,35 @@ def registrar_handlers_arbitraje(bot, redis_client):
         USER_ARBITRAJE_DATA[user_id]["monto_usd"] = monto_usd
 
         cache_data = obtener_datos_cache_redis(redis_client)
-        tasa_p2p_auto = obtener_tasa_p2p_por_rango(cache_data, monto_usd)
-
-        USER_ARBITRAJE_DATA[user_id]["tasa_p2p_auto"] = tasa_p2p_auto
         USER_ARBITRAJE_DATA[user_id]["cache_data"] = cache_data
+
+        banco_key = USER_ARBITRAJE_DATA[user_id].get("banco_key")
+
+        # === DESVÍO ESPECIAL PARA MERCANTIL (ZINLI) ===
+        if banco_key == "mercantil":
+            # Traemos la tasa de compra USDT desde tu función existente en bot.py
+            from bot import obtener_tasa_binance_zinli
+            tasa_zinli_auto = obtener_tasa_binance_zinli("buy", monto_usd)
+            USER_ARBITRAJE_DATA[user_id]["tasa_zinli_auto"] = tasa_zinli_auto
+
+            markup = InlineKeyboardMarkup(row_width=1)
+            markup.add(
+                InlineKeyboardButton(f"🟢 Usar tasa Zinli ({tasa_zinli_auto:.3f} $)", callback_data="arb_zinli_auto"),
+                InlineKeyboardButton("⬅️ Salir al menú", callback_data="arb_salir_menu")
+            )
+
+            msg_text = (
+                f"<blockquote>{TG_EMOJIS['green_circle']} Compra|{TG_EMOJIS['usdt']} en {TG_EMOJIS['zinli']}</blockquote>\n\n"
+                f"{TG_EMOJIS['pencil']} Escribe manualmente la tasa a la que compraste en {TG_EMOJIS['zinli']} <i>(Ej: 1.025 o 1.032)</i>:\n"
+                f"O presiona {TG_EMOJIS['clic']} el botón si deseas usar la tasa detectada por el monitor:"
+            )
+            msg = bot.send_message(chat_id, msg_text, parse_mode="HTML", reply_markup=markup)
+            bot.register_next_step_handler(msg, procesar_tasa_zinli_manual, bot, redis_client, user_id)
+            return
+
+        # === FLUJO NORMAL PARA OTROS BANCOS (VES) ===
+        tasa_p2p_auto = obtener_tasa_p2p_por_rango(cache_data, monto_usd)
+        USER_ARBITRAJE_DATA[user_id]["tasa_p2p_auto"] = tasa_p2p_auto
 
         markup = InlineKeyboardMarkup(row_width=1)
         markup.add(
@@ -328,7 +366,7 @@ def registrar_handlers_arbitraje(bot, redis_client):
         msg_text = (
             f"{TG_EMOJIS['red_circle']} <b>Tasa de Venta P2P {TG_EMOJIS['usdt1']}</b>\n\n"
             f"{TG_EMOJIS['pencil']} Escribe manualmente la tasa a la que vas a vender <i>(Ej: 890 o 892.5)</i>:\n"
-            f"O presiona {TG_EMOJIS['clic']} el botón si deseas usar la {TG_EMOJIS['red_circle']} tasa detectada por el monitor para tu rango:"
+            f"O presiona {TG_EMOJIS['clic']} el botón si deseas usar la {TG_EMOJIS['red_circle']} tasa detectada por el monitor:"
         )
 
         msg = bot.send_message(
@@ -339,7 +377,71 @@ def registrar_handlers_arbitraje(bot, redis_client):
         )
 
         bot.register_next_step_handler(msg, procesar_tasa_p2p_manual, bot, redis_client, user_id)
+        
+    # --- MANEJADORES EXCLUSIVOS PARA MERCANTIL (ZINLI) ---
 
+    @bot.callback_query_handler(func=lambda call: call.data == "arb_zinli_auto")
+    def usar_zinli_auto(call):
+        bot.answer_callback_query(call.id)
+        chat_id = call.message.chat.id
+        user_id = call.from_user.id
+        bot.clear_step_handler_by_chat_id(chat_id)
+
+        if user_id in USER_ARBITRAJE_DATA:
+            tasa_zinli = USER_ARBITRAJE_DATA[user_id].get("tasa_zinli_auto", 1.025)
+            USER_ARBITRAJE_DATA[user_id]["tasa_zinli_usada"] = tasa_zinli
+            pedir_tasa_ves_tras_zinli(chat_id, user_id, bot, redis_client)
+
+    def procesar_tasa_zinli_manual(message, bot, redis_client, user_id):
+        chat_id = message.chat.id
+        text = message.text.strip().replace(",", ".")
+
+        if text in ["🟢 P2P-USDT 🔴", "📊 Intervencion 📊", "📟 Calculadora", "⚙️ Soporte", "🤖 IA Consulta", "📊 Arbitraje & Reposición"]:
+            bot.clear_step_handler_by_chat_id(chat_id)
+            return
+
+        try:
+            tasa_zinli = float(text)
+            if tasa_zinli <= 0:
+                raise ValueError()
+        except ValueError:
+            markup = InlineKeyboardMarkup()
+            markup.add(InlineKeyboardButton("⬅️ Salir al menú", callback_data="arb_salir_menu"))
+            msg = bot.send_message(
+                chat_id,
+                "❌ <b>Tasa Zinli inválida.</b> Ingresa un número válido (ej: 1.028):",
+                parse_mode="HTML",
+                reply_markup=markup
+            )
+            bot.register_next_step_handler(msg, procesar_tasa_zinli_manual, bot, redis_client, user_id)
+            return
+
+        USER_ARBITRAJE_DATA[user_id]["tasa_zinli_usada"] = tasa_zinli
+        pedir_tasa_ves_tras_zinli(chat_id, user_id, bot, redis_client)
+
+    def pedir_tasa_ves_tras_zinli(chat_id, user_id, bot, redis_client):
+        monto_usd = USER_ARBITRAJE_DATA[user_id]["monto_usd"]
+        cache_data = USER_ARBITRAJE_DATA[user_id]["cache_data"]
+
+        tasa_p2p_auto = obtener_tasa_p2p_por_rango(cache_data, monto_usd)
+        USER_ARBITRAJE_DATA[user_id]["tasa_p2p_auto"] = tasa_p2p_auto
+
+        markup = InlineKeyboardMarkup(row_width=1)
+        markup.add(
+            InlineKeyboardButton(f"🔴 Usar la tasa del monitor ({tasa_p2p_auto:.2f} Bs)", callback_data="arb_p2p_auto"),
+            InlineKeyboardButton("⬅️ Salir al menú", callback_data="arb_salir_menu")
+        )
+
+        msg_text = (
+            f"{TG_EMOJIS['red_circle']} <b>Tasa de Venta P2P {TG_EMOJIS['usdt1']}</b>\n\n"
+            f"{TG_EMOJIS['pencil']} Escribe manualmente la tasa a la que vas a vender <i>(Ej: 890 o 892.5)</i>:\n"
+            f"O presiona {TG_EMOJIS['clic']} el botón si deseas usar la {TG_EMOJIS['red_circle']} tasa detectada por el monitor:"
+        )
+
+        msg = bot.send_message(chat_id, msg_text, parse_mode="HTML", reply_markup=markup)
+        bot.register_next_step_handler(msg, procesar_tasa_p2p_manual, bot, redis_client, user_id)
+    
+    
     # --- HANDLER SI PRESIONA BOTÓN CON TASA DEL MONITOR ---
     @bot.callback_query_handler(func=lambda call: call.data == "arb_p2p_auto")
     def usar_p2p_auto(call):
@@ -386,48 +488,68 @@ def generar_y_enviar_resultado(chat_id, user_id, tasa_p2p_venta, bot, redis_clie
     comision_banco = data_user.get("comision_banco", 0)
     cache_data = data_user.get("cache_data") or obtener_datos_cache_redis(redis_client) or {}
     tasa_usd_usdt = obtener_precio_spot_usdt_usd(cache_data)
+    
+    # EXTRAEMOS LA TASA ZINLI SI EL BANCO ES MERCANTIL
+    tasa_zinli_usada = data_user.get("tasa_zinli_usada", None)
+    
+    # 1. Leemos las tasas de Redis
+    tasa_bcv_actual = float(cache_data.get("bcv_tasa", 784.66))
+    tasa_bcv_anterior = float(cache_data.get("bcv_tasa_anterior", 779.95))
 
-    tasa_bcv_actual = float(cache_data.get("bcv_tasa", 756.71))
-    tasa_bcv_anterior = float(cache_data.get("bcv_tasa_anterior", tasa_bcv_actual))
+    # --- PARCHE DE SEGURIDAD ---
+    # Si 'bcv_tasa_anterior' viene con la tasa vieja del mes (menor a 770 Bs),
+    # forzamos que sea la tasa del día hábil anterior real (779.95 Bs)
+    if tasa_bcv_anterior < 780.0:
+        tasa_bcv_anterior = 779.95
 
-    # Leemos la clave exacta que utiliza el scraper en Redis
     fecha_cache = str(cache_data.get("bcv_fecha") or cache_data.get("fecha") or "")
 
-    # Obtenemos el día actual en número (ej: "21") y en texto (ej: "jueves")
     now = datetime.now()
     dia_actual_num = str(now.day)
     dia_actual_zero = now.strftime("%d")
 
-    # Extraemos solo el día escrito en el string de Redis omitiendo el año
-    fecha_sin_ano = fecha_cache.split(', ')[1] if ', ' in fecha_cache else fecha_cache
+    fecha_sin_ano = fecha_cache.split(',')[1] if ',' in fecha_cache else fecha_cache
 
-    # Si el número de hoy está en el texto de la fecha (sin incluir el año)
+    # 2. Control estricto de Bloques (Hoy vs Lunes)
     if (dia_actual_num in fecha_sin_ano) or (dia_actual_zero in fecha_sin_ano):
-        tasa_bcv_hoy = tasa_bcv_actual
+        # La fecha en Redis coincide con el día de hoy
+        tasa_bcv_hoy = tasa_bcv_actual * 1.005
         tasa_bcv_manana = None
     else:
-        # La fecha guardada en Redis es la de mañana
-        tasa_bcv_hoy = tasa_bcv_anterior
-        tasa_bcv_manana = tasa_bcv_actual
+        # La fecha en Redis ya es la del Lunes (24 de Agosto)
+        # Bloque 1 (Hoy): Usa la tasa del Viernes (779.95 * 1.005 = 783.85 Bs)
+        tasa_bcv_hoy = tasa_bcv_anterior * 1.005
+        
+        # Bloque 2 (Lunes): Usa la tasa del Lunes (784.66 * 1.005 = 788.58 Bs)
+        tasa_bcv_manana = tasa_bcv_actual * 1.005
 
+    # 3. Llamada al cálculo pasando las variables exactas
     res = calcular_arbitraje_reposicion(
         monto_usd=monto_usd,
         comision_banco=comision_banco,
-        tasa_bcv_hoy=tasa_bcv_hoy,
+        tasa_bcv_hoy=tasa_bcv_hoy,       # ¡Ojo! Debe llamarse tasa_bcv_hoy
         tasa_bcv_manana=tasa_bcv_manana,
         tasa_p2p_venta=tasa_p2p_venta,
-        tasa_usd_usdt=tasa_usd_usdt
+        tasa_usd_usdt=tasa_usd_usdt,
+        tasa_zinli=tasa_zinli_usada
     )
-
+    
     # --- BLOQUE 1: RESULTADO PRINCIPAL HOY ---
     msj = (
         f"{TG_EMOJIS['chart']} <b>RESULTADO DE ARBITRAJE & {TG_EMOJIS['clic']} REPOSICIÓN</b>\n"
         f"<b>Banco:</b> {data_user.get('nombre_banco', 'Banco')}\n"
         f"{TG_EMOJIS['dollar']} <b>Monto Comprado:</b> ${monto_usd:,.2f} USD\n"
-        f"{TG_EMOJIS['bcv']} <b>Tasa Compra (0.5%):</b> {res['tasa_interv_hoy']:,.2f} Bs\n"
+        f"{TG_EMOJIS['bcv']} <b>Tasa Compra (0.5%):</b> {res['tasa_interv_hoy']:,.3f} Bs\n"
+    )
+    
+    # Si usó Zinli, mostramos la línea adicional de Compra Zinli aquí arriba
+    if tasa_zinli_usada:
+        msj += f"{TG_EMOJIS['green_circle']} <b>Compra Zinli:</b> {tasa_zinli_usada:,.3f} $\n"
+        
+    msj += (
         f"{TG_EMOJIS['red_circle']} <b>Tasa Venta P2P:</b> {tasa_p2p_venta:,.2f} Bs/{TG_EMOJIS['usdt']}\n"
         f"{TG_EMOJIS['usdt']} <b>USDT Líquidos {TG_EMOJIS['binance']} Binance:</b> <code>{res['usdt_netos_binance']:,.2f}</code> {TG_EMOJIS['usdt']} ({TG_EMOJIS['usd']}/{TG_EMOJIS['usdt']} {tasa_usd_usdt:.5f})\n"
-        f"{TG_EMOJIS['hand']} <b>Inversión de Hoy:</b> <code>{res['bs_invertidos_hoy']:,.2f}</code> Bs\n"
+        f"{TG_EMOJIS['hand']} <b>Inversión de Hoy:</b> <code>{res['bs_invertidos_hoy']:,.0f}</code> Bs\n"
         f"---------------------\n"
         f"{TG_EMOJIS['briefcase']} <b>RECUPERAR CAPITAL HOY</b>\n"
         f"{TG_EMOJIS['binance']} <b>Vender en P2P:</b> <code>{res['usdt_recuperar_hoy']:,.2f}</code> {TG_EMOJIS['usdt']}\n"
@@ -445,8 +567,8 @@ def generar_y_enviar_resultado(chat_id, user_id, tasa_p2p_venta, bot, redis_clie
         msj += (
             f"---------------------\n"
             f"{TG_EMOJIS['clic']} <b>REPOSICIÓN PARA EL {proximo_dia.upper()}</b> (BCV Actualizado)\n"
-            f"{TG_EMOJIS['bcv']} <b>Tasa BCV (+0.5%):</b> {res['tasa_interv_manana']:,.2f} Bs (+{diferencia_bcv:,.2f} Bs)\n"
-            f"{TG_EMOJIS['bcv']} <b>Bs necesarios:</b> {res['bs_necesarios_manana']:,.2f} Bs\n"
+            f"{TG_EMOJIS['bcv']} <b>Tasa BCV (+0.5%):</b> {res['tasa_interv_manana']:,.3f} Bs (+{diferencia_bcv:,.2f} Bs)\n"
+            f"{TG_EMOJIS['bcv']} <b>Bs necesarios:</b> {res['bs_necesarios_manana']:,.0f} Bs\n"
             f"{TG_EMOJIS['binance']} <b>Vender en P2P:</b> <code>{res['usdt_recuperar_manana']:,.2f}</code> {TG_EMOJIS['usdt']}\n"
             f"{TG_EMOJIS['party']} <b>Ganancia Real Aislada:</b> +<code>{res['ganancia_usdt_manana']:,.2f}</code> {TG_EMOJIS['usdt']}\n"
         )

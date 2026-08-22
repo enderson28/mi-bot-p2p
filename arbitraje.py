@@ -167,8 +167,11 @@ def calcular_arbitraje_reposicion(monto_usd, comision_banco, tasa_bcv_hoy, tasa_
     
     # Si viene tasa_zinli se calcula la conversión Zinli -> USDT, si no, usa el cálculo de pasarela
     if tasa_zinli and tasa_zinli > 0:
-        usdt_netos_binance = monto_usd / tasa_zinli
+        usdt_brutos = monto_usd / tasa_zinli
+        comision_taker = usdt_brutos * 0.00041  # Tarifa Taker de Binance (~0.08 USDT en $200)
+        usdt_netos_binance = usdt_brutos - comision_taker
     else:
+        comision_taker = 0.0
         usd_tras_banco = monto_usd * (1 - comision_banco)
         usd_fiat_netos = usd_tras_banco * (1 - COMISION_PASARELA_BINANCE)
         usdt_netos_binance = usd_fiat_netos / tasa_usd_usdt if tasa_usd_usdt > 0 else usd_fiat_netos
@@ -196,6 +199,7 @@ def calcular_arbitraje_reposicion(monto_usd, comision_banco, tasa_bcv_hoy, tasa_
         "usdt_recuperar_manana": usdt_recuperar_manana,
         "ganancia_usdt_manana": ganancia_usdt_manana,
         "ganancia_bs_manana": ganancia_bs_manana,
+        "comision_taker": comsion_taker,
     }
 
 
@@ -544,7 +548,12 @@ def generar_y_enviar_resultado(chat_id, user_id, tasa_p2p_venta, bot, redis_clie
     
     # Si usó Zinli, mostramos la línea adicional de Compra Zinli aquí arriba
     if tasa_zinli_usada:
+        usdt_bruto_calc = monto_usd / tasa_zinli_usada
+        comision_extra = usdt_bruto_calc - res['usdt_netos_binance']
+        
         msj += f"{TG_EMOJIS['green_circle']} <b>Compra Zinli:</b> {tasa_zinli_usada:,.3f} $\n"
+        msj += f"🧪 <b>USDT Brutos:</b> {usdt_bruto_calc:.2f} ₮\n"
+        msj += f"🔻 <b>Comisión Binance P2P:</b> -{comision_extra:.2f} ₮\n"
         
     msj += (
         f"{TG_EMOJIS['red_circle']} <b>Tasa Venta P2P:</b> {tasa_p2p_venta:,.2f} Bs/{TG_EMOJIS['usdt']}\n"

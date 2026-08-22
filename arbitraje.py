@@ -1,4 +1,4 @@
-uimport json
+import json
 import logging
 import requests
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton

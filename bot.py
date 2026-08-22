@@ -450,9 +450,9 @@ def obtener_tasa_binance_spot_usdt():
                     
 # --- CACHÉ GLOBAL DE TASAS ---
 CACHE_TASAS = {
-    "bcv_tasa": 756.71,
-    "bcv_tasa_anterior": 755.90,
-    "bcv_fecha": "2026-08-06",
+    "bcv_tasa": 784.6633,
+    "bcv_tasa_anterior": 779.95,
+    "bcv_fecha": "2026-08-24",
     "usdt_usd_spot": 0.9987,  # 👈 AGREGAR ESTA LÍNEA
     "rangos": {} # Guardará las tasas calculadas por rango
 }
@@ -512,7 +512,7 @@ def actualizar_cache_segundo_plano():
             CACHE_TASAS["usdt_usd_spot"] = obtener_tasa_binance_spot_usdt()
             
             # Leemos la tasa BCV actual almacenada en memoria (la que envía el cazador)
-            tasa_bcv = CACHE_TASAS.get("bcv_tasa", 756.71)
+            tasa_bcv = CACHE_TASAS.get("bcv_tasa", 784.6633)
             tasa_bcv_ajustada = tasa_bcv * 1.005
 
             ranges_def = [
@@ -544,8 +544,8 @@ threading.Thread(target=actualizar_cache_segundo_plano, daemon=True).start()
 
 def refrescar_tasas_en_vivo():
     global CACHE_TASAS
-    tasa_bcv = CACHE_TASAS.get("bcv_tasa", 756.71)
-    fecha_bcv = CACHE_TASAS.get("bcv_fecha", "2026-08-06")
+    tasa_bcv = CACHE_TASAS.get("bcv_tasa", 784.6633)
+    fecha_bcv = CACHE_TASAS.get("bcv_fecha", "2026-08-24")
 
     tasa_bcv_ajustada = tasa_bcv * 1.005
     rangos_def = [

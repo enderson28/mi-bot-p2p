@@ -493,7 +493,7 @@ def generar_y_enviar_resultado(chat_id, user_id, tasa_p2p_venta, bot, redis_clie
     tasa_zinli_usada = data_user.get("tasa_zinli_usada", None)
     
     # 1. Extraer tasas de Redis asegurando floats limpios
-    tasa_bcv_actual = float(cache_data.get("bcv_tasa", tasa_bcv_actual))
+    tasa_bcv_actual = float(cache_data.get("bcv_tasa", 784.66))
     tasa_bcv_anterior = float(cache_data.get("bcv_tasa_anterior", tasa_bcv_anterior))
 
     # Leemos la clave exacta que utiliza el scraper en Redis

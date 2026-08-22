@@ -20,6 +20,7 @@ TG_EMOJIS = {
     "percent": '<tg-emoji emoji-id="5229064374403998351">🛍</tg-emoji>',
     "chart": '<tg-emoji emoji-id="5197503331215361533">📈</tg-emoji>',
     "red_circle": '<tg-emoji emoji-id="5411225014148014586">🔴</tg-emoji>',
+    "green_circle": '<tg-emoji emoji-id="5416081784641168838">🟢</tg-emoji>',
     "usdt": '<tg-emoji emoji-id="5814556334829343625">🪙</tg-emoji>',
     "usd": '<tg-emoji emoji-id="5325517150754986636">🪙</tg-emoji>',
     "binance": '<tg-emoji emoji-id="5830062858985018281">🪙</tg-emoji>',
@@ -157,7 +158,7 @@ def obtener_precio_spot_usdt_usd(cache_data=None):
     return 0.9987
 
 
-def calcular_arbitraje_reposicion(monto_usd, comision_banco, tasa_bcv_hoy, tasa_bcv_manana, tasa_p2p_venta, tasa_usd_usdt=0.9987):
+def calcular_arbitraje_reposicion(monto_usd, comision_banco, tasa_bcv_hoy, tasa_bcv_manana, tasa_p2p_venta, tasa_usd_usdt=0.9987, tasa_zinli=None):
     tasa_interv_hoy = tasa_bcv_hoy * 1.005
     bs_invertidos_hoy = monto_usd * tasa_interv_hoy
 
@@ -344,8 +345,8 @@ def registrar_handlers_arbitraje(bot, redis_client):
             )
 
             msg_text = (
-                f"{TG_EMOJIS['zinli']} <b>Tasa Compra USDT en Zinli</b>\n\n"
-                f"{TG_EMOJIS['pencil']} Escribe manualmente la tasa a la que compraste en Zinli <i>(Ej: 1.025 o 1.032)</i>:\n"
+                f"<b>Tasa</b> <blockquote>{TG_EMOJIS['green_circle']} Compra|{TG_EMOJIS['usdt']} en {TG_EMOJIS['zinli']}</blockquote>\n\n"
+                f"{TG_EMOJIS['pencil']} Escribe manualmente la tasa a la que compraste en {TG_EMOJIS['zinli']} <i>(Ej: 1.025 o 1.032)</i>:\n"
                 f"O presiona {TG_EMOJIS['clic']} el botón si deseas usar la tasa detectada por el monitor:"
             )
             msg = bot.send_message(chat_id, msg_text, parse_mode="HTML", reply_markup=markup)

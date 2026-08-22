@@ -92,6 +92,12 @@ COMISIONES_BANCOS = {
         "porcentaje_str": f"5{TG_EMOJIS['percent']}",
         "comision": 0.050,
     },
+    "mercantil": {
+        "emoji": TG_EMOJIS["mercantil"],
+        "nombre": "MERCANTIL (Zinli)",
+        "porcentaje_str": f"Zinli",
+        "comision": 0.0,
+    },   
 }
 
 COMISION_PASARELA_BINANCE = 0.041  # 4.1% fija
@@ -157,9 +163,14 @@ def calcular_arbitraje_reposicion(monto_usd, comision_banco, tasa_bcv_hoy, tasa_
 
     usd_tras_banco = monto_usd * (1 - comision_banco)
     usd_fiat_netos = usd_tras_banco * (1 - COMISION_PASARELA_BINANCE)
-
-    # Conversión Spot USD Fiat -> USDT Cripto
-    usdt_netos_binance = usd_fiat_netos / tasa_usd_usdt if tasa_usd_usdt > 0 else usd_fiat_netos
+    
+    # Si viene tasa_zinli se calcula la conversión Zinli -> USDT, si no, usa el cálculo de pasarela
+    if tasa_zinli and tasa_zinli > 0:
+        usdt_netos_binance = monto_usd / tasa_zinli
+    else:
+        usd_tras_banco = monto_usd * (1 - comision_banco)
+        usd_fiat_netos = usd_tras_banco * (1 - COMISION_PASARELA_BINANCE)
+        usdt_netos_binance = usd_fiat_netos / tasa_usd_usdt if tasa_usd_usdt > 0 else usd_fiat_netos
 
     usdt_recuperar_hoy = bs_invertidos_hoy / tasa_p2p_venta
     ganancia_usdt_hoy = usdt_netos_binance - usdt_recuperar_hoy
@@ -229,6 +240,7 @@ def registrar_handlers_arbitraje(bot, redis_client):
             InlineKeyboardButton("6. 📲 otros bancos (2.5%)", callback_data="arb_banco_otros_2_5"),
             InlineKeyboardButton("7. 🏦 BANCO ACTIVO (3%)", callback_data="arb_banco_activo"),
             InlineKeyboardButton("8. 🏦 BANCO BANCAMIGA (5%)", callback_data="arb_banco_amiga"),
+            InlineKeyboardButton("9. 🏦 MERCANTIL (Zinli)", callback_data="arb_banco_mercantil"),
             InlineKeyboardButton("⬅️ Salir al Menu", callback_data="arb_salir_menu")
         )
 
@@ -284,7 +296,7 @@ def registrar_handlers_arbitraje(bot, redis_client):
         )
 
         bot.register_next_step_handler(msg, solicitar_tasa_p2p, bot, redis_client, user_id)
-        
+
 
     # --- PASO 3: SOLICITAR TASA DE VENTA / MOSTRAR BOTÓN DE MONITOR ---
     def solicitar_tasa_p2p(message, bot, redis_client, user_id):
@@ -314,10 +326,35 @@ def registrar_handlers_arbitraje(bot, redis_client):
         USER_ARBITRAJE_DATA[user_id]["monto_usd"] = monto_usd
 
         cache_data = obtener_datos_cache_redis(redis_client)
-        tasa_p2p_auto = obtener_tasa_p2p_por_rango(cache_data, monto_usd)
-
-        USER_ARBITRAJE_DATA[user_id]["tasa_p2p_auto"] = tasa_p2p_auto
         USER_ARBITRAJE_DATA[user_id]["cache_data"] = cache_data
+
+        banco_key = USER_ARBITRAJE_DATA[user_id].get("banco_key")
+
+        # === DESVÍO ESPECIAL PARA MERCANTIL (ZINLI) ===
+        if banco_key == "mercantil":
+            # Traemos la tasa de compra USDT desde tu función existente en bot.py
+            from bot import obtener_tasa_binance_zinli
+            tasa_zinli_auto = obtener_tasa_binance_zinli("buy", monto_usd)
+            USER_ARBITRAJE_DATA[user_id]["tasa_zinli_auto"] = tasa_zinli_auto
+
+            markup = InlineKeyboardMarkup(row_width=1)
+            markup.add(
+                InlineKeyboardButton(f"🟢 Usar tasa Zinli ({tasa_zinli_auto:.3f} $)", callback_data="arb_zinli_auto"),
+                InlineKeyboardButton("⬅️ Salir al menú", callback_data="arb_salir_menu")
+            )
+
+            msg_text = (
+                f"{TG_EMOJIS['zinli']} <b>Tasa Compra USDT en Zinli</b>\n\n"
+                f"{TG_EMOJIS['pencil']} Escribe manualmente la tasa a la que compraste en Zinli <i>(Ej: 1.025 o 1.032)</i>:\n"
+                f"O presiona {TG_EMOJIS['clic']} el botón si deseas usar la tasa detectada por el monitor:"
+            )
+            msg = bot.send_message(chat_id, msg_text, parse_mode="HTML", reply_markup=markup)
+            bot.register_next_step_handler(msg, procesar_tasa_zinli_manual, bot, redis_client, user_id)
+            return
+
+        # === FLUJO NORMAL PARA OTROS BANCOS (VES) ===
+        tasa_p2p_auto = obtener_tasa_p2p_por_rango(cache_data, monto_usd)
+        USER_ARBITRAJE_DATA[user_id]["tasa_p2p_auto"] = tasa_p2p_auto
 
         markup = InlineKeyboardMarkup(row_width=1)
         markup.add(
@@ -328,7 +365,7 @@ def registrar_handlers_arbitraje(bot, redis_client):
         msg_text = (
             f"{TG_EMOJIS['red_circle']} <b>Tasa de Venta P2P {TG_EMOJIS['usdt1']}</b>\n\n"
             f"{TG_EMOJIS['pencil']} Escribe manualmente la tasa a la que vas a vender <i>(Ej: 890 o 892.5)</i>:\n"
-            f"O presiona {TG_EMOJIS['clic']} el botón si deseas usar la {TG_EMOJIS['red_circle']} tasa detectada por el monitor para tu rango:"
+            f"O presiona {TG_EMOJIS['clic']} el botón si deseas usar la {TG_EMOJIS['red_circle']} tasa detectada por el monitor:"
         )
 
         msg = bot.send_message(
@@ -339,7 +376,71 @@ def registrar_handlers_arbitraje(bot, redis_client):
         )
 
         bot.register_next_step_handler(msg, procesar_tasa_p2p_manual, bot, redis_client, user_id)
+        
+    # --- MANEJADORES EXCLUSIVOS PARA MERCANTIL (ZINLI) ---
 
+    @bot.callback_query_handler(func=lambda call: call.data == "arb_zinli_auto")
+    def usar_zinli_auto(call):
+        bot.answer_callback_query(call.id)
+        chat_id = call.message.chat.id
+        user_id = call.from_user.id
+        bot.clear_step_handler_by_chat_id(chat_id)
+
+        if user_id in USER_ARBITRAJE_DATA:
+            tasa_zinli = USER_ARBITRAJE_DATA[user_id].get("tasa_zinli_auto", 1.025)
+            USER_ARBITRAJE_DATA[user_id]["tasa_zinli_usada"] = tasa_zinli
+            pedir_tasa_ves_tras_zinli(chat_id, user_id, bot, redis_client)
+
+    def procesar_tasa_zinli_manual(message, bot, redis_client, user_id):
+        chat_id = message.chat.id
+        text = message.text.strip().replace(",", ".")
+
+        if text in ["🟢 P2P-USDT 🔴", "📊 Intervencion 📊", "📟 Calculadora", "⚙️ Soporte", "🤖 IA Consulta", "📊 Arbitraje & Reposición"]:
+            bot.clear_step_handler_by_chat_id(chat_id)
+            return
+
+        try:
+            tasa_zinli = float(text)
+            if tasa_zinli <= 0:
+                raise ValueError()
+        except ValueError:
+            markup = InlineKeyboardMarkup()
+            markup.add(InlineKeyboardButton("⬅️ Salir al menú", callback_data="arb_salir_menu"))
+            msg = bot.send_message(
+                chat_id,
+                "❌ <b>Tasa Zinli inválida.</b> Ingresa un número válido (ej: 1.028):",
+                parse_mode="HTML",
+                reply_markup=markup
+            )
+            bot.register_next_step_handler(msg, procesar_tasa_zinli_manual, bot, redis_client, user_id)
+            return
+
+        USER_ARBITRAJE_DATA[user_id]["tasa_zinli_usada"] = tasa_zinli
+        pedir_tasa_ves_tras_zinli(chat_id, user_id, bot, redis_client)
+
+    def pedir_tasa_ves_tras_zinli(chat_id, user_id, bot, redis_client):
+        monto_usd = USER_ARBITRAJE_DATA[user_id]["monto_usd"]
+        cache_data = USER_ARBITRAJE_DATA[user_id]["cache_data"]
+
+        tasa_p2p_auto = obtener_tasa_p2p_por_rango(cache_data, monto_usd)
+        USER_ARBITRAJE_DATA[user_id]["tasa_p2p_auto"] = tasa_p2p_auto
+
+        markup = InlineKeyboardMarkup(row_width=1)
+        markup.add(
+            InlineKeyboardButton(f"🔴 Usar la tasa del monitor ({tasa_p2p_auto:.2f} Bs)", callback_data="arb_p2p_auto"),
+            InlineKeyboardButton("⬅️ Salir al menú", callback_data="arb_salir_menu")
+        )
+
+        msg_text = (
+            f"{TG_EMOJIS['red_circle']} <b>Tasa de Venta P2P {TG_EMOJIS['usdt1']}</b>\n\n"
+            f"{TG_EMOJIS['pencil']} Escribe manualmente la tasa a la que vas a vender <i>(Ej: 890 o 892.5)</i>:\n"
+            f"O presiona {TG_EMOJIS['clic']} el botón si deseas usar la {TG_EMOJIS['red_circle']} tasa detectada por el monitor:"
+        )
+
+        msg = bot.send_message(chat_id, msg_text, parse_mode="HTML", reply_markup=markup)
+        bot.register_next_step_handler(msg, procesar_tasa_p2p_manual, bot, redis_client, user_id)
+    
+    
     # --- HANDLER SI PRESIONA BOTÓN CON TASA DEL MONITOR ---
     @bot.callback_query_handler(func=lambda call: call.data == "arb_p2p_auto")
     def usar_p2p_auto(call):
@@ -386,6 +487,9 @@ def generar_y_enviar_resultado(chat_id, user_id, tasa_p2p_venta, bot, redis_clie
     comision_banco = data_user.get("comision_banco", 0)
     cache_data = data_user.get("cache_data") or obtener_datos_cache_redis(redis_client) or {}
     tasa_usd_usdt = obtener_precio_spot_usdt_usd(cache_data)
+    
+    # EXTRAEMOS LA TASA ZINLI SI EL BANCO ES MERCANTIL
+    tasa_zinli_usada = data_user.get("tasa_zinli_usada", None)
 
     tasa_bcv_actual = float(cache_data.get("bcv_tasa", 756.71))
     tasa_bcv_anterior = float(cache_data.get("bcv_tasa_anterior", tasa_bcv_actual))
@@ -416,7 +520,8 @@ def generar_y_enviar_resultado(chat_id, user_id, tasa_p2p_venta, bot, redis_clie
         tasa_bcv_hoy=tasa_bcv_hoy,
         tasa_bcv_manana=tasa_bcv_manana,
         tasa_p2p_venta=tasa_p2p_venta,
-        tasa_usd_usdt=tasa_usd_usdt
+        tasa_usd_usdt=tasa_usd_usdt,
+        tasa_zinli=tasa_zinli_usada
     )
 
     # --- BLOQUE 1: RESULTADO PRINCIPAL HOY ---

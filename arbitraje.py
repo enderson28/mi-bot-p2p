@@ -492,7 +492,7 @@ def generar_y_enviar_resultado(chat_id, user_id, tasa_p2p_venta, bot, redis_clie
     # EXTRAEMOS LA TASA ZINLI SI EL BANCO ES MERCANTIL
     tasa_zinli_usada = data_user.get("tasa_zinli_usada", None)
 
-    tasa_bcv_actual = float(cache_data.get("bcv_tasa", 756.71))
+    tasa_bcv_actual = float(cache_data.get("bcv_tasa", 784.66))
     tasa_bcv_anterior = float(cache_data.get("bcv_tasa_anterior", tasa_bcv_actual))
 
     # Leemos la clave exacta que utiliza el scraper en Redis
@@ -512,8 +512,8 @@ def generar_y_enviar_resultado(chat_id, user_id, tasa_p2p_venta, bot, redis_clie
         tasa_bcv_manana = None
     else:
         # La fecha guardada en Redis es la de mañana
-        tasa_bcv_hoy = tasa_bcv_anterior * 1005 if tasa_bcv_anterior > 0 else tasa_bcv_actual * 1.005
-        tasa_bcv_manana = tasa_bcv_actual * 1005
+        tasa_bcv_hoy = tasa_bcv_anterior * 1.005 if tasa_bcv_anterior > 0 else tasa_bcv_actual * 1.005
+        tasa_bcv_manana = tasa_bcv_actual * 1.005
 
     res = calcular_arbitraje_reposicion(
         monto_usd=monto_usd,

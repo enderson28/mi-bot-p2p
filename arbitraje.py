@@ -492,11 +492,15 @@ def generar_y_enviar_resultado(chat_id, user_id, tasa_p2p_venta, bot, redis_clie
     # EXTRAEMOS LA TASA ZINLI SI EL BANCO ES MERCANTIL
     tasa_zinli_usada = data_user.get("tasa_zinli_usada", None)
     
-    # 1. Obtenemos la tasa que el scraper acaba de publicar (Tasa del Lunes)
-    tasa_bcv_lunes = float(cache_data.get("bcv_tasa", 784.66))
-    
-    # 2. Obtenemos la tasa previa (Tasa del Viernes)
-    tasa_bcv_viernes = float(cache_data.get("bcv_tasa_anterior", 779.95))
+    # 1. Leemos las tasas de Redis
+    tasa_bcv_actual = float(cache_data.get("bcv_tasa", 784.66))
+    tasa_bcv_anterior = float(cache_data.get("bcv_tasa_anterior", 779.95))
+
+    # --- PARCHE DE SEGURIDAD ---
+    # Si 'bcv_tasa_anterior' viene con la tasa vieja del mes (menor a 770 Bs),
+    # forzamos que sea la tasa del día hábil anterior real (779.95 Bs)
+    if tasa_bcv_anterior < 770.0:
+        tasa_bcv_anterior = 779.95
 
     fecha_cache = str(cache_data.get("bcv_fecha") or cache_data.get("fecha") or "")
 
@@ -506,21 +510,24 @@ def generar_y_enviar_resultado(chat_id, user_id, tasa_p2p_venta, bot, redis_clie
 
     fecha_sin_ano = fecha_cache.split(',')[1] if ',' in fecha_cache else fecha_cache
 
-    # 3. Asignación correcta de Bloques (+0.5% en ambos)
+    # 2. Control estricto de Bloques (Hoy vs Lunes)
     if (dia_actual_num in fecha_sin_ano) or (dia_actual_zero in fecha_sin_ano):
-        # Aún estamos en el día de la tasa vieja (o es lunes y ya coincide la fecha)
-        tasa_bcv_hoy = tasa_bcv_viernes * 1.005  # Darse: 779.95 * 1.005 = 783.85 Bs
+        # La fecha en Redis coincide con el día de hoy
+        tasa_bcv_hoy = tasa_bcv_actual * 1.005
         tasa_bcv_manana = None
     else:
-        # Ya el scraper publicó la fecha del Lunes (Fecha Valor: Lunes, 24)
-        tasa_bcv_hoy = tasa_bcv_viernes * 1.005  # Bloque 1 (Hoy): 783.85 Bs
-        tasa_bcv_manana = tasa_bcv_lunes * 1.005 # Bloque 2 (Reposición Lunes): 788.58 Bs
+        # La fecha en Redis ya es la del Lunes (24 de Agosto)
+        # Bloque 1 (Hoy): Usa la tasa del Viernes (779.95 * 1.005 = 783.85 Bs)
+        tasa_bcv_hoy = tasa_bcv_anterior * 1.005
+        
+        # Bloque 2 (Lunes): Usa la tasa del Lunes (784.66 * 1.005 = 788.58 Bs)
+        tasa_bcv_manana = tasa_bcv_actual * 1.005
 
-    # 4. Pasar al cálculo
+    # 3. Llamada al cálculo pasando las variables exactas
     res = calcular_arbitraje_reposicion(
         monto_usd=monto_usd,
         comision_banco=comision_banco,
-        tasa_bcv_hoy=tasa_bcv_hoy,
+        tasa_bcv_hoy=tasa_bcv_hoy,       # ¡Ojo! Debe llamarse tasa_bcv_hoy
         tasa_bcv_manana=tasa_bcv_manana,
         tasa_p2p_venta=tasa_p2p_venta,
         tasa_usd_usdt=tasa_usd_usdt,

@@ -6,6 +6,7 @@ import requests
 import telebot
 import time
 import threading
+import locale
 from datetime import datetime, timedelta
 from telebot.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
 from telebot import types
@@ -967,10 +968,21 @@ def handle_bcv_porcentajes(message):
 
     historico = CACHE_TASAS.get("bcv_historico_mes", [])
     
-    # Plantilla del mensaje
+    # Mapeo de meses dinámico
+    meses_nombre = {
+        "01": "ENERO", "02": "FEBRERO", "03": "MARZO", "04": "ABRIL",
+        "05": "MAYO", "06": "JUNIO", "07": "JULIO", "08": "AGOSTO",
+        "09": "SEPTIEMBRE", "10": "OCTUBRE", "11": "NOVIEMBRE", "12": "DICIEMBRE"
+    }
+    
+    # Lee el mes de los registros o toma el actual
+    mes_num = historico[-1]["fecha"].split("/")[1] if historico and "/" in historico[-1]["fecha"] else f"{datetime.now().month:02d}"
+    nombre_mes = meses_nombre.get(mes_num, "MES ACTUAL")
+
     msj = (
-        f"<blockquote><b>AGOSTO</b> {e('CALENDARIO', '📊')} <b>Aumentos diarios del</b> {e('BCV', '🏛️')}</blockquote>\n\n"
+        f"<blockquote><b>{nombre_mes}</b> {e('CALENDARIO', '📊')} <b>( © Lista de Porcentaje/Bs ) Aumentos diarios del</b> {e('BCV', '🏛️')}</blockquote>\n\n"
     )
+    
     
     emoji_flecha = e('FLECHA_DERECHA', '➡️')
     for item in historico:
@@ -1744,15 +1756,22 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
                         return
 
                     # 🔥 SI LLEGAMOS AQUÍ, ES UNA FECHA NUEVA REAL PUBLICADA POR EL BCV:
+                    fecha_corta = fecha_nueva[:5] if len(fecha_nueva) >= 5 else fecha_nueva
+                    mes_nuevo = fecha_corta.split("/")[1] if "/" in fecha_corta else ""
+                    
+                    historico = CACHE_TASAS.get("bcv_historico_mes", [])
+                    
+                    # Detectamos si cambió el mes leyendo el registro anterior
+                    if historico:
+                        ultimo_mes = historico[-1]["fecha"].split("/")[1] if "/" in historico[-1]["fecha"] else ""
+                        if mes_nuevo and ultimo_mes and mes_nuevo != ultimo_mes:
+                            historico = [] # Limpiamos para iniciar el nuevo mes
+                    
                     if tasa_previa_guardada is not None and float(tasa_previa_guardada) > 0:
                         CACHE_TASAS["bcv_tasa_anterior"] = float(tasa_previa_guardada)
                         
-                        # CÁLCULO DE PORCENTAJE Y VARIACIÓN EN BS
                         variacion_bs = tasa_nueva - float(tasa_previa_guardada)
                         porcentaje_inc = (variacion_bs / float(tasa_previa_guardada)) * 100
-                        
-                        # Extraemos formato corto DD/MM de la fecha valor del BCV
-                        fecha_corta = fecha_nueva[:5] if len(fecha_nueva) >= 5 else fecha_nueva
                         
                         nuevo_registro = {
                             "fecha": fecha_corta,
@@ -1760,12 +1779,13 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
                             "variacion": f"{variacion_bs:.2f} Bs"
                         }
                         
-                        historico = CACHE_TASAS.get("bcv_historico_mes", [])
                         if not any(x.get("fecha") == fecha_corta for x in historico):
                             historico.append(nuevo_registro)
-                            CACHE_TASAS["bcv_historico_mes"] = historico[-20:]
+                            CACHE_TASAS["bcv_historico_mes"] = historico[-25:]
                     else:
                         CACHE_TASAS["bcv_tasa_anterior"] = tasa_nueva
+                        
+
 
                     CACHE_TASAS["bcv_tasa"] = tasa_nueva
                     CACHE_TASAS["bcv_fecha"] = fecha_nueva

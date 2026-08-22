@@ -969,14 +969,14 @@ def handle_bcv_porcentajes(message):
     
     # Plantilla del mensaje
     msj = (
-        f" <b>AGOSTO</b> {TG_EMOJIS.get('CALENDARIO', '📊')} <b>Aumentos diarios del</b> {TG_EMOJIS.get('BCV', '🏛️')}\n\n"
+        f"<blockquote><b>AGOSTO</b> {e('CALENDARIO', '📊')} <b>Aumentos diarios del</b> {e('BCV', '🏛️')}</blockquote>\n\n"
     )
     
-    emoji_flecha = TG_EMOJIS.get('FLECHA_DERECHA', '➡️')
+    emoji_flecha = e('FLECHA_DERECHA', '➡️')
     for item in historico:
         msj += f"{emoji_flecha} {item['fecha']}. {item['porcentaje']}. {item['variacion']}\n"
         
-    msj += f"\n{TG_EMOJIS.get('BCV', '🏛️')} <b>@COMUNIDV</b> 🚀"
+    msj += f"\n{e('BCV', '🏛️')} <b>@COMUNIDV</b> 🚀"
 
     bot.send_message(message.chat.id, msj, parse_mode="HTML")
     

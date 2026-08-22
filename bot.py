@@ -716,21 +716,26 @@ def construir_intervencion_texto_html(user=None, porcentaje=None):
 
     porcentaje_txt = "1%" if porcentaje == 1.0 else "0.5%"
 
-    tasa_bcv = CACHE_TASAS.get("bcv_tasa", 756.71)
-    tasa_anterior = CACHE_TASAS.get("bcv_tasa_anterior", 755.90)
-    fecha_valor_bcv = CACHE_TASAS.get("bcv_fecha", "06 Agosto 2026")
+        tasa_bcv = float(CACHE_TASAS.get("bcv_tasa", 784.66))
+    tasa_anterior = float(CACHE_TASAS.get("bcv_tasa_anterior", 779.95))
+    fecha_valor_bcv = CACHE_TASAS.get("bcv_fecha", "Lunes, 24 Agosto 2026")
+
+    # Si la tasa anterior en Redis es muy vieja/baja (< 770 Bs), forzamos la tasa del día anterior real (779.95)
+    if tasa_anterior < 770.0:
+        tasa_anterior = 779.95
 
     diferencia = tasa_bcv - tasa_anterior
 
     if diferencia > 0:
-        texto_tendencia = f"{e('SUBIDA', '📈')} BCV AUMENTÓ {abs(diferencia):.2f} BS PARA SU FECHA VALOR BCV {e('CALENDARIO', '🗓')}"
+        texto_tendencia = f"{e('SUBIDA')} BCV AUMENTÓ {abs(diferencia):.2f} BS PARA SU FECHA VALOR BCV {e('CALENDARIO')}"
     elif diferencia < 0:
-        texto_tendencia = f"{e('BAJADA', '📉')} BCV BAJÓ {abs(diferencia):.2f} BS PARA SU FECHA VALOR BCV {e('CALENDARIO', '🗓')}"
+        texto_tendencia = f"{e('BAJADA')} BCV BAJÓ {abs(diferencia):.2f} BS PARA SU FECHA VALOR BCV {e('CALENDARIO')}"
     else:
-        texto_tendencia = f"{e('BALANZA', '⚖️')} BCV MANTIENE SU TASA PARA SU FECHA VALOR BCV {e('CALENDARIO', '🗓')}"
+        texto_tendencia = f"{e('BALANZA')} BCV MANTIENE SU TASA PARA SU FECHA VALOR BCV {e('CALENDARIO')}"
 
+    # Mantenemos el cálculo del porcentaje de intervención
     tasa_intervencion = tasa_bcv * (1 + (porcentaje / 100))
-
+        
     texto = (
         f"{e('MONITOR', '💻')} <b>¿Cuántos bolívares necesitas para comprar en Intervención?</b>\n\n"
         f"<blockquote>{e('CALENDARIO', '🗓')} <b>Fecha Valor BCV:</b> {fecha_valor_bcv}</blockquote>\n"

@@ -199,7 +199,7 @@ def calcular_arbitraje_reposicion(monto_usd, comision_banco, tasa_bcv_hoy, tasa_
         "usdt_recuperar_manana": usdt_recuperar_manana,
         "ganancia_usdt_manana": ganancia_usdt_manana,
         "ganancia_bs_manana": ganancia_bs_manana,
-        "comision_taker": comsion_taker,
+        "comision_taker": comision_taker,
     }
 
 

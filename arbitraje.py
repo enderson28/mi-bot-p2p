@@ -508,17 +508,17 @@ def generar_y_enviar_resultado(chat_id, user_id, tasa_p2p_venta, bot, redis_clie
 
     # Si el número de hoy está en el texto de la fecha (sin incluir el año)
     if (dia_actual_num in fecha_sin_ano) or (dia_actual_zero in fecha_sin_ano):
-        tasa_bcv_hoy = tasa_bcv_actual
+        tasa_bcv_hoy = tasa_bcv_actual * 1.005
         tasa_bcv_manana = None
     else:
         # La fecha guardada en Redis es la de mañana
-        tasa_bcv_hoy = tasa_bcv_anterior
-        tasa_bcv_manana = tasa_bcv_actual
+        tasa_bcv_hoy = tasa_bcv_anterior * 1005 if tasa_bcv_anterior > 0 else tasa_bcv_actual * 1.005
+        tasa_bcv_manana = tasa_bcv_actual * 1005
 
     res = calcular_arbitraje_reposicion(
         monto_usd=monto_usd,
         comision_banco=comision_banco,
-        tasa_bcv_hoy=tasa_bcv_hoy,
+        tasa_bcv_key=tasa_bcv_hoy,
         tasa_bcv_manana=tasa_bcv_manana,
         tasa_p2p_venta=tasa_p2p_venta,
         tasa_usd_usdt=tasa_usd_usdt,

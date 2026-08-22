@@ -95,7 +95,7 @@ COMISIONES_BANCOS = {
     },
     "mercantil": {
         "emoji": TG_EMOJIS["mercantil"],
-        "nombre": "MERCANTIL (Zinli)",
+        "nombre": "MERCANTIL",
         "porcentaje_str": f"Zinli",
         "comision": 0.0,
     },   
@@ -241,7 +241,7 @@ def registrar_handlers_arbitraje(bot, redis_client):
             InlineKeyboardButton("6. 📲 otros bancos (2.5%)", callback_data="arb_banco_otros_2_5"),
             InlineKeyboardButton("7. 🏦 BANCO ACTIVO (3%)", callback_data="arb_banco_activo"),
             InlineKeyboardButton("8. 🏦 BANCO BANCAMIGA (5%)", callback_data="arb_banco_amiga"),
-            InlineKeyboardButton("9. 🏦 MERCANTIL (Zinli)", callback_data="arb_banco_mercantil"),
+            InlineKeyboardButton("9. 🏦 MERCANTIL", callback_data="arb_banco_mercantil"),
             InlineKeyboardButton("⬅️ Salir al Menu", callback_data="arb_salir_menu")
         )
 
@@ -345,7 +345,7 @@ def registrar_handlers_arbitraje(bot, redis_client):
             )
 
             msg_text = (
-                f"<b>Tasa</b> <blockquote>{TG_EMOJIS['green_circle']} Compra|{TG_EMOJIS['usdt']} en {TG_EMOJIS['zinli']}</blockquote>\n\n"
+                f"<blockquote>{TG_EMOJIS['green_circle']} Compra|{TG_EMOJIS['usdt']} en {TG_EMOJIS['zinli']}</blockquote>\n\n"
                 f"{TG_EMOJIS['pencil']} Escribe manualmente la tasa a la que compraste en {TG_EMOJIS['zinli']} <i>(Ej: 1.025 o 1.032)</i>:\n"
                 f"O presiona {TG_EMOJIS['clic']} el botón si deseas usar la tasa detectada por el monitor:"
             )
@@ -531,6 +531,13 @@ def generar_y_enviar_resultado(chat_id, user_id, tasa_p2p_venta, bot, redis_clie
         f"<b>Banco:</b> {data_user.get('nombre_banco', 'Banco')}\n"
         f"{TG_EMOJIS['dollar']} <b>Monto Comprado:</b> ${monto_usd:,.2f} USD\n"
         f"{TG_EMOJIS['bcv']} <b>Tasa Compra (0.5%):</b> {res['tasa_interv_hoy']:,.2f} Bs\n"
+    )
+    
+    # Si usó Zinli, mostramos la línea adicional de Compra Zinli aquí arriba
+    if tasa_zinli_usada:
+        msj += f"{TG_EMOJIS['green_circle']} <b>Compra Zinli:</b> {tasa_zinli_usada:,.3f} $\n"
+        
+    msj += (
         f"{TG_EMOJIS['red_circle']} <b>Tasa Venta P2P:</b> {tasa_p2p_venta:,.2f} Bs/{TG_EMOJIS['usdt']}\n"
         f"{TG_EMOJIS['usdt']} <b>USDT Líquidos {TG_EMOJIS['binance']} Binance:</b> <code>{res['usdt_netos_binance']:,.2f}</code> {TG_EMOJIS['usdt']} ({TG_EMOJIS['usd']}/{TG_EMOJIS['usdt']} {tasa_usd_usdt:.5f})\n"
         f"{TG_EMOJIS['hand']} <b>Inversión de Hoy:</b> <code>{res['bs_invertidos_hoy']:,.2f}</code> Bs\n"

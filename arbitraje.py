@@ -520,7 +520,7 @@ def generar_y_enviar_resultado(chat_id, user_id, tasa_p2p_venta, bot, redis_clie
     res = calcular_arbitraje_reposicion(
         monto_usd=monto_usd,
         comision_banco=comision_banco,
-        tasa_bcv_key=tasa_bcv_hoy,
+        tasa_bcv_hoy=tasa_bcv_hoy,
         tasa_bcv_manana=tasa_bcv_manana,
         tasa_p2p_venta=tasa_p2p_venta,
         tasa_usd_usdt=tasa_usd_usdt,

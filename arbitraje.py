@@ -159,7 +159,7 @@ def obtener_precio_spot_usdt_usd(cache_data=None):
 
 
 def calcular_arbitraje_reposicion(monto_usd, comision_banco, tasa_bcv_hoy, tasa_bcv_manana, tasa_p2p_venta, tasa_usd_usdt=0.9987, tasa_zinli=None):
-    tasa_interv_hoy = tasa_bcv_hoy * 1.005
+    tasa_interv_hoy = tasa_bcv_hoy
     bs_invertidos_hoy = monto_usd * tasa_interv_hoy
 
     usd_tras_banco = monto_usd * (1 - comision_banco)
@@ -177,7 +177,7 @@ def calcular_arbitraje_reposicion(monto_usd, comision_banco, tasa_bcv_hoy, tasa_
     ganancia_usdt_hoy = usdt_netos_binance - usdt_recuperar_hoy
     ganancia_bs_hoy = ganancia_usdt_hoy * tasa_p2p_venta
 
-    tasa_interv_manana = (tasa_bcv_manana * 1.005) if tasa_bcv_manana else (tasa_bcv_hoy * 1.005)
+    tasa_interv_manana = tasa_bcv_manana if tasa_bcv_manana else tasa_bcv_hoy
     bs_necesarios_manana = monto_usd * tasa_interv_manana
     usdt_recuperar_manana = bs_necesarios_manana / tasa_p2p_venta
     ganancia_usdt_manana = usdt_netos_binance - usdt_recuperar_manana

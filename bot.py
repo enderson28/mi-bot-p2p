@@ -608,8 +608,8 @@ def construir_monitor_texto_html():
     texto = (
         f"{e('MONITOR', '💻')} <b>Monitor de Tasas Arbitraje P2P</b>\n\n"
         f"<blockquote>{e('CALENDARIO', '🗓')} <b>Vigencia BCV :</b> {fecha_valor_bcv}</blockquote>\n"
-        f"<blockquote>{e('BCV', '🏦')} <b>BCV Oficial :</b> <code>{tasa_bcv:.4f}</code> Bs</blockquote>\n"
-        f"<blockquote>{e('BALANZA', '⚖️')} <b>BCV + 0.5% :</b> <code>{tasa_intervencion:.4f}</code> Bs</blockquote>\n\n"
+        f"<blockquote>{e('BCV', '🏦')} <b>BCV Oficial :</b> <code>{tasa_bcv:.3f}</code> Bs</blockquote>\n"
+        f"<blockquote>{e('BALANZA', '⚖️')} <b>BCV + 0.5% :</b> <code>{tasa_intervencion:.3f}</code> Bs</blockquote>\n\n"
         f"{e('ETIQUETA', '🔖')} <b>Filtros Activos:</b> Verificados | Comerciables {e('BOMBILLA', '💡')} | Pago : Todos {e('CHINCHE', '📌')}\n"
         f"-----------------------------------------\n\n"
     )
@@ -727,11 +727,11 @@ def construir_intervencion_texto_html(user=None, porcentaje=None):
     diferencia = tasa_bcv - tasa_anterior
 
     if diferencia > 0:
-        texto_tendencia = f"{e('SUBIDA')} BCV AUMENTÓ {abs(diferencia):.2f} BS PARA SU FECHA VALOR BCV {e('CALENDARIO')}"
+        texto_tendencia = f"{e('SUBIDA', '📈')} BCV AUMENTÓ {abs(diferencia):.2f} BS PARA SU FECHA VALOR BCV {e('CALENDARIO')}"
     elif diferencia < 0:
-        texto_tendencia = f"{e('BAJADA')} BCV BAJÓ {abs(diferencia):.2f} BS PARA SU FECHA VALOR BCV {e('CALENDARIO')}"
+        texto_tendencia = f"{e('BAJADA','📉')} BCV BAJÓ {abs(diferencia):.2f} BS PARA SU FECHA VALOR BCV {e('CALENDARIO')}"
     else:
-        texto_tendencia = f"{e('BALANZA')} BCV MANTIENE SU TASA PARA SU FECHA VALOR BCV {e('CALENDARIO')}"
+        texto_tendencia = f"{e('BALANZA', '⚖️')} BCV MANTIENE SU TASA PARA SU FECHA VALOR BCV {e('CALENDARIO')}"
 
     # Mantenemos el cálculo del porcentaje de intervención
     tasa_intervencion = tasa_bcv * (1 + (porcentaje / 100))
@@ -740,8 +740,8 @@ def construir_intervencion_texto_html(user=None, porcentaje=None):
         f"{e('MONITOR', '💻')} <b>¿Cuántos bolívares necesitas para comprar en Intervención?</b>\n\n"
         f"<blockquote>{e('CALENDARIO', '🗓')} <b>Fecha Valor BCV:</b> {fecha_valor_bcv}</blockquote>\n"
         f"<blockquote>{texto_tendencia}</blockquote>\n"
-        f"<blockquote>{e('BCV', '🏦')} <b>Tasa BCV Oficial:</b> <code>{tasa_bcv:.2f}</code> Bs</blockquote>\n"
-        f"<blockquote>{e('BALANZA', '⚖️')} <b>Tasa Intervención:</b> <code>{tasa_intervencion:.2f}</code> Bs ({porcentaje_txt} Agregado)</blockquote>\n"
+        f"<blockquote>{e('BCV', '🏦')} <b>Tasa BCV Oficial:</b> <code>{tasa_bcv:.3f}</code> Bs</blockquote>\n"
+        f"<blockquote>{e('BALANZA', '⚖️')} <b>Tasa Intervención:</b> <code>{tasa_intervencion:.3f}</code> Bs ({porcentaje_txt} Agregado)</blockquote>\n"
         f"-----------------------------------------\n\n"
     )
 

@@ -601,8 +601,8 @@ def construir_monitor_canal_html():
     
 
 def construir_monitor_texto_html():
-    tasa_bcv = CACHE_TASAS.get("bcv_tasa", 756.71)
-    fecha_valor_bcv = CACHE_TASAS.get("bcv_fecha", "06 Agosto 2026")
+    tasa_bcv = CACHE_TASAS.get("bcv_tasa", 784.6633)
+    fecha_valor_bcv = CACHE_TASAS.get("bcv_fecha", "Lunes, 24 Agosto 2026")
     tasa_intervencion = tasa_bcv * 1.005
 
     texto = (

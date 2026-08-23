@@ -282,8 +282,8 @@ setup_verification_handlers(
     # Actualizacion de velocidad
 def obtener_datos_bcv_validos():
     """Retorna la tasa y fecha actuales guardadas en memoria desde el Cazador BCV."""
-    tasa = CACHE_TASAS.get("bcv_tasa", 756.71)
-    fecha = CACHE_TASAS.get("bcv_fecha", "2026-08-06")
+    tasa = CACHE_TASAS.get("bcv_tasa", 784.6633)
+    fecha = CACHE_TASAS.get("bcv_fecha", "Lunes, 24 agosto 2026")
     return tasa, fecha
     
     
@@ -452,7 +452,7 @@ def obtener_tasa_binance_spot_usdt():
 CACHE_TASAS = {
     "bcv_tasa": 784.6633,
     "bcv_tasa_anterior": 779.95,
-    "bcv_fecha": "2026-08-24",
+    "bcv_fecha": "Lunes, 24 agosto 2026",
     "usdt_usd_spot": 0.9987,  # 👈 AGREGAR ESTA LÍNEA
     "rangos": {} # Guardará las tasas calculadas por rango
 }
@@ -545,7 +545,7 @@ threading.Thread(target=actualizar_cache_segundo_plano, daemon=True).start()
 def refrescar_tasas_en_vivo():
     global CACHE_TASAS
     tasa_bcv = CACHE_TASAS.get("bcv_tasa", 784.6633)
-    fecha_bcv = CACHE_TASAS.get("bcv_fecha", "2026-08-24")
+    fecha_bcv = CACHE_TASAS.get("bcv_fecha", "Lunes, 24 agosto 2026")
 
     tasa_bcv_ajustada = tasa_bcv * 1.005
     rangos_def = [

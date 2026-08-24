@@ -1744,54 +1744,51 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
                 if tasa and fecha:
                     tasa_nueva = float(tasa)
                     fecha_nueva = str(fecha).strip()
-
-                    # Leemos la tasa que realmente estuvo vigente en el cache
+                    # Leemos los valores guardados en el cache
                     tasa_previa_guardada = CACHE_TASAS.get("bcv_tasa")
-
-                    # Obtenemos la lista de fechas procesadas
+                    fecha_previa_guardada = CACHE_TASAS.get("bcv_fecha")
                     fechas_procesadas = CACHE_TASAS.get("fechas_procesadas", [])
 
-                    # 🔒 CANDADO DE SEGURIDAD
-                    if fecha_nueva in fechas_procesadas:
-                        print(f"🔒 [WEBHOOK] La tasa para la fecha '{fecha_nueva}' ya fue procesada previamente. Sin cambios.")
+                    # 🔒 1. CANDADO DE SEGURIDAD (Por Fecha o Tasa Duplicada)
+                    if fecha_nueva in fechas_procesadas or (fecha_nueva == fecha_previa_guardada and tasa_nueva == float(tasa_previa_guardada or 0)):
+                        print(f"🔒 [WEBHOOK] La tasa/fecha '{fecha_nueva}' ya fue procesada previamente. Sin cambios.")
                         self.send_response(200)
                         self.send_header('Content-Type', 'application/json')
                         self.end_headers()
                         self.wfile.write(b'{"status": "ignored", "message": "Tasa ya registrada para esta fecha"}')
                         return
 
-                    # 🔥 SI LLEGAMOS AQUÍ, ES UNA FECHA NUEVA REAL PUBLICADA POR EL BCV:
+                    # 🔥 2. SI LLEGAMOS AQUÍ, ES UNA FECHA NUEVA REAL PUBLICADA POR EL BCV
                     fecha_corta = fecha_nueva[:5] if len(fecha_nueva) >= 5 else fecha_nueva
                     mes_nuevo = fecha_corta.split("/")[1] if "/" in fecha_corta else ""
-                    
+
                     historico = CACHE_TASAS.get("bcv_historico_mes", [])
-                    
+
                     # Detectamos si cambió el mes leyendo el registro anterior
                     if historico:
                         ultimo_mes = historico[-1]["fecha"].split("/")[1] if "/" in historico[-1]["fecha"] else ""
                         if mes_nuevo and ultimo_mes and mes_nuevo != ultimo_mes:
-                            historico = [] # Limpiamos para iniciar el nuevo mes
-                    
+                            historico = []  # Limpiamos para iniciar el nuevo mes
+
+                    # 🛑 CORRECCIÓN DE LA TASA ANTERIOR (Evitamos pisar datos)
                     if tasa_previa_guardada is not None and float(tasa_previa_guardada) > 0:
+                        # La tasa que estaba vigente pasa a ser de forma segura la ANTERIOR
                         CACHE_TASAS["bcv_tasa_anterior"] = float(tasa_previa_guardada)
-                        
+            
                         variacion_bs = tasa_nueva - float(tasa_previa_guardada)
                         porcentaje_inc = (variacion_bs / float(tasa_previa_guardada)) * 100
-                        
+
                         nuevo_registro = {
                             "fecha": fecha_corta,
                             "porcentaje": f"{porcentaje_inc:.2f}%",
                             "variacion": f"{variacion_bs:.2f} Bs"
                         }
-                        
+
                         if not any(x.get("fecha") == fecha_corta for x in historico):
                             historico.append(nuevo_registro)
                             CACHE_TASAS["bcv_historico_mes"] = historico[-25:]
-                    else:
-                        CACHE_TASAS["bcv_tasa_anterior"] = tasa_nueva
-                        
 
-
+                    # Actualizamos la tasa y fecha vigente
                     CACHE_TASAS["bcv_tasa"] = tasa_nueva
                     CACHE_TASAS["bcv_fecha"] = fecha_nueva
 
@@ -1799,7 +1796,7 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
                     if fecha_nueva not in fechas_procesadas:
                         fechas_procesadas.append(fecha_nueva)
                         CACHE_TASAS["fechas_procesadas"] = fechas_procesadas[-10:]
-
+        
                     # Recalculamos rangos P2P inmediatamente
                     tasa_ajustada = tasa_nueva * 1.005
                     ranges_def = [

@@ -2,7 +2,7 @@ import json
 import logging
 import requests
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 
 logger = logging.getLogger(__name__)
 
@@ -508,24 +508,23 @@ def generar_y_enviar_resultado(chat_id, user_id, tasa_p2p_venta, bot, redis_clie
 
     fecha_cache = str(cache_data.get("bcv_fecha") or cache_data.get("fecha") or "")
 
-    now = datetime.now()
-    dia_actual_num = str(now.day)
-    dia_actual_zero = now.strftime("%d")
+    manana = datetime.now() + timedelta(days=1)
+    dia_manana_num = str(manana.day)
+    dia_manana_zero = manana.strftime("%d")
 
     fecha_sin_ano = fecha_cache.split(',')[1] if ',' in fecha_cache else fecha_cache
 
-    # 2. Control estricto de Bloques (Hoy vs Lunes)
-    if (dia_actual_num in fecha_sin_ano) or (dia_actual_zero in fecha_sin_ano):
-        # La fecha en Redis coincide con el día de hoy
+    # Verificamos si la fecha guardada en Redis corresponde a MAÑANA
+    es_tasa_manana = (dia_manana_num in fecha_sin_ano) or (dia_manana_zero in fecha_sin_ano)
+
+    if es_tasa_manana:
+        # 🟢 CASO TARDE: El BCV ya publicó la tasa de mañana
+        tasa_bcv_hoy = tasa_bcv_anterior * 1.005
+        tasa_bcv_manana = tasa_bcv_actual * 1.005
+    else:
+        # 🟡 CASO MAÑANA: En Redis todavía tenemos la tasa del día en curso
         tasa_bcv_hoy = tasa_bcv_actual * 1.005
         tasa_bcv_manana = None
-    else:
-        # La fecha en Redis ya es la del Lunes (24 de Agosto)
-        # Bloque 1 (Hoy): Usa la tasa del Viernes (779.95 * 1.005 = 783.85 Bs)
-        tasa_bcv_hoy = tasa_bcv_anterior * 1.005
-        
-        # Bloque 2 (Lunes): Usa la tasa del Lunes (784.66 * 1.005 = 788.58 Bs)
-        tasa_bcv_manana = tasa_bcv_actual * 1.005
 
     # 3. Llamada al cálculo pasando las variables exactas
     res = calcular_arbitraje_reposicion(

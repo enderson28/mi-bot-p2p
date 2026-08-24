@@ -584,8 +584,8 @@ def generar_y_enviar_resultado(chat_id, user_id, tasa_p2p_venta, bot, redis_clie
     else:
         msj += (
             f"---------------------\n"
-            f"{TG_EMOJIS['bcv']} <i>Tasa BCV del {proximo_dia} aún no publicada por el {TG_EMOJIS['bcv']} BCV.</i>\n"
-            f"<i>Usa este cálculo para tu operación de hoy.</i>\n"
+            f"<i>Tasa {TG_EMOJIS['bcv']} del {proximo_dia} aún no publicada {TG_EMOJIS['chart']} por el {TG_EMOJIS['bcv']}</i>\n"
+            f"<i>Usa este cálculo {TG_EMOJIS['calc']} para tu operación de hoy.</i>\n"
         )
 
     markup = InlineKeyboardMarkup(row_width=1)

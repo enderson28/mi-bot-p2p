@@ -1767,7 +1767,7 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
                         # Detectamos si cambió el mes leyendo el registro anterior
                         if historico:
                             ultimo_mes = historico[-1]["fecha"].split(" ")[1] if len(historico[-1]["fecha"].split(" ")) > 1 else ""
-                            mes_nuevo = fecha_corta.split(" ")[1] if len(fecha_corta.split(" ")) > 1 me else ""
+                            mes_nuevo = fecha_corta.split(" ")[1] if len(fecha_corta.split(" ")) > 1 else ""
                             if mes_nuevo and ultimo_mes and mes_nuevo != ultimo_mes:
                                 historico = []
 

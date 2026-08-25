@@ -1758,25 +1758,25 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
                         self.wfile.write(b'{"status": "ignored", "message": "Tasa ya registrada para esta fecha"}')
                         return
 
-                    # 🔥 2. SI LLEGAMOS AQUÍ, ES UNA FECHA NUEVA REAL PUBLICADA POR EL BCV
-                    fecha_corta = fecha_nueva[:5] if len(fecha_nueva) >= 5 else fecha_nueva
-                    mes_nuevo = fecha_corta.split("/")[1] if "/" in fecha_corta else ""
 
-                    historico = CACHE_TASAS.get("bcv_historico_mes", [])
+                        # 🔥 2. SI LLEGAMOS AQUÍ, ES UNA FECHA NUEVA REAL PUBLICADA POR EL BCV
+                        fecha_corta = fecha_nueva.split(",")[1].strip() if "," in fecha_nueva else fecha_nueva
 
-                    # Detectamos si cambió el mes leyendo el registro anterior
-                    if historico:
-                        ultimo_mes = historico[-1]["fecha"].split("/")[1] if "/" in historico[-1]["fecha"] else ""
-                        if mes_nuevo and ultimo_mes and mes_nuevo != ultimo_mes:
-                            historico = []  # Limpiamos para iniciar el nuevo mes
+                        historico = CACHE_TASAS.get("bcv_historico_mes", [])
 
-                    # 🛑 CORRECCIÓN DE LA TASA ANTERIOR (Evitamos pisar datos)
-                    if tasa_previa_guardada is not None and float(tasa_previa_guardada) > 0:
-                        # La tasa que estaba vigente pasa a ser de forma segura la ANTERIOR
-                        CACHE_TASAS["bcv_tasa_anterior"] = float(tasa_previa_guardada)
-            
-                        variacion_bs = tasa_nueva - float(tasa_previa_guardada)
-                        porcentaje_inc = (variacion_bs / float(tasa_previa_guardada)) * 100
+                        # Detectamos si cambió el mes leyendo el registro anterior
+                        if historico:
+                            ultimo_mes = historico[-1]["fecha"].split(" ")[1] if len(historico[-1]["fecha"].split(" ")) > 1 else ""
+                            mes_nuevo = fecha_corta.split(" ")[1] if len(fecha_corta.split(" ")) > 1 me else ""
+                            if mes_nuevo and ultimo_mes and mes_nuevo != ultimo_mes:
+                                historico = []
+
+                        # 📌 CORRECCIÓN DE LA TASA ANTERIOR
+                        if tasa_previa_guardada is not None and float(tasa_previa_guardada) > 0:
+                            CACHE_TASAS["bcv_tasa_anterior"] = float(tasa_previa_guardada)
+
+                        variacion_bs = tasa_nueva - float(tasa_previa_guardada or tasa_nueva)
+                        porcentaje_inc = (variacion_bs / float(tasa_previa_guardada or 1)) * 100
 
                         nuevo_registro = {
                             "fecha": fecha_corta,
@@ -1786,7 +1786,7 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
 
                         if not any(x.get("fecha") == fecha_corta for x in historico):
                             historico.append(nuevo_registro)
-                            CACHE_TASAS["bcv_historico_mes"] = historico[-25:]
+                            CACHE_TASAS["bcv_historico_mes"] = historico[-31:]
 
                     # Actualizamos la tasa y fecha vigente
                     CACHE_TASAS["bcv_tasa"] = tasa_nueva

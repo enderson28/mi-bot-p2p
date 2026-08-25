@@ -495,33 +495,26 @@ def generar_y_enviar_resultado(chat_id, user_id, tasa_p2p_venta, bot, redis_clie
     
     # EXTRAEMOS LA TASA ZINLI SI EL BANCO ES MERCANTIL
     tasa_zinli_usada = data_user.get("tasa_zinli_usada", None)
-    
-    # 1. Leemos las tasas de Redis
-    tasa_bcv_actual = float(cache_data.get("bcv_tasa", 784.66))
-    tasa_bcv_nueva = float(cache_data.get("bcv_tasa_nueva", 0.0)) # Tasa del nuevo aviso si existe
 
-    fecha_cache = str(cache_data.get("bcv_fecha") or cache_data.get("Fecha") or "")
+    # --- CÓDIGO BLINDADO EN ARBITRAJE.PY ---
+    val_bcv = CACHE_TASAS.get("bcv_tasa") if isinstance(CACHE_TASAS, dict) else None
+    if val_bcv is None:
+        val_bcv = cache_data.get("bcv_tasa") if 'cache_data' in locals() and cache_data else 0.0
 
-    manana = datetime.now() + timedelta(days=1)
-    dia_manana_num = str(manana.day)
-    dia_manana_zero = manana.strftime("%d")
-
-    fecha_sin_ano = fecha_cache.split(',')[1] if ',' in fecha_cache else fecha_cache
-
-    # Verificamos si la fecha guardada en Redis en 'bcv_fecha' ya corresponde a MAÑANA
-    es_tasa_manana = (dia_manana_num in fecha_sin_ano) or (dia_manana_zero in fecha_sin_ano)
-
-    # --- LÓGICA CORREGIDA DE TASAS ---
-    # La tasa activa en Redis (que trae el cazador) SIEMPRE es la tasa oficial de HOY
-    tasa_bcv_hoy = float(CACHE_TASAS.get("bcv_tasa") or 0.0) * 1.005
+    tasa_bcv_hoy = float(val_bcv or 0.0) * 1.005
 
     # Validamos si de verdad hay una tasa almacenada explícitamente para el día de mañana
     # (Solo si tu cazador guarda la llave 'bcv_tasa_manana' después de las 4 PM)
-    tasa_manana_raw = CACHE_TASAS.get("bcv_tasa_manana")
-    if tasa_manana_raw and float(tasa_manana_raw) > 0:
-        tasa_bcv_manana = float(tasa_manana_raw) * 1.005
+    
+    val_manana = CACHE_TASAS.get("bcv_tasa_manana") if isinstance(CACHE_TASAS, dict) else None
+    if val_manana is None and 'cache_data' in locals() and cache_data:
+        val_manana = cache_data.get("bcv_tasa_manana")
+
+    if val_manana and float(val_manana or 0.0) > 0:
+        tasa_bcv_manana = float(val_manana) * 1.005
     else:
         tasa_bcv_manana = None
+    
 
     # 3. Llamada al cálculo pasando las variables exactas
     res = calcular_arbitraje_reposicion(

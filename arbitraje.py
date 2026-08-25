@@ -564,10 +564,8 @@ def generar_y_enviar_resultado(chat_id, user_id, tasa_p2p_venta, bot, redis_clie
         f"<blockquote>{TG_EMOJIS['party']} <b>Ganancia Actual:</b> +<code>{res['ganancia_usdt_hoy']:,.2f}</code> {TG_EMOJIS['usdt']} (<code>{res['ganancia_bs_hoy']:,.2f}</code> Bs)</blockquote>\n"
     )
 
-    # Cálculo dinámico del próximo día hábil
-    dias_semana = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
-    dia_num = datetime.now().weekday()
-    proximo_dia = "lunes" if dia_num in [4, 5, 6] else dias_semana[dia_num + 1]
+    # Extraemos el día real directamente de la fecha de Redis (ej: "Martes, 25 Agosto 2026")
+    proximo_dia = fecha_cache.split(',')[0].strip() if ',' in fecha_cache else "mañana"
 
     # --- BLOQUE 2: REPOSICIÓN SI YA SALIÓ TASA DE MAÑANA ---
     if tasa_bcv_manana:

@@ -498,15 +498,9 @@ def generar_y_enviar_resultado(chat_id, user_id, tasa_p2p_venta, bot, redis_clie
     
     # 1. Leemos las tasas de Redis
     tasa_bcv_actual = float(cache_data.get("bcv_tasa", 784.66))
-    tasa_bcv_anterior = float(cache_data.get("bcv_tasa_anterior", 779.95))
+    tasa_bcv_nueva = float(cache_data.get("bcv_tasa_nueva", 0.0)) # Tasa del nuevo aviso si existe
 
-    # --- PARCHE DE SEGURIDAD ---
-    # Si 'bcv_tasa_anterior' viene con la tasa vieja del mes (menor a 770 Bs),
-    # forzamos que sea la tasa del día hábil anterior real (779.95 Bs)
-    if tasa_bcv_anterior < 780.0:
-        tasa_bcv_anterior = 779.95
-
-    fecha_cache = str(cache_data.get("bcv_fecha") or cache_data.get("fecha") or "")
+    fecha_cache = str(cache_data.get("bcv_fecha") or cache_data.get("Fecha") or "")
 
     manana = datetime.now() + timedelta(days=1)
     dia_manana_num = str(manana.day)
@@ -514,28 +508,36 @@ def generar_y_enviar_resultado(chat_id, user_id, tasa_p2p_venta, bot, redis_clie
 
     fecha_sin_ano = fecha_cache.split(',')[1] if ',' in fecha_cache else fecha_cache
 
-    # Verificamos si la fecha guardada en Redis corresponde a MAÑANA
+    # Verificamos si la fecha guardada en Redis en 'bcv_fecha' ya corresponde a MAÑANA
     es_tasa_manana = (dia_manana_num in fecha_sin_ano) or (dia_manana_zero in fecha_sin_ano)
 
+    # --- LÓGICA CORREGIDA Y BLINDADA ---
+    # La tasa de HOY es SIEMPRE la tasa oficial activa (tasa_bcv_actual)
+    tasa_bcv_hoy = tasa_bcv_actual * 1.005
+
     if es_tasa_manana:
-        # 🟢 CASO TARDE: El BCV ya publicó la tasa de mañana
-        tasa_bcv_hoy = tasa_bcv_anterior * 1.005
+        # CASO TARDE: El BCV ya publicó y la fecha del Redis es la de MAÑANA.
+        # En este caso, la tasa de mañana es la que trajo la scraping actual
         tasa_bcv_manana = tasa_bcv_actual * 1.005
+        # Si tienes guardada la tasa previa del día en curso, la usas para hoy:
+        tasa_bcv_anterior_val = float(cache_data.get("bcv_tasa_anterior", 0.0))
+        if tasa_bcv_anterior_val > 700.0:
+            tasa_bcv_hoy = tasa_bcv_anterior_val * 1.005
     else:
-        # 🟡 CASO MAÑANA: En Redis todavía tenemos la tasa del día en curso
-        tasa_bcv_hoy = tasa_bcv_actual * 1.005
+        # CASO MAÑANA / VIGENTE: No hay tasa nueva anunciada aún
         tasa_bcv_manana = None
 
     # 3. Llamada al cálculo pasando las variables exactas
     res = calcular_arbitraje_reposicion(
         monto_usd=monto_usd,
         comision_banco=comision_banco,
-        tasa_bcv_hoy=tasa_bcv_hoy,       # ¡Ojo! Debe llamarse tasa_bcv_hoy
+        tasa_bcv_hoy=tasa_bcv_hoy,
         tasa_bcv_manana=tasa_bcv_manana,
         tasa_p2p_venta=tasa_p2p_venta,
         tasa_usd_usdt=tasa_usd_usdt,
         tasa_zinli=tasa_zinli_usada
     )
+    
     
     # --- BLOQUE 1: RESULTADO PRINCIPAL HOY ---
     msj = (

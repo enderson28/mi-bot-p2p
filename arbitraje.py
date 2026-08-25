@@ -48,8 +48,8 @@ COMISIONES_BANCOS = {
     "provincial": {
         "emoji": TG_EMOJIS["pro"],
         "nombre": "BBVA Provincial",
-        "porcentaje_str": f"0{TG_EMOJIS['percent']}",
-        "comision": 0.00,
+        "porcentaje_str": f"1.5{TG_EMOJIS['percent']}",
+        "comision": 0.15,
     },
     "bdv_debit": {
         "emoji": TG_EMOJIS["bdv1"],
@@ -237,7 +237,7 @@ def registrar_handlers_arbitraje(bot, redis_client):
         # Los botones Inline llevan Emojis Unicode estándar (no soportan custom animados)
         markup = InlineKeyboardMarkup(row_width=1)
         markup.add(
-            InlineKeyboardButton("1. 🏦 BBVA PROVINCIAL (0%)", callback_data="arb_banco_provincial"),
+            InlineKeyboardButton("1. 🏦 BBVA PROVINCIAL (1.5%)", callback_data="arb_banco_provincial"),
             InlineKeyboardButton("2. 💳 BDV MASTERDEBIT (1.5%)", callback_data="arb_banco_bdv_debit"),
             InlineKeyboardButton("3. 📲 Otros Bancos (1.5%)", callback_data="arb_banco_otros_1_5"),
             InlineKeyboardButton("4. 💳 BDV MASTERCARD (2.5%)", callback_data="arb_banco_bdv_master"),

@@ -49,7 +49,7 @@ COMISIONES_BANCOS = {
         "emoji": TG_EMOJIS["pro"],
         "nombre": "BBVA Provincial",
         "porcentaje_str": f"1.5{TG_EMOJIS['percent']}",
-        "comision": 0.15,
+        "comision": 0.015,
     },
     "bdv_debit": {
         "emoji": TG_EMOJIS["bdv1"],

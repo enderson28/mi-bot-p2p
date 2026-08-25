@@ -566,8 +566,11 @@ def generar_y_enviar_resultado(chat_id, user_id, tasa_p2p_venta, bot, redis_clie
         f"<blockquote>{TG_EMOJIS['party']} <b>Ganancia Actual:</b> +<code>{res['ganancia_usdt_hoy']:,.2f}</code> {TG_EMOJIS['usdt']} (<code>{res['ganancia_bs_hoy']:,.2f}</code> Bs)</blockquote>\n"
     )
 
-    # Extraemos el día real directamente de la fecha de Redis (ej: "Martes, 25 Agosto 2026")
-    proximo_dia = fecha_cache.split(',')[0].strip() if ',' in fecha_cache else "mañana"
+    # Reemplazar la extracción de proximo_dia en arbitraje.py:
+    dias_semana = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
+    # Si hoy es el día actual, la reposición es para el día siguiente
+    proximo_dia = dias_semana[(datetime.now().weekday() + 1) % 7]
+
 
     # --- BLOQUE 2: REPOSICIÓN SI YA SALIÓ TASA DE MAÑANA ---
     if tasa_bcv_manana:

@@ -480,9 +480,6 @@ def cargar_cache_de_disco():
                 CACHE_TASAS.update(json.loads(data))
                 print("💾 ¡Tasas recuperadas con éxito desde Redis!")
 
-                # PARCHE DE LIMPIEZA TEMPORAL (Solo para un reinicio)
-                CACHE_TASAS["fechas_procesadas"] = []
-                CACHE_TASAS["bcv_historico_mes"] = []
 
                 # --- SEMILLA HISTÓRICA BASE BCV ---
                 if "bcv_historico_mes" not in CACHE_TASAS or not CACHE_TASAS["bcv_historico_mes"]:

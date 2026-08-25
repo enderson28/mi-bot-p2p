@@ -450,9 +450,9 @@ def obtener_tasa_binance_spot_usdt():
                     
 # --- CACHÉ GLOBAL DE TASAS ---
 CACHE_TASAS = {
-    "bcv_tasa": 784.6633,
-    "bcv_tasa_anterior": 779.95,
-    "bcv_fecha": "Lunes, 24 agosto 2026",
+    "bcv_tasa": None,
+    "bcv_tasa_anterior": None,
+    "bcv_fecha": "",
     "usdt_usd_spot": 0.9987,  # 👈 AGREGAR ESTA LÍNEA
     "rangos": {} # Guardará las tasas calculadas por rango
 }
@@ -500,7 +500,6 @@ def cargar_cache_de_disco():
                         {"fecha": "21/08", "porcentaje": "0.33%", "variacion": "2.54 Bs"},
                         {"fecha": "24/08", "porcentaje": "0.60%", "variacion": "4.71 Bs"}
                     ]
-                    guardar_cache_en_disco()
     except Exception as e:
         print(f"Error leyendo caché desde Redis: {e}")
         
@@ -513,7 +512,7 @@ def actualizar_cache_segundo_plano():
             CACHE_TASAS["usdt_usd_spot"] = obtener_tasa_binance_spot_usdt()
             
             # Leemos la tasa BCV actual almacenada en memoria (la que envía el cazador)
-            tasa_bcv = CACHE_TASAS.get("bcv_tasa", 784.6633)
+            tasa_bcv = CACHE_TASAS.get("bcv_tasa") or 0.0
             tasa_bcv_ajustada = tasa_bcv * 1.005
 
             ranges_def = [
@@ -545,8 +544,8 @@ threading.Thread(target=actualizar_cache_segundo_plano, daemon=True).start()
 
 def refrescar_tasas_en_vivo():
     global CACHE_TASAS
-    tasa_bcv = CACHE_TASAS.get("bcv_tasa", 784.6633)
-    fecha_bcv = CACHE_TASAS.get("bcv_fecha", "Lunes, 24 agosto 2026")
+    tasa_bcv = CACHE_TASAS.get("bcv_tasa") or 0.0
+    fecha_bcv = CACHE_TASAS.get("bcv_fecha", "Sin fecha")
 
     tasa_bcv_ajustada = tasa_bcv * 1.005
     rangos_def = [
@@ -602,8 +601,8 @@ def construir_monitor_canal_html():
     
 
 def construir_monitor_texto_html():
-    tasa_bcv = CACHE_TASAS.get("bcv_tasa", 784.6633)
-    fecha_valor_bcv = CACHE_TASAS.get("bcv_fecha", "Lunes, 24 Agosto 2026")
+    tasa_bcv = CACHE_TASAS.get("bcv_tasa") or 0.0
+    fecha_valor_bcv = CACHE_TASAS.get("bcv_fecha", "Sin fecha")
     tasa_intervencion = tasa_bcv * 1.005
 
     texto = (
@@ -717,13 +716,10 @@ def construir_intervencion_texto_html(user=None, porcentaje=None):
 
     porcentaje_txt = "1%" if porcentaje == 1.0 else "0.5%"
 
-    tasa_bcv = float(CACHE_TASAS.get("bcv_tasa", 784.66))
-    tasa_anterior = float(CACHE_TASAS.get("bcv_tasa_anterior", 779.95))
-    fecha_valor_bcv = CACHE_TASAS.get("bcv_fecha", "Lunes, 24 Agosto 2026")
+    tasa_bcv = float(CACHE_TASAS.get("bcv_tasa") or 0.0)
+    tasa_anterior = float(CACHE_TASAS.get("bcv_tasa_anterior") or 0.0)
+    fecha_valor_bcv = CACHE_TASAS.get("bcv_fecha", "Sin fecha")
 
-    # Si la tasa anterior en Redis es muy vieja/baja (< 770 Bs), forzamos la tasa del día anterior real (779.95)
-    if tasa_anterior < 770.0:
-        tasa_anterior = 779.95
 
     diferencia = tasa_bcv - tasa_anterior
 

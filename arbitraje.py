@@ -496,25 +496,19 @@ def generar_y_enviar_resultado(chat_id, user_id, tasa_p2p_venta, bot, redis_clie
     # EXTRAEMOS LA TASA ZINLI SI EL BANCO ES MERCANTIL
     tasa_zinli_usada = data_user.get("tasa_zinli_usada", None)
 
-    # --- CÓDIGO BLINDADO EN ARBITRAJE.PY ---
-    val_bcv = CACHE_TASAS.get("bcv_tasa") if isinstance(CACHE_TASAS, dict) else None
-    if val_bcv is None:
-        val_bcv = cache_data.get("bcv_tasa") if 'cache_data' in locals() and cache_data else 0.0
+    # --- CÓDIGO CORREGIDO LEYENDO DE CACHE_DATA ---
+    cache_data = cache_data or {}
 
+    # Tasa BCV de hoy
+    val_bcv = cache_data.get("bcv_tasa")
     tasa_bcv_hoy = float(val_bcv or 0.0) * 1.005
 
-    # Validamos si de verdad hay una tasa almacenada explícitamente para el día de mañana
-    # (Solo si tu cazador guarda la llave 'bcv_tasa_manana' después de las 4 PM)
-    
-    val_manana = CACHE_TASAS.get("bcv_tasa_manana") if isinstance(CACHE_TASAS, dict) else None
-    if val_manana is None and 'cache_data' in locals() and cache_data:
-        val_manana = cache_data.get("bcv_tasa_manana")
-
+    # Validamos la tasa de mañana
+    val_manana = cache_data.get("bcv_tasa_manana")
     if val_manana and float(val_manana or 0.0) > 0:
         tasa_bcv_manana = float(val_manana) * 1.005
     else:
         tasa_bcv_manana = None
-    
 
     # 3. Llamada al cálculo pasando las variables exactas
     res = calcular_arbitraje_reposicion(

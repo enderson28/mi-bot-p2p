@@ -573,7 +573,7 @@ def generar_y_enviar_resultado(chat_id, user_id, tasa_p2p_venta, bot, redis_clie
 
 
     # --- BLOQUE 2: REPOSICIÓN SI YA SALIÓ TASA DE MAÑANA ---
-    if tasa_bcv_manana:
+    if es_tasa_manana and tasa_bcv_manana:
         diferencia_bcv = tasa_bcv_manana - tasa_bcv_hoy
         msj += (
             f"---------------------\n"

@@ -511,20 +511,16 @@ def generar_y_enviar_resultado(chat_id, user_id, tasa_p2p_venta, bot, redis_clie
     # Verificamos si la fecha guardada en Redis en 'bcv_fecha' ya corresponde a MAÑANA
     es_tasa_manana = (dia_manana_num in fecha_sin_ano) or (dia_manana_zero in fecha_sin_ano)
 
-    # --- LÓGICA CORREGIDA Y BLINDADA ---
-    # La tasa de HOY es SIEMPRE la tasa oficial activa (tasa_bcv_actual)
-    tasa_bcv_hoy = tasa_bcv_actual * 1.005
+    # --- LÓGICA CORREGIDA DE TASAS ---
+    # La tasa activa en Redis (que trae el cazador) SIEMPRE es la tasa oficial de HOY
+    tasa_bcv_hoy = float(CACHE_TASAS.get("bcv_tasa") or 0.0) * 1.005
 
-    if es_tasa_manana:
-        # CASO TARDE: El BCV ya publicó y la fecha del Redis es la de MAÑANA.
-        # En este caso, la tasa de mañana es la que trajo la scraping actual
-        tasa_bcv_manana = tasa_bcv_actual * 1.005
-        # Si tienes guardada la tasa previa del día en curso, la usas para hoy:
-        tasa_bcv_anterior_val = float(cache_data.get("bcv_tasa_anterior", 0.0))
-        if tasa_bcv_anterior_val > 700.0:
-            tasa_bcv_hoy = tasa_bcv_anterior_val * 1.005
+    # Validamos si de verdad hay una tasa almacenada explícitamente para el día de mañana
+    # (Solo si tu cazador guarda la llave 'bcv_tasa_manana' después de las 4 PM)
+    tasa_manana_raw = CACHE_TASAS.get("bcv_tasa_manana")
+    if tasa_manana_raw and float(tasa_manana_raw) > 0:
+        tasa_bcv_manana = float(tasa_manana_raw) * 1.005
     else:
-        # CASO MAÑANA / VIGENTE: No hay tasa nueva anunciada aún
         tasa_bcv_manana = None
 
     # 3. Llamada al cálculo pasando las variables exactas

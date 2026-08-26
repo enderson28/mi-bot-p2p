@@ -92,8 +92,21 @@ def registrar_calculadora(bot, obtener_cache_func, obtener_teclado_func):
 
         # 4. Obtener tasa BCV
         cache = obtener_cache_func()
-        tasa_bcv = cache.get("bcv_tasa", 766.86)
-        fecha_valor_bcv = cache.get("bcv_fecha", "BCV")
+        val_manana = cache.get("bcv_tasa_manana")
+        fecha_manana = cache.get("bcv_fecha_manana")
+
+        try:
+            val_manana_float = float(val_manana) if val_manana else 0.0
+        except ValueError:
+            val_manana_float = 0.0
+            
+        if val_manana_float > 0:
+            tasa_bcv = val_manana_float
+            fecha_valor_bcv = fecha_manana or cache.get("bcv_fecha", "Sin fecha")
+        else:
+            tasa_bcv = float(cache.get("bcv_tasa", 780.00))
+            fecha_valor_bcv = cache.get("bcv_fecha", "BCV")
+
         tasa_con_intervencion = tasa_bcv * 1.005
 
         # 5. Cálculo según el modo

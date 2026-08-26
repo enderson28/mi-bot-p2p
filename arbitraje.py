@@ -549,11 +549,15 @@ def generar_y_enviar_resultado(chat_id, user_id, tasa_p2p_venta, bot, redis_clie
         f"<blockquote>{TG_EMOJIS['party']} <b>Ganancia Actual:</b> +<code>{res['ganancia_usdt_hoy']:,.2f}</code> {TG_EMOJIS['usdt']} (<code>{res['ganancia_bs_hoy']:,.2f}</code> Bs)</blockquote>\n"
     )
 
-    # Reemplazar la extracción de proximo_dia en arbitraje.py:
-    dias_semana = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
-    # Si hoy es el día actual, la reposición es para el día siguiente
-    proximo_dia = dias_semana[(datetime.now().weekday() + 1) % 7]
-
+    # Extraemos el nombre del día directamente de la fecha de mañana en el cache
+    fecha_m = cache_data.get("bcv_fecha_manana", "")
+    if fecha_m and "," in fecha_m:
+        proximo_dia = fecha_m.split(",")[0].strip()
+    else:
+        # Fallback usando hora Venezuela (-4) para evitar brincos por UTC
+        dias_semana = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
+        hora_ve = datetime.now(timezone.utc) - timedelta(hours=4)
+        proximo_dia = dias_semana[(hora_ve.weekday() + 1) % 7]
 
     # --- BLOQUE 2: REPOSICIÓN SI YA SALIÓ TASA DE MAÑANA ---
     if tasa_bcv_manana is not None and tasa_bcv_manana > 0:

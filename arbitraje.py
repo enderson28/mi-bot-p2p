@@ -2,7 +2,7 @@ import json
 import logging
 import requests
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
-from datetime import datetime, time, timedelta
+from datetime import datetime, time, timedelta, timezone
 
 logger = logging.getLogger(__name__)
 

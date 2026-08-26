@@ -1088,25 +1088,26 @@ def fix_tasa_handler(message):
             partes = message.text.split()
             if len(partes) > 1:
                 tasa_fix = float(partes[1])
-                
+
                 # Sincronización completa del diccionario en memoria
                 CACHE_TASAS["bcv_tasa"] = tasa_fix
-                CACHE_TASAS["bcv_tasa_anterior"] = 785.069
+                CACHE_TASAS["bcv_tasa_anterior"] = 787.5196
                 CACHE_TASAS["bcv_tasa_manana"] = None
-                CACHE_TASAS["bcv_fecha"] = "Miércoles, 26 Agosto 2026"
+                CACHE_TASAS["bcv_fecha"] = "Jueves, 27 Agosto 2026"
                 CACHE_TASAS["bcv_fecha_manana"] = None
-                
+
                 guardar_cache_en_disco()
-                
+
                 bot.reply_to(
-                    message, 
+                    message,
                     f"✅ <b>Estructura de tasas restaurada:</b>\n"
                     f"• Tasa Hoy: {tasa_fix} Bs\n"
-                    f"• Tasa Mañana: Esperando actualización BCV", 
+                    f"• Fecha: Jueves, 27 Agosto 2026\n"
+                    f"• Tasa Mañana: Esperando actualización BCV",
                     parse_mode="HTML"
                 )
             else:
-                bot.reply_to(message, "⚠️ Uso: <code>/fix_tasa 785.069</code>", parse_mode="HTML")
+                bot.reply_to(message, "⚠️ Uso: <code>/fix_tasa 791.325</code>", parse_mode="HTML")
         except Exception as e:
             bot.reply_to(message, f"❌ Error: {e}")
             

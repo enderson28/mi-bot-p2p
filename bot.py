@@ -1077,7 +1077,7 @@ def handle_invitacion_comando(message):
         )
         borrar_mensaje_luego(message.chat.id, aviso.message_id, 15)
 
-# 🚨 COMANDO DE EMERGENCIA PARA CORREGIR TASA ANTERIOR
+# 🚨 COMANDO DE EMERGENCIA PARA CORREGIR ESTRUCTURA DE TASAS (HOY Y MAÑANA)
 @bot.message_handler(commands=['fix_tasa'])
 def fix_tasa_handler(message):
     user_id = message.from_user.id
@@ -1087,23 +1087,22 @@ def fix_tasa_handler(message):
         try:
             partes = message.text.split()
             if len(partes) > 1:
-                tasa_fix = float(partes[1])
+                tasa_manana = float(partes[1])
 
-                # Sincronización completa del diccionario en memoria
-                CACHE_TASAS["bcv_tasa"] = tasa_fix
-                CACHE_TASAS["bcv_tasa_anterior"] = 787.5196
-                CACHE_TASAS["bcv_tasa_manana"] = None
-                CACHE_TASAS["bcv_fecha"] = "Jueves, 27 Agosto 2026"
-                CACHE_TASAS["bcv_fecha_manana"] = None
+                # Asignación correcta: HOY es 787.5196 y MAÑANA es la que ingresas (791.325)
+                CACHE_TASAS["bcv_tasa"] = 787.5196
+                CACHE_TASAS["bcv_tasa_manana"] = tasa_manana
+                CACHE_TASAS["bcv_fecha"] = "Miércoles, 26 Agosto 2026"
+                CACHE_TASAS["bcv_fecha_manana"] = "Jueves, 27 Agosto 2026"
 
                 guardar_cache_en_disco()
 
                 bot.reply_to(
                     message,
                     f"✅ <b>Estructura de tasas restaurada:</b>\n"
-                    f"• Tasa Hoy: {tasa_fix} Bs\n"
-                    f"• Fecha: Jueves, 27 Agosto 2026\n"
-                    f"• Tasa Mañana: Esperando actualización BCV",
+                    f"• Tasa Hoy (Miércoles): 787.5196 Bs\n"
+                    f"• Tasa Mañana (Jueves): {tasa_manana} Bs\n"
+                    f"• Incremento: +{round(tasa_manana - 787.5196, 2)} Bs",
                     parse_mode="HTML"
                 )
             else:

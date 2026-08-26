@@ -282,11 +282,17 @@ setup_verification_handlers(
     # Actualizacion de velocidad
 def obtener_datos_bcv_validos():
     """Retorna la tasa y fecha actuales guardadas en memoria desde el Cazador BCV."""
-    tasa = CACHE_TASAS.get("bcv_tasa", 784.6633)
-    fecha = CACHE_TASAS.get("bcv_fecha", "Lunes, 24 agosto 2026")
+    val_manana = CACHE_TASAS.get("bcv_tasa_manana")
+    fecha_manana = CACHE_TASAS.get("bcv_fecha_manana")
+
+    if val_manana and float(val_manana or 0) > 0:
+        tasa = float(val_manana)
+        fecha = fecha_manana or CACHE_TASAS.get("bcv_fecha", "Sin fecha")
+    else:
+        tasa = float(CACHE_TASAS.get("bcv_tasa") or 0.0)
+        fecha = CACHE_TASAS.get("bcv_fecha", "Sin fecha")
+
     return tasa, fecha
-    
-    
 
 def obtener_tasa_binance_p2p(tipo_operacion, monto_bs):
     url = "https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search"
@@ -453,6 +459,8 @@ CACHE_TASAS = {
     "bcv_tasa": None,
     "bcv_tasa_anterior": None,
     "bcv_fecha": "",
+    "bcv_tasa_manana": None,       # <-- Agrega esta línea
+    "bcv_fecha_manana": "",        # <-- Agrega esta línea
     "usdt_usd_spot": 0.9987,  # 👈 AGREGAR ESTA LÍNEA
     "rangos": {} # Guardará las tasas calculadas por rango
 }

@@ -601,10 +601,19 @@ def construir_monitor_canal_html():
     
 
 def construir_monitor_texto_html():
-    tasa_bcv = CACHE_TASAS.get("bcv_tasa") or 0.0
-    fecha_valor_bcv = CACHE_TASAS.get("bcv_fecha", "Sin fecha")
-    tasa_intervencion = tasa_bcv * 1.005
+    # --- LÓGICA DE SELECCIÓN DE TASA Y FECHA ---
+    val_manana = CACHE_TASAS.get("bcv_tasa_manana")
+    fecha_manana = CACHE_TASAS.get("bcv_fecha_manana")
+    
+    if val_manana and float(val_manana or 0) > 0:
+        tasa_bcv = float(val_manana)
+        fecha_valor_bcv = fecha_manana or CACHE_TASAS.get("bcv_fecha", "Sin fecha")
+    else:
+        tasa_bcv = float(CACHE_TASAS.get("bcv_tasa") or 0.0)
+        fecha_valor_bcv = CACHE_TASAS.get("bcv_fecha", "Sin fecha")
 
+    tasa_intervencion = tasa_bcv * 1.005
+    
     texto = (
         f"{e('MONITOR', '💻')} <b>Monitor de Tasas Arbitraje P2P</b>\n\n"
         f"<blockquote>{e('CALENDARIO', '🗓')} <b>Vigencia BCV :</b> {fecha_valor_bcv}</blockquote>\n"
@@ -716,10 +725,18 @@ def construir_intervencion_texto_html(user=None, porcentaje=None):
 
     porcentaje_txt = "1%" if porcentaje == 1.0 else "0.5%"
 
-    tasa_bcv = float(CACHE_TASAS.get("bcv_tasa") or 0.0)
-    tasa_anterior = float(CACHE_TASAS.get("bcv_tasa_anterior") or 0.0)
-    fecha_valor_bcv = CACHE_TASAS.get("bcv_fecha", "Sin fecha")
+    # --- LÓGICA DE SELECCIÓN DE TASA (Toma la de mañana si ya está publicada) ---
+    val_manana = CACHE_TASAS.get("bcv_tasa_manana")
+    fecha_manana = CACHE_TASAS.get("bcv_fecha_manana")
+    
+    if val_manana and float(val_manana or 0) > 0:
+        tasa_bcv = float(val_manana)
+        fecha_valor_bcv = fecha_manana or CACHE_TASAS.get("bcv_fecha", "Sin fecha")
+    else:
+        tasa_bcv = float(CACHE_TASAS.get("bcv_tasa") or 0.0)
+        fecha_valor_bcv = CACHE_TASAS.get("bcv_fecha", "Sin fecha")
 
+    tasa_anterior = float(CACHE_TASAS.get("bcv_tasa_anterior") or 0.0)
 
     diferencia = tasa_bcv - tasa_anterior
 
@@ -1064,28 +1081,27 @@ def fix_tasa_handler(message):
             if len(partes) > 1:
                 tasa_fix = float(partes[1])
                 
-                # 1. La tasa ingresada vuelve a ser la tasa activa del día (Bloque 1)
+                # Sincronización completa del diccionario en memoria
                 CACHE_TASAS["bcv_tasa"] = tasa_fix
-                CACHE_TASAS["bcv_tasa_anterior"] = tasa_fix
+                CACHE_TASAS["bcv_tasa_anterior"] = 785.069
+                CACHE_TASAS["bcv_tasa_manana"] = 787.5196
+                CACHE_TASAS["bcv_fecha"] = "Martes, 25 Agosto 2026"
+                CACHE_TASAS["bcv_fecha_manana"] = "Miércoles, 26 Agosto 2026"
                 
-                # 2. Si la tasa guardada de la tarde es mayor, la aseguramos en mañana (Bloque 2)
-                # Si pasas 785.069 y la tarde raspó 787.5196, se asigna a mañana
-                if "bcv_tasa_manana" not in CACHE_TASAS or CACHE_TASAS.get("bcv_tasa_manana", 0) <= tasa_fix:
-                    CACHE_TASAS["bcv_tasa_manana"] = 787.5196
-                
-                # 3. Guardar en RAM + Redis + Disco
                 guardar_cache_en_disco()
                 
                 bot.reply_to(
                     message, 
-                    f"✅ <b>Tasa activa corregida a {tasa_fix} Bs</b>\n"
-                    f" RAM y Redis sincronizados correctamente.", 
+                    f"✅ <b>Estructura de tasas restaurada:</b>\n"
+                    f"• Tasa Hoy: {tasa_fix} Bs\n"
+                    f"• Tasa Mañana: 787.5196 Bs", 
                     parse_mode="HTML"
                 )
             else:
                 bot.reply_to(message, "⚠️ Uso: <code>/fix_tasa 785.069</code>", parse_mode="HTML")
         except Exception as e:
             bot.reply_to(message, f"❌ Error: {e}")
+            
             
         
 @bot.message_handler(func=lambda message: message.chat.type == "private" and message.text in [

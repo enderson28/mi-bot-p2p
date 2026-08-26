@@ -1092,9 +1092,9 @@ def fix_tasa_handler(message):
                 # Sincronización completa del diccionario en memoria
                 CACHE_TASAS["bcv_tasa"] = tasa_fix
                 CACHE_TASAS["bcv_tasa_anterior"] = 785.069
-                CACHE_TASAS["bcv_tasa_manana"] = 787.5196
-                CACHE_TASAS["bcv_fecha"] = "Martes, 25 Agosto 2026"
-                CACHE_TASAS["bcv_fecha_manana"] = "Miércoles, 26 Agosto 2026"
+                CACHE_TASAS["bcv_tasa_manana"] = None
+                CACHE_TASAS["bcv_fecha"] = "Miércoles, 26 Agosto 2026"
+                CACHE_TASAS["bcv_fecha_manana"] = None
                 
                 guardar_cache_en_disco()
                 
@@ -1102,7 +1102,7 @@ def fix_tasa_handler(message):
                     message, 
                     f"✅ <b>Estructura de tasas restaurada:</b>\n"
                     f"• Tasa Hoy: {tasa_fix} Bs\n"
-                    f"• Tasa Mañana: 787.5196 Bs", 
+                    f"• Tasa Mañana: Esperando actualización BCV", 
                     parse_mode="HTML"
                 )
             else:

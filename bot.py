@@ -1057,19 +1057,36 @@ def handle_invitacion_comando(message):
 def fix_tasa_handler(message):
     user_id = message.from_user.id
     user_name = f"@{message.from_user.username}" if message.from_user.username else user_id
-    
+
     if user_id in USUARIOS_AUTORIZADOS or user_name in USUARIOS_AUTORIZADOS:
         try:
             partes = message.text.split()
             if len(partes) > 1:
                 tasa_fix = float(partes[1])
+                
+                # 1. La tasa ingresada vuelve a ser la tasa activa del día (Bloque 1)
+                CACHE_TASAS["bcv_tasa"] = tasa_fix
                 CACHE_TASAS["bcv_tasa_anterior"] = tasa_fix
+                
+                # 2. Si la tasa guardada de la tarde es mayor, la aseguramos en mañana (Bloque 2)
+                # Si pasas 785.069 y la tarde raspó 787.5196, se asigna a mañana
+                if "bcv_tasa_manana" not in CACHE_TASAS or CACHE_TASAS.get("bcv_tasa_manana", 0) <= tasa_fix:
+                    CACHE_TASAS["bcv_tasa_manana"] = 787.5196
+                
+                # 3. Guardar en RAM + Redis + Disco
                 guardar_cache_en_disco()
-                bot.reply_to(message, f"✅ <b>¡Tasa anterior corregida a {tasa_fix}!</b>\nRAM y Redis sincronizados.", parse_mode="HTML")
+                
+                bot.reply_to(
+                    message, 
+                    f"✅ <b>Tasa activa corregida a {tasa_fix} Bs</b>\n"
+                    f" RAM y Redis sincronizados correctamente.", 
+                    parse_mode="HTML"
+                )
             else:
-                bot.reply_to(message, "⚠️ Uso: <code>/fix_tasa 755.90</code>", parse_mode="HTML")
+                bot.reply_to(message, "⚠️ Uso: <code>/fix_tasa 785.069</code>", parse_mode="HTML")
         except Exception as e:
             bot.reply_to(message, f"❌ Error: {e}")
+            
         
 @bot.message_handler(func=lambda message: message.chat.type == "private" and message.text in [
     "🟢 P2P-USDT 🔴",

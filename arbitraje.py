@@ -136,25 +136,23 @@ def obtener_tasa_p2p_por_rango(cache_data, monto_usd):
 
 
 def obtener_precio_spot_usdt_usd(cache_data=None):
-    # 1. Intentar leer desde la caché de Redis
     if cache_data and "usdt_usd_spot" in cache_data:
         try:
             val = float(cache_data["usdt_usd_spot"])
             if val > 0:
-                return val
+                return 1 / val if val > 1.0 else val
         except (ValueError, TypeError):
             pass
 
-    # 2. Fallback: Consulta directa en vivo si no venía en Redis
     try:
         url = "https://api.binance.com/api/v3/ticker/price?symbol=USDTUSD"
         response = requests.get(url, timeout=3)
         if response.status_code == 200:
-            return float(response.json().get("price", 0.9987))
+            precio = float(response.json().get("price", 0.9987))
+            return 1 / precio if precio > 1.0 else precio
     except Exception as e:
         logger.warning(f"No se pudo consultar Binance Spot USDTUSD: {e}")
 
-    # 3. Respaldo estático final
     return 0.9987
 
 
@@ -491,26 +489,22 @@ def generar_y_enviar_resultado(chat_id, user_id, tasa_p2p_venta, bot, redis_clie
     monto_usd = data_user.get("monto_usd", 0)
     comision_banco = data_user.get("comision_banco", 0)
     cache_data = data_user.get("cache_data") or obtener_datos_cache_redis(redis_client) or {}
-    tasa_usd_usdt = obtener_precio_spot_usdt_usd(cache_data)
     
-    # EXTRAEMOS LA TASA ZINLI SI EL BANCO ES MERCANTIL
+    # 1. Obtener Spot con relación correcta USDT/USD (< 1.0)
+    tasa_usd_usdt_raw = obtener_precio_spot_usdt_usd(cache_data)
+    tasa_usd_usdt = 1 / tasa_usd_usdt_raw if tasa_usd_usdt_raw > 1.0 else tasa_usd_usdt_raw
+
+    # 2. Extraer tasa Zinli si el banco es Mercantil
     tasa_zinli_usada = data_user.get("tasa_zinli_usada", None)
 
-    # --- CÓDIGO CORREGIDO LEYENDO DE CACHE_DATA ---
-    cache_data = cache_data or {}
-
-    # Tasa BCV de hoy
+    # 3. Lógica de Tasas BCV SIN BORRAR la tasa de Mañana
     val_bcv = cache_data.get("bcv_tasa")
     val_manana = cache_data.get("bcv_tasa_manana")
 
-    if val_manana and float(val_manana or 0.0) > 0:
-        tasa_bcv_hoy = float(val_manana) * 1.005
-        tasa_bcv_manana = None
-    else:
-        tasa_bcv_hoy = float(val_bcv or 0.0) * 1.005
-        tasa_bcv_manana = None
-        
-    # 3. Llamada al cálculo pasando las variables exactas
+    tasa_bcv_hoy = float(val_bcv or 0.0)
+    tasa_bcv_manana = float(val_manana) if (val_manana and float(val_manana) > 0) else None
+
+    # 4. Llamada al cálculo pasando la variable tasa_zinli explícitamente
     res = calcular_arbitraje_reposicion(
         monto_usd=monto_usd,
         comision_banco=comision_banco,
@@ -518,7 +512,7 @@ def generar_y_enviar_resultado(chat_id, user_id, tasa_p2p_venta, bot, redis_clie
         tasa_bcv_manana=tasa_bcv_manana,
         tasa_p2p_venta=tasa_p2p_venta,
         tasa_usd_usdt=tasa_usd_usdt,
-        tasa_zinli=tasa_zinli_usada
+        tasa_zinli=tasa_zinli_usada # <--- ¡AHORA SÍ SE ENVÍA A LA FUNCIÓN!
     )
     
     

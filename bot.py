@@ -733,20 +733,33 @@ def construir_intervencion_texto_html(user=None, porcentaje=None):
 
     porcentaje_txt = "1%" if porcentaje == 1.0 else "0.5%"
 
-    # --- LÓGICA DE SELECCIÓN DE TASA (Toma la de mañana si ya está publicada) ---
+    # --- LÓGICA DE SELECCIÓN DE TASA E INTERVENCIÓN CORREGIDA ---
     val_manana = CACHE_TASAS.get("bcv_tasa_manana")
-    fecha_manana = CACHE_TASAS.get("bcv_fecha_manana")
-    
+    val_hoy = CACHE_TASAS.get("bcv_tasa") or CACHE_TASAS.get("bcv", 0.0)
+    val_anterior = CACHE_TASAS.get("bcv_tasa_anterior", 0.0)
+
+    try:
+        tasa_hoy_num = float(val_hoy)
+    except (ValueError, TypeError):
+        tasa_hoy_num = 0.0
+
     if val_manana and float(val_manana or 0) > 0:
+        # Ya salió la tasa de mañana: comparar Mañana vs Hoy
         tasa_bcv = float(val_manana)
-        fecha_valor_bcv = fecha_manana or CACHE_TASAS.get("bcv_fecha", "Sin fecha")
+        fecha_valor_bcv = CACHE_TASAS.get("bcv_fecha_manana", "Sin fecha")
+        tasa_base_comparar = tasa_hoy_num
     else:
-        tasa_bcv = float(CACHE_TASAS.get("bcv_tasa") or 0.0)
+        # Tasa vigente normal: comparar Hoy vs Ayer
+        tasa_bcv = tasa_hoy_num
         fecha_valor_bcv = CACHE_TASAS.get("bcv_fecha", "Sin fecha")
+        try:
+            tasa_base_comparar = float(val_anterior)
+        except (ValueError, TypeError):
+            tasa_base_comparar = tasa_bcv
 
-    tasa_anterior = float(CACHE_TASAS.get("bcv_tasa_anterior") or 0.0)
-
-    diferencia = tasa_bcv - tasa_anterior
+    # Calcular la diferencia REAL sin acumulación errónea
+    diferencia = tasa_bcv - tasa_base_comparar if tasa_base_comparar > 0 else 0.0
+    
 
     if diferencia > 0:
         texto_tendencia = f"{e('SUBIDA', '📈')} BCV AUMENTÓ {abs(diferencia):.2f} BS PARA SU FECHA VALOR BCV {e('CALENDARIO')}"

@@ -500,24 +500,36 @@ def generar_y_enviar_resultado(chat_id, user_id, tasa_p2p_venta, bot, redis_clie
     tasa_zinli_usada = data_user.get("tasa_zinli_usada", None)
 
     # 4. Extraer BCV Hoy con MÚLTIPLES FALLBACKS para evitar el 0.000
-    val_bcv = cache_data.get("bcv_tasa") or cache_data.get("bcv") or cache_data.get("tasa_bcv")
+    val_bcv = (
+        cache_data.get("bcv_tasa") 
+        or cache_data.get("bcv") 
+        or cache_data.get("tasa_bcv")
+    )
+    
+    if not val_bcv or str(val_bcv) == "0.0":
+        from bot import CACHE_TASAS
+        val_bcv = CACHE_TASAS.get("bcv") or CACHE_TASAS.get("bcv_tasa") or CACHE_TASAS.get("tasa_bcv", 0.0)
+
     try:
         tasa_bcv_hoy = float(val_bcv) if val_bcv and float(val_bcv) > 0 else 0.0
     except (ValueError, TypeError):
         tasa_bcv_hoy = 0.0
 
-    # Si por falla de red Redis devolvió None/0, tomar el respaldo del diccionario de tasas globales
-    if tasa_bcv_hoy == 0.0:
-        from bot import CACHE_TASAS
-        tasa_bcv_hoy = float(CACHE_TASAS.get("bcv", 0.0))
-
     # 5. Extraer BCV Mañana con verificación limpia
-    val_manana = cache_data.get("bcv_tasa_manana") or cache_data.get("bcv_manana") or cache_data.get("tasa_bcv_manana")
+    val_manana = (
+        cache_data.get("bcv_tasa_manana") 
+        or cache_data.get("bcv_manana") 
+        or cache_data.get("tasa_bcv_manana")
+    )
+    
+    if not val_manana:
+        from bot import CACHE_TASAS
+        val_manana = CACHE_TASAS.get("bcv_tasa_manana") or CACHE_TASAS.get("bcv_manana")
+
     try:
         tasa_bcv_manana = float(val_manana) if (val_manana and float(val_manana) > 0) else None
     except (ValueError, TypeError):
         tasa_bcv_manana = None
-        
 
     # 4. Llamada al cálculo pasando la variable tasa_zinli explícitamente
     res = calcular_arbitraje_reposicion(

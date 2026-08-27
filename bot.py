@@ -1093,17 +1093,28 @@ def fix_tasa_handler(message):
         try:
             partes = message.text.split()
             if len(partes) > 1:
-                tasa_manana = float(partes[1])
+                valor_1 = float(partes[1])
                 
-                # Mantiene la tasa activa actual como 'hoy' y asigna la ingresada como 'mañana'
-                tasa_hoy = float(CACHE_TASAS.get("bcv_tasa") or tasa_manana)
+                # Si pasas 2 argumentos (/fix_tasa 791.325 791.667):
+                # Argumento 1 = Tasa Hoy | Argumento 2 = Tasa Mañana
+                if len(partes) > 2:
+                    tasa_hoy = valor_1
+                    tasa_manana = float(partes[2])
+                else:
+                    # Si pasas 1 solo argumento (/fix_tasa 791.325):
+                    # Asigna la tasa dada a 'Hoy' y limpia la de 'Mañana' para evitar diferencias falsas.
+                    tasa_hoy = valor_1
+                    tasa_manana = None
+
+                # Actualizamos la memoria global sin sobreescribir Hoy con Mañana
+                if tasa_hoy is not None:
+                    CACHE_TASAS["bcv_tasa_anterior"] = CACHE_TASAS.get("bcv_tasa") or tasa_hoy
+                    CACHE_TASAS["bcv_tasa"] = tasa_hoy
                 
-                CACHE_TASAS["bcv_tasa_anterior"] = tasa_hoy
-                CACHE_TASAS["bcv_tasa"] = tasa_hoy
                 CACHE_TASAS["bcv_tasa_manana"] = tasa_manana
                 
-                CACHE_TASAS["bcv_fecha"] = CACHE_TASAS.get("bcv_fecha", "Jueves, 27 Agosto 2026")
-                CACHE_TASAS["bcv_fecha_manana"] = "Viernes, 28 Agosto 2026"
+                if tasa_manana is None:
+                    CACHE_TASAS["bcv_fecha_manana"] = ""
 
                 guardar_cache_en_disco()
                 try:
@@ -1112,20 +1123,32 @@ def fix_tasa_handler(message):
                 except Exception as e:
                     print(f"⚠️ Error Redis en fix_tasa: {e}")
 
-                diferencia = round(tasa_manana - tasa_hoy, 4)
+                # Cálculo de variación
+                if tasa_manana is not None:
+                    diferencia = round(tasa_manana - tasa_hoy, 4)
+                    txt_manana = f"{tasa_manana:.3f} Bs"
+                    txt_inc = f"{diferencia:+} Bs"
+                else:
+                    txt_manana = "Sin asignar (Inactiva)"
+                    txt_inc = "0.0 Bs (Sin tasa futura)"
 
                 bot.reply_to(
                     message,
                     f"✅ <b>Estructura de tasas restaurada:</b>\n"
-                    f"• Tasa Hoy: {tasa_hoy:.3f} Bs\n"
-                    f"• Tasa Mañana: {tasa_manana:.3f} Bs\n"
-                    f"• Incremento: {diferencia:+} Bs",
+                    f"• <b>Tasa Hoy:</b> <code>{tasa_hoy:.3f} Bs</code>\n"
+                    f"• <b>Tasa Mañana:</b> <code>{txt_manana}</code>\n"
+                    f"• <b>Incremento:</b> <code>{txt_inc}</code>",
                     parse_mode="HTML"
                 )
             else:
-                bot.reply_to(message, "⚠️ Uso: <code>/fix_tasa 791.6667</code>", parse_mode="HTML")
+                bot.reply_to(
+                    message, 
+                    "⚠️ Uso:\n• Solo hoy: <code>/fix_tasa 791.325</code>\n• Hoy y Mañana: <code>/fix_tasa 791.325 791.667</code>", 
+                    parse_mode="HTML"
+                )
         except Exception as e:
             bot.reply_to(message, f"❌ Error: {e}")
+                
                     
         
 @bot.message_handler(func=lambda message: message.chat.type == "private" and message.text in [

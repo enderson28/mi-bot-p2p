@@ -1842,6 +1842,12 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
                     # Actualizamos la tasa y fecha vigente
                     CACHE_TASAS["bcv_tasa"] = tasa_nueva
                     CACHE_TASAS["bcv_fecha"] = fecha_nueva
+                    
+                    # Guardar inmediatamente en Redis y Disco para evitar que Redis quede en NULL
+                    guardar_cache_en_disco()
+                    if redis_client:
+                        guardar_datos_cache_redis(redis_client, CACHE_TASAS)
+    
 
                     # Guardamos la fecha en el historial para no volver a meterla
                     if fecha_nueva not in fechas_procesadas:

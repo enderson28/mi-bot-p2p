@@ -1103,23 +1103,23 @@ def fix_tasa_handler(message):
                 tasa_manana = float(partes[1])
 
                 # Asignación correcta: HOY es 787.5196 y MAÑANA es la que ingresas (791.325)
-                CACHE_TASAS["bcv_tasa"] = 787.5196
+                CACHE_TASAS["bcv_tasa"] = 791.325
                 CACHE_TASAS["bcv_tasa_manana"] = tasa_manana
-                CACHE_TASAS["bcv_fecha"] = "Miércoles, 26 Agosto 2026"
-                CACHE_TASAS["bcv_fecha_manana"] = "Jueves, 27 Agosto 2026"
+                CACHE_TASAS["bcv_fecha"] = "Jueves, 27 Agosto 2026"
+                CACHE_TASAS["bcv_fecha_manana"] = "Viernes, 28 Agosto 2026"
 
                 guardar_cache_en_disco()
 
                 bot.reply_to(
                     message,
                     f"✅ <b>Estructura de tasas restaurada:</b>\n"
-                    f"• Tasa Hoy (Miércoles): 787.5196 Bs\n"
+                    f"• Tasa Hoy (Jueves): 791.325 Bs\n"
                     f"• Tasa Mañana (Jueves): {tasa_manana} Bs\n"
-                    f"• Incremento: +{round(tasa_manana - 787.5196, 2)} Bs",
+                    f"• Incremento: +{round(tasa_manana - 791.666, 2)} Bs",
                     parse_mode="HTML"
                 )
             else:
-                bot.reply_to(message, "⚠️ Uso: <code>/fix_tasa 791.325</code>", parse_mode="HTML")
+                bot.reply_to(message, "⚠️ Uso: <code>/fix_tasa 791.666</code>", parse_mode="HTML")
         except Exception as e:
             bot.reply_to(message, f"❌ Error: {e}")
             

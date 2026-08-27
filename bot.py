@@ -1114,12 +1114,12 @@ def fix_tasa_handler(message):
                     message,
                     f"✅ <b>Estructura de tasas restaurada:</b>\n"
                     f"• Tasa Hoy (Jueves): 791.325 Bs\n"
-                    f"• Tasa Mañana (Jueves): {tasa_manana} Bs\n"
-                    f"• Incremento: +{round(tasa_manana - 791.666, 2)} Bs",
+                    f"• Tasa Mañana (Viernes): {tasa_manana} Bs\n"
+                    f"• Incremento: +{round(tasa_manana - 791.6667, 2)} Bs",
                     parse_mode="HTML"
                 )
             else:
-                bot.reply_to(message, "⚠️ Uso: <code>/fix_tasa 791.666</code>", parse_mode="HTML")
+                bot.reply_to(message, "⚠️ Uso: <code>/fix_tasa 791.6667</code>", parse_mode="HTML")
         except Exception as e:
             bot.reply_to(message, f"❌ Error: {e}")
             

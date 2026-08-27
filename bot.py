@@ -1845,8 +1845,11 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
                     
                     # Guardar inmediatamente en Redis y Disco para evitar que Redis quede en NULL
                     guardar_cache_en_disco()
-                    if redis_client:
-                        guardar_datos_cache_redis(redis_client, CACHE_TASAS)
+                    try:
+                        if r:
+                            guardar_datos_cache_redis(r, CACHE_TASAS)
+                    except Exception as e:
+                        print(f"⚠️ No se pudo guardar en Redis desde webhook: {e}")
     
 
                     # Guardamos la fecha en el historial para no volver a meterla

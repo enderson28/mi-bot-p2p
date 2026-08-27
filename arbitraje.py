@@ -54,8 +54,8 @@ COMISIONES_BANCOS = {
     "bdv_debit": {
         "emoji": TG_EMOJIS["bdv1"],
         "nombre": "BDV Masterdebit",
-        "porcentaje_str": f"1.5{TG_EMOJIS['percent']}",
-        "comision": 0.015,
+        "porcentaje_str": f"2.5{TG_EMOJIS['percent']}",
+        "comision": 0.025,
     },
     "otros_1_5": {
         "emoji": TG_EMOJIS["clic"],
@@ -236,7 +236,7 @@ def registrar_handlers_arbitraje(bot, redis_client):
         markup = InlineKeyboardMarkup(row_width=1)
         markup.add(
             InlineKeyboardButton("1. 🏦 BBVA PROVINCIAL (1.5%)", callback_data="arb_banco_provincial"),
-            InlineKeyboardButton("2. 💳 BDV MASTERDEBIT (1.5%)", callback_data="arb_banco_bdv_debit"),
+            InlineKeyboardButton("2. 💳 BDV MASTERDEBIT (2.5%)", callback_data="arb_banco_bdv_debit"),
             InlineKeyboardButton("3. 📲 Otros Bancos (1.5%)", callback_data="arb_banco_otros_1_5"),
             InlineKeyboardButton("4. 💳 BDV MASTERCARD (2.5%)", callback_data="arb_banco_bdv_master"),
             InlineKeyboardButton("5. 🏛️ BANCO TESORO (2.5%)", callback_data="arb_banco_tesoro"),

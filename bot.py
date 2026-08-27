@@ -281,7 +281,7 @@ setup_verification_handlers(
 
     # Actualizacion de velocidad
 def obtener_datos_bcv_validos():
-    """Retorna la tasa y fecha actuales guardadas en memoria desde el Cazador BCV."""
+    """Retorna la tasa y fecha vigentes en memoria priorizando la tasa futura."""
     val_manana = CACHE_TASAS.get("bcv_tasa_manana")
     fecha_manana = CACHE_TASAS.get("bcv_fecha_manana")
 
@@ -458,11 +458,11 @@ def obtener_tasa_binance_spot_usdt():
 CACHE_TASAS = {
     "bcv_tasa": None,
     "bcv_tasa_anterior": None,
+    "bcv_tasa_manana": None,  
     "bcv_fecha": "",
-    "bcv_tasa_manana": None,       # <-- Agrega esta línea
-    "bcv_fecha_manana": "",        # <-- Agrega esta línea
-    "usdt_usd_spot": 0.9987,  # 👈 AGREGAR ESTA LÍNEA
-    "rangos": {} # Guardará las tasas calculadas por rango
+    "bcv_fecha_manana": "",        
+    "usdt_usd_spot": 0.9987,  
+    "rangos": {} 
 }
 
 # Registramos el módulo pasándole la instancia del bot y la función para leer CACHE_TASAS
@@ -516,11 +516,11 @@ def actualizar_cache_segundo_plano():
     global CACHE_TASAS
     while True:
         try:
-            # 📌 AGREGAR AQUÍ (Actualiza el precio spot en cada ciclo)
+            # 1. Actualizar tasa Spot
             CACHE_TASAS["usdt_usd_spot"] = obtener_tasa_binance_spot_usdt()
-            
-            # Leemos la tasa BCV actual almacenada en memoria (la que envía el cazador)
-            tasa_bcv = CACHE_TASAS.get("bcv_tasa") or 0.0
+
+            # 2. Obtener la tasa BCV adecuada (prioridad a mañana si existe)
+            tasa_bcv, _ = obtener_datos_bcv_validos()
             tasa_bcv_ajustada = tasa_bcv * 1.005
 
             ranges_def = [
@@ -541,18 +541,19 @@ def actualizar_cache_segundo_plano():
                 }
 
             CACHE_TASAS["rangos"] = nuevos_rangos
-            guardar_cache_en_disco()  # 👈 AGREGA ESTA LÍNEA AQUÍ (alrededor de la línea 311)
+            guardar_cache_en_disco()  # Persistencia atómica en Redis y Disco
 
         except Exception as e:
-            print(f"Error actualizando caché: {e}")
+            print(f"Error actualizando caché en segundo plano: {e}")
 
         time.sleep(60)
+            
         
 threading.Thread(target=actualizar_cache_segundo_plano, daemon=True).start()
 
 def refrescar_tasas_en_vivo():
     global CACHE_TASAS
-    tasa_bcv = CACHE_TASAS.get("bcv_tasa") or 0.0
+    tasa_bcv, _ = obtener_datos_bcv_validos()
     fecha_bcv = CACHE_TASAS.get("bcv_fecha", "Sin fecha")
 
     tasa_bcv_ajustada = tasa_bcv * 1.005
@@ -609,16 +610,8 @@ def construir_monitor_canal_html():
     
 
 def construir_monitor_texto_html():
-    # --- LÓGICA DE SELECCIÓN DE TASA Y FECHA ---
-    val_manana = CACHE_TASAS.get("bcv_tasa_manana")
-    fecha_manana = CACHE_TASAS.get("bcv_fecha_manana")
-    
-    if val_manana and float(val_manana or 0) > 0:
-        tasa_bcv = float(val_manana)
-        fecha_valor_bcv = fecha_manana or CACHE_TASAS.get("bcv_fecha", "Sin fecha")
-    else:
-        tasa_bcv = float(CACHE_TASAS.get("bcv_tasa") or 0.0)
-        fecha_valor_bcv = CACHE_TASAS.get("bcv_fecha", "Sin fecha")
+    # Solución limpia y sincronizada:
+    tasa_bcv, fecha_valor_bcv = obtener_datos_bcv_validos()
 
     tasa_intervencion = tasa_bcv * 1.005
     
@@ -1101,29 +1094,39 @@ def fix_tasa_handler(message):
             partes = message.text.split()
             if len(partes) > 1:
                 tasa_manana = float(partes[1])
-
-                # Asignación correcta: HOY es 787.5196 y MAÑANA es la que ingresas (791.325)
-                CACHE_TASAS["bcv_tasa"] = 791.325
+                
+                # Mantiene la tasa activa actual como 'hoy' y asigna la ingresada como 'mañana'
+                tasa_hoy = float(CACHE_TASAS.get("bcv_tasa") or tasa_manana)
+                
+                CACHE_TASAS["bcv_tasa_anterior"] = tasa_hoy
+                CACHE_TASAS["bcv_tasa"] = tasa_hoy
                 CACHE_TASAS["bcv_tasa_manana"] = tasa_manana
-                CACHE_TASAS["bcv_fecha"] = "Jueves, 27 Agosto 2026"
+                
+                CACHE_TASAS["bcv_fecha"] = CACHE_TASAS.get("bcv_fecha", "Jueves, 27 Agosto 2026")
                 CACHE_TASAS["bcv_fecha_manana"] = "Viernes, 28 Agosto 2026"
 
                 guardar_cache_en_disco()
+                try:
+                    if r:
+                        guardar_datos_cache_redis(r, CACHE_TASAS)
+                except Exception as e:
+                    print(f"⚠️ Error Redis en fix_tasa: {e}")
+
+                diferencia = round(tasa_manana - tasa_hoy, 4)
 
                 bot.reply_to(
                     message,
                     f"✅ <b>Estructura de tasas restaurada:</b>\n"
-                    f"• Tasa Hoy (Jueves): 791.325 Bs\n"
-                    f"• Tasa Mañana (Viernes): {tasa_manana} Bs\n"
-                    f"• Incremento: +{round(tasa_manana - 791.6667, 2)} Bs",
+                    f"• Tasa Hoy: {tasa_hoy:.3f} Bs\n"
+                    f"• Tasa Mañana: {tasa_manana:.3f} Bs\n"
+                    f"• Incremento: {diferencia:+} Bs",
                     parse_mode="HTML"
                 )
             else:
                 bot.reply_to(message, "⚠️ Uso: <code>/fix_tasa 791.6667</code>", parse_mode="HTML")
         except Exception as e:
             bot.reply_to(message, f"❌ Error: {e}")
-            
-            
+                    
         
 @bot.message_handler(func=lambda message: message.chat.type == "private" and message.text in [
     "🟢 P2P-USDT 🔴",
@@ -1839,10 +1842,15 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
                             historico.append(nuevo_registro)
                             CACHE_TASAS["bcv_historico_mes"] = historico[-31:]
 
-                    # Actualizamos la tasa y fecha vigente
-                    CACHE_TASAS["bcv_tasa"] = tasa_nueva
-                    CACHE_TASAS["bcv_fecha"] = fecha_nueva
-                    
+                    # 1. Rotación y actualización correcta de estructura (Hoy / Mañana)
+                    CACHE_TASAS["bcv_tasa_anterior"] = float(tasa_previa_guardada or tasa_nueva)
+                    CACHE_TASAS["bcv_tasa"] = float(tasa_previa_guardada or tasa_nueva)
+                    CACHE_TASAS["bcv_tasa_manana"] = tasa_nueva
+
+                    # Mantener registro de fechas
+                    CACHE_TASAS["bcv_fecha"] = fecha_previa_guardada or fecha_nueva
+                    CACHE_TASAS["bcv_fecha_manana"] = fecha_nueva
+
                     # Guardar inmediatamente en Redis y Disco para evitar que Redis quede en NULL
                     guardar_cache_en_disco()
                     try:

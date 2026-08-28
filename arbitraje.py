@@ -189,6 +189,7 @@ def calcular_arbitraje_reposicion(monto_usd, comision_banco, tasa_bcv_hoy, tasa_
         "bs_invertidos_hoy": bs_invertidos_hoy,
         "usd_fiat_netos": usd_fiat_netos,
         "usdt_netos_binance": usdt_netos_binance,
+        "tasa_usd_usdt": tasa_usd_usdt,
         "usdt_recuperar_hoy": usdt_recuperar_hoy,
         "ganancia_usdt_hoy": ganancia_usdt_hoy,
         "ganancia_bs_hoy": ganancia_bs_hoy,
@@ -553,7 +554,9 @@ def generar_y_enviar_resultado(chat_id, user_id, tasa_p2p_venta, bot, redis_clie
 
     msj += (
         f"{TG_EMOJIS['red_circle']} <b>Tasa Venta P2P:</b> {tasa_p2p_venta:,.2f} Bs/{TG_EMOJIS['usdt']}\n"
-        f"<blockquote>{TG_EMOJIS['usdt']} <b>USDT Líquidos (Binance):</b> <code>{res['usdt_netos_binance']:,.2f}</code></blockquote>\n"
+        f"<blockquote>{TG_EMOJIS['usdt']} <b>USDT Líquidos {TG_EMOJIS['binance']} Binance:</b>\n"
+        f"<code>{res['usdt_netos_binance']:.2f}</code> {TG_EMOJIS['usdt']} ({TG_EMOJIS['usdt']}/{TG_EMOJIS['usd']} {res['tasa_usd_usdt']:.5f})</blockquote>\n"
+
         f"{TG_EMOJIS['hand']} <b>Inversión de Hoy:</b> <code>{res['bs_invertidos_hoy']:,.2f}</code> Bs\n"
         f"-------------------------\n"
         f"{TG_EMOJIS['briefcase']} <b>RECUPERAR CAPITAL HOY</b>\n"

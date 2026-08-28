@@ -568,42 +568,51 @@ def generar_y_enviar_resultado(chat_id, user_id, tasa_p2p_venta, bot, redis_clie
         f"<blockquote>{TG_EMOJIS['party']} <b>Ganancia Actual:</b> +<code>{res['ganancia_usdt_hoy']:,.2f}</code> {TG_EMOJIS['usdt']} (<code>{res['ganancia_bs_hoy']:,.2f}</code> Bs)</blockquote>\n"
     )
 
-    # Extraemos el nombre del día directamente de la fecha de mañana en el cache
+    # --- DETECTAR EL PRÓXIMO DÍA HÁBIL REAL ---
     fecha_m = cache_data.get("bcv_fecha_manana", "")
     if fecha_m and "," in fecha_m:
         proximo_dia = fecha_m.split(",")[0].strip()
     else:
-        # Fallback usando hora Venezuela (-4) para evitar brincos por UTC
-        dias_semana = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
+        # Hora local Venezuela (UTC-4)
         hora_ve = datetime.now(timezone.utc) - timedelta(hours=4)
-        proximo_dia = dias_semana[(hora_ve.weekday() + 1) % 7]
+        dia_semana_num = hora_ve.weekday() # 0=Lun, 1=Mar, 2=Mié, 3=Jue, 4=Vie, 5=Sáb, 6=Dom
+        
+        # Si hoy es Viernes(4), Sábado(5) o Domingo(6), el próximo día hábil es Lunes
+        if dia_semana_num in [4, 5, 6]:
+            proximo_dia = "Lunes"
+        else:
+            dias_semana = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
+            proximo_dia = dias_semana[dia_semana_num + 1]
 
-    # --- BLOQUE 2: REPOSICIÓN SI YA SALIÓ TASA DE MAÑANA ---
+    # --- BLOQUE 2: REPOSICIÓN O AVISO DE TASA NO PUBLICADA ---
     if tasa_bcv_manana is not None and tasa_bcv_manana > 0:
         diferencia_bcv = tasa_bcv_manana - tasa_bcv_hoy
+        signo_dif = "+" if diferencia_bcv >= 0 else ""
+        
         msj += (
-            f"---------------------\n"
-            f"<blockquote>{TG_EMOJIS['clic']} <b>REPOSICIÓN PARA EL {proximo_dia.upper()}</b> (BCV Actualizado)</blockquote>\n"
-            f"{TG_EMOJIS['bcv']} <b>Tasa BCV (+0.5%):</b> {res['tasa_interv_manana']:,.3f} Bs (+{diferencia_bcv:,.2f} Bs)\n"
-            f"<blockquote>{TG_EMOJIS['bcv']} <b>Bs necesarios:</b> {res['bs_necesarios_manana']:,.0f} Bs</blockquote>\n"
-            f"{TG_EMOJIS['binance']} <b>Vender en P2P:</b> <code>{res['usdt_recuperar_manana']:,.2f}</code> {TG_EMOJIS['usdt']}\n"
-            f"<blockquote>{TG_EMOJIS['party']} <b>Ganancia Real Aislada:</b> +<code>{res['ganancia_usdt_manana']:,.2f}</code> {TG_EMOJIS['usdt']}</blockquote>\n"
+            f"-------------------\n"
+            f"<{TG_EMOJIS['click']}> <b>REPOSICIÓN PARA EL {proximo_dia.upper()}</b> (BCV Actualizado)\n\n"
+            f"<{TG_EMOJIS['bcv']}> <b>Tasa BCV (+0.5%):</b> {res['tasa_interv_manana']:.3f} Bs ({signo_dif}{diferencia_bcv:.2f} Bs)\n"
+            f"<{TG_EMOJIS['bcv']}> <b>Bs necesarios:</b> {res['bs_necesarios_manana']:,.0f} Bs\n"
+            f"<{TG_EMOJIS['binance']}> <b>Vender en P2P:</b> {res['usdt_recuperar_manana']:.2f} <{TG_EMOJIS['usdt']}>\n"
+            f"<{TG_EMOJIS['party']}> <b>Ganancia Real Aislada:</b> +{res['ganancia_usdt_manana']:.2f} <{TG_EMOJIS['usdt']}>\n"
         )
     else:
         msj += (
-            f"---------------------\n"
-            f"<i>Tasa {TG_EMOJIS['bcv']} del {proximo_dia} aún no publicada {TG_EMOJIS['chart']} por el {TG_EMOJIS['bcv']}</i>\n"
-            f"<i>Usa este cálculo {TG_EMOJIS['calc']} para tu operación de hoy.</i>\n"
+            f"-------------------\n"
+            f"<i>Tasa <{TG_EMOJIS['bcv']}> del <b>{proximo_dia}</b> aún no publicada por el <{TG_EMOJIS['bcv']}>.\n"
+            f"Usa este cálculo <{TG_EMOJIS['calc']}> para tu operación de hoy.</i>\n"
         )
 
     markup = InlineKeyboardMarkup(row_width=1)
     markup.add(
         InlineKeyboardButton("🔄 Calcular otro monto", callback_data="calc_arbitraje"),
-        InlineKeyboardButton("🔙 Salir al menú", callback_data="arb_salir_menu")
+        InlineKeyboardButton("⬅️ Salir al menú", callback_data="arb_salir_menu")
     )
 
     bot.send_message(chat_id, msj, parse_mode="HTML", reply_markup=markup)
 
     if user_id in USER_ARBITRAJE_DATA:
         del USER_ARBITRAJE_DATA[user_id]
+        
         

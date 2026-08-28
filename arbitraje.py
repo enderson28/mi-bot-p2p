@@ -488,7 +488,7 @@ def generar_y_enviar_resultado(chat_id, user_id, tasa_p2p_venta, bot, redis_clie
     data_user = USER_ARBITRAJE_DATA.get(user_id, {})
     monto_usd = data_user.get("monto_usd", 0)
     comision_banco = data_user.get("comision_banco", 0)
-    
+
     # # 1. FORZAR lectura fresca de Redis (Omitir cache desactualizada)
     cache_data = obtener_datos_cache_redis(redis_client) or {}
 
@@ -499,13 +499,15 @@ def generar_y_enviar_resultado(chat_id, user_id, tasa_p2p_venta, bot, redis_clie
     # # 3. Extraer tasa Zinli si aplica
     tasa_zinli_usada = data_user.get("tasa_zinli_usada", None)
 
-    # # 4. Extraer BCV Hoy con múltiples fallbacks (EVITA EL 0.000 EN MERCANTIL)
+    # # 4. Extraer BCV Hoy con fallbacks completos (EVITA EL 0.000 EN MERCANTIL/BDV)
     from bot import CACHE_TASAS  # Importación de respaldo directo
 
     val_bcv = (
-        cache_data.get("bcv_tasa") 
-        or cache_data.get("bcv") 
+        cache_data.get("tasa_oficial")
+        or cache_data.get("bcv_tasa")
+        or cache_data.get("bcv")
         or cache_data.get("tasa_bcv")
+        or CACHE_TASAS.get("tasa_oficial")
         or CACHE_TASAS.get("bcv_tasa")
         or CACHE_TASAS.get("bcv")
         or 0.0
@@ -518,7 +520,7 @@ def generar_y_enviar_resultado(chat_id, user_id, tasa_p2p_venta, bot, redis_clie
 
     # # 5. Extraer BCV Mañana con verificación limpia
     val_manana = (
-        cache_data.get("bcv_tasa_manana") 
+        cache_data.get("bcv_tasa_manana")
         or cache_data.get("bcv_manana")
         or CACHE_TASAS.get("bcv_tasa_manana")
         or CACHE_TASAS.get("bcv_manana")
@@ -528,13 +530,13 @@ def generar_y_enviar_resultado(chat_id, user_id, tasa_p2p_venta, bot, redis_clie
         tasa_bcv_manana = float(val_manana) if val_manana and float(val_manana) > 0 else None
     except (ValueError, TypeError):
         tasa_bcv_manana = None
-    
-    # 4. Llamada al cálculo pasando la variable tasa_zinli explícitamente
+
+    # # 6. Llamada al cálculo pasando la variable tasa_zinli explícitamente
     res = calcular_arbitraje_reposicion(
         monto_usd=monto_usd,
         comision_banco=comision_banco,
         tasa_bcv_hoy=tasa_bcv_hoy,
-        tasa_bcv_manana=tasa_bcv_manana,
+        tasa_bcv_manana=tasa_bcv_manana if tasa_bcv_manana else tasa_bcv_hoy,
         tasa_p2p_venta=tasa_p2p_venta,
         tasa_usd_usdt=tasa_usd_usdt,
         tasa_zinli=tasa_zinli_usada

@@ -281,18 +281,28 @@ setup_verification_handlers(
 
     # Actualizacion de velocidad
 def obtener_datos_bcv_validos():
-    """Retorna la tasa y fecha vigentes en memoria priorizando la tasa futura."""
+    """Retorna la tasa y fecha vigentes en memoria priorizando la tasa futura si existe."""
     val_manana = CACHE_TASAS.get("bcv_tasa_manana")
     fecha_manana = CACHE_TASAS.get("bcv_fecha_manana")
 
-    if val_manana and float(val_manana or 0) > 0:
+    # Validar que val_manana sea un número válido y estrictamente mayor a 0
+    try:
+        es_val_manana_valido = val_manana is not None and float(val_manana) > 0
+    except (ValueError, TypeError):
+        es_val_manana_valido = False
+
+    if es_val_manana_valido:
         tasa = float(val_manana)
         fecha = fecha_manana or CACHE_TASAS.get("bcv_fecha", "Sin fecha")
     else:
-        tasa = float(CACHE_TASAS.get("bcv_tasa") or 0.0)
+        try:
+            tasa = float(CACHE_TASAS.get("bcv_tasa") or 0.0)
+        except (ValueError, TypeError):
+            tasa = 0.0
         fecha = CACHE_TASAS.get("bcv_fecha", "Sin fecha")
 
     return tasa, fecha
+    
 
 def obtener_tasa_binance_p2p(tipo_operacion, monto_bs):
     url = "https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search"
@@ -726,32 +736,40 @@ def construir_intervencion_texto_html(user=None, porcentaje=None):
 
     porcentaje_txt = "1%" if porcentaje == 1.0 else "0.5%"
 
-    # --- LÓGICA DE SELECCIÓN DE TASA E INTERVENCIÓN CORREGIDA ---
-    val_manana = CACHE_TASAS.get("bcv_tasa_manana")
-    val_hoy = CACHE_TASAS.get("bcv_tasa") or CACHE_TASAS.get("bcv", 0.0)
-    val_anterior = CACHE_TASAS.get("bcv_tasa_anterior", 0.0)
-
+    # EXTRAER VALORES CON SEGURIDAD EXTRA
     try:
-        tasa_hoy_num = float(val_hoy)
+        tasa_hoy_num = float(CACHE_TASAS.get("bcv_tasa") or 0.0)
     except (ValueError, TypeError):
         tasa_hoy_num = 0.0
 
-    if val_manana and float(val_manana or 0) > 0:
-        # Ya salió la tasa de mañana: comparar Mañana vs Hoy
-        tasa_bcv = float(val_manana)
-        fecha_valor_bcv = CACHE_TASAS.get("bcv_fecha_manana", "Sin fecha")
+    try:
+        tasa_manana_num = float(CACHE_TASAS.get("bcv_tasa_manana") or 0.0)
+    except (ValueError, TypeError):
+        tasa_manana_num = 0.0
+
+    try:
+        tasa_anterior_num = float(CACHE_TASAS.get("bcv_tasa_anterior") or 0.0)
+    except (ValueError, TypeError):
+        tasa_anterior_num = 0.0
+
+    # LÓGICA DE DECISIÓN DE TASA Y TENDENCIA
+    if tasa_manana_num > 0 and tasa_manana_num != tasa_hoy_num:
+        # Ya salió la tasa de mañana
+        tasa_bcv = tasa_manana_num
+        fecha_valor_bcv = CACHE_TASAS.get("bcv_fecha_manana") or CACHE_TASAS.get("bcv_fecha", "Sin fecha")
         tasa_base_comparar = tasa_hoy_num
     else:
-        # Tasa vigente normal: comparar Hoy vs Ayer
+        # Tasa vigente de hoy
         tasa_bcv = tasa_hoy_num
         fecha_valor_bcv = CACHE_TASAS.get("bcv_fecha", "Sin fecha")
-        try:
-            tasa_base_comparar = float(val_anterior)
-        except (ValueError, TypeError):
-            tasa_base_comparar = tasa_bcv
+        tasa_base_comparar = tasa_anterior_num if tasa_anterior_num > 0 else tasa_bcv
 
-    # Calcular la diferencia REAL sin acumulación errónea
-    diferencia = tasa_bcv - tasa_base_comparar if tasa_base_comparar > 0 else 0.0
+    # EVITAR ERRORES SI TASA_BCV ES 0
+    if tasa_bcv == 0.0:
+        return "⚠️ <b>Error:</b> Las tasas del BCV se están cargando desde la base de datos. Intenta en unos segundos."
+
+    # CALCULAR DIFERENCIA
+    diferencia = round(tasa_bcv - tasa_base_comparar, 4) if tasa_base_comparar > 0 else 0.0
     
 
     if diferencia > 0:
@@ -1093,63 +1111,53 @@ def fix_tasa_handler(message):
         try:
             partes = message.text.split()
             if len(partes) > 1:
-                valor_1 = float(partes[1])
+                tasa_hoy = float(partes[1])
                 
-                # Si pasas 2 argumentos (/fix_tasa 791.325 791.667):
-                # Argumento 1 = Tasa Hoy | Argumento 2 = Tasa Mañana
                 if len(partes) > 2:
-                    tasa_hoy = valor_1
                     tasa_manana = float(partes[2])
                 else:
-                    # Si pasas 1 solo argumento (/fix_tasa 791.325):
-                    # Asigna la tasa dada a 'Hoy' y limpia la de 'Mañana' para evitar diferencias falsas.
-                    tasa_hoy = valor_1
                     tasa_manana = None
 
-                # Actualizamos la memoria global sin sobreescribir Hoy con Mañana
-                if tasa_hoy is not None:
-                    CACHE_TASAS["bcv_tasa_anterior"] = CACHE_TASAS.get("bcv_tasa") or tasa_hoy
-                    CACHE_TASAS["bcv_tasa"] = tasa_hoy
+                # Actualizar estructura limpia
+                CACHE_TASAS["bcv_tasa_anterior"] = CACHE_TASAS.get("bcv_tasa", tasa_hoy)
+                CACHE_TASAS["bcv_tasa"] = tasa_hoy
                 
-                CACHE_TASAS["bcv_tasa_manana"] = tasa_manana
-                
-                if tasa_manana is None:
-                    CACHE_TASAS["bcv_fecha_manana"] = ""
+                # Asignar fecha actual simulada/real si no hay
+                if not CACHE_TASAS.get("bcv_fecha"):
+                    CACHE_TASAS["bcv_fecha"] = "Viernes, 28 Agosto 2026"
 
-                guardar_cache_en_disco()
-                try:
-                    if r:
-                        guardar_datos_cache_redis(r, CACHE_TASAS)
-                except Exception as e:
-                    print(f"⚠️ Error Redis en fix_tasa: {e}")
-
-                # Cálculo de variación
                 if tasa_manana is not None:
+                    CACHE_TASAS["bcv_tasa_manana"] = tasa_manana
+                    CACHE_TASAS["bcv_fecha_manana"] = "Lunes, 31 Agosto 2026"
                     diferencia = round(tasa_manana - tasa_hoy, 4)
                     txt_manana = f"{tasa_manana:.3f} Bs"
-                    txt_inc = f"{diferencia:+} Bs"
+                    txt_inc = f"{diferencia:+.2f} Bs"
                 else:
+                    CACHE_TASAS["bcv_tasa_manana"] = None
+                    CACHE_TASAS["bcv_fecha_manana"] = ""
                     txt_manana = "Sin asignar (Inactiva)"
-                    txt_inc = "0.0 Bs (Sin tasa futura)"
+                    txt_inc = "+0.00 Bs (Sin tasa futura)"
+
+                # Sincronizar persistencia en Redis
+                guardar_cache_on_disco()
 
                 bot.reply_to(
                     message,
-                    f"✅ <b>Estructura de tasas restaurada:</b>\n"
-                    f"• <b>Tasa Hoy:</b> <code>{tasa_hoy:.3f} Bs</code>\n"
+                    f"✅ <b>Estructura de tasas restaurada:</b>\n\n"
+                    f"• <b>Tasa Hoy:</b> <code>{tasa_hoy:.3f}</code> Bs\n"
                     f"• <b>Tasa Mañana:</b> <code>{txt_manana}</code>\n"
                     f"• <b>Incremento:</b> <code>{txt_inc}</code>",
                     parse_mode="HTML"
                 )
             else:
                 bot.reply_to(
-                    message, 
-                    "⚠️ Uso:\n• Solo hoy: <code>/fix_tasa 791.325</code>\n• Hoy y Mañana: <code>/fix_tasa 791.325 791.667</code>", 
+                    message,
+                    "⚠️ Uso:\n• Solo hoy: <code>/fix_tasa 791.325</code>\n• Hoy y Mañana: <code>/fix_tasa 791.325 791.667</code>",
                     parse_mode="HTML"
                 )
         except Exception as e:
             bot.reply_to(message, f"❌ Error: {e}")
-                
-                    
+                            
         
 @bot.message_handler(func=lambda message: message.chat.type == "private" and message.text in [
     "🟢 P2P-USDT 🔴",

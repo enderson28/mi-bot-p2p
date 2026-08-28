@@ -557,7 +557,7 @@ def generar_y_enviar_resultado(chat_id, user_id, tasa_p2p_venta, bot, redis_clie
     msj += (
         f"{TG_EMOJIS['red_circle']} <b>Tasa Venta P2P:</b> {tasa_p2p_venta:,.2f} Bs/{TG_EMOJIS['usdt']}\n"
         f"<blockquote>{TG_EMOJIS['usdt']} <b>USDT Líquidos {TG_EMOJIS['binance']} Binance:</b>\n"
-        f"<code>{res['usdt_netos_binance']:.2f}</code> {TG_EMOJIS['usdt']} ({TG_EMOJIS['usdt']}/{TG_EMOJIS['usd']} {res['tasa_usd_usdt']:.5f})</blockquote>\n"
+        f"<code>{res['usdt_netos_binance']:.2f}</code> {TG_EMOJIS['usdt']} ({TG_EMOJIS['usd']}/{TG_EMOJIS['usdt']} {res['tasa_usd_usdt']:.5f})</blockquote>\n"
 
         f"{TG_EMOJIS['hand']} <b>Inversión de Hoy:</b> <code>{res['bs_invertidos_hoy']:,.2f}</code> Bs\n"
         f"-------------------------\n"

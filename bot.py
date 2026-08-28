@@ -1139,7 +1139,7 @@ def fix_tasa_handler(message):
                     txt_inc = "+0.00 Bs (Sin tasa futura)"
 
                 # Sincronizar persistencia en Redis
-                guardar_cache_on_disco()
+                guardar_cache_en_disco()
 
                 bot.reply_to(
                     message,

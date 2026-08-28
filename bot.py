@@ -1806,7 +1806,6 @@ def filtro_seguridad_chat(message):
 # ==================================
 
 CLAVE_SECRETA_BCV = os.getenv("CLAVE_SECRETA_BCV")
-
 class WebhookHandler(http.server.BaseHTTPRequestHandler):
     def do_POST(self):
         if self.path == '/actualizar_bcv':
@@ -1829,73 +1828,65 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
                 if tasa and fecha:
                     tasa_nueva = float(tasa)
                     fecha_nueva = str(fecha).strip()
+
                     # Leemos los valores guardados en el cache
                     tasa_previa_guardada = CACHE_TASAS.get("bcv_tasa")
                     fecha_previa_guardada = CACHE_TASAS.get("bcv_fecha")
                     fechas_procesadas = CACHE_TASAS.get("fechas_procesadas", [])
 
-                    # 🔒 1. CANDADO DE SEGURIDAD (Por Fecha o Tasa Duplicada)
+                    # 1. CANDADO DE SEGURIDAD (Por Fecha o Tasa Duplicada)
                     if fecha_nueva in fechas_procesadas or (fecha_nueva == fecha_previa_guardada and tasa_nueva == float(tasa_previa_guardada or 0)):
-                        print(f"🔒 [WEBHOOK] La tasa/fecha '{fecha_nueva}' ya fue procesada previamente. Sin cambios.")
+                        print(f"⚠️ [WEBHOOK] La tasa/fecha '{fecha_nueva}' ya fue procesada previamente. Sin cambios.")
                         self.send_response(200)
                         self.send_header('Content-Type', 'application/json')
                         self.end_headers()
                         self.wfile.write(b'{"status": "ignored", "message": "Tasa ya registrada para esta fecha"}')
                         return
 
+                    # 2. SI LLEGAMOS AQUÍ, ES UNA FECHA NUEVA REAL PUBLICADA POR EL BCV
+                    fecha_corta = fecha_nueva.split(",")[1].strip() if "," in fecha_nueva else fecha_nueva
+                    historico = CACHE_TASAS.get("bcv_historico_mes", [])
 
-                        # 🔥 2. SI LLEGAMOS AQUÍ, ES UNA FECHA NUEVA REAL PUBLICADA POR EL BCV
-                        fecha_corta = fecha_nueva.split(",")[1].strip() if "," in fecha_nueva else fecha_nueva
+                    # Detectamos si cambió el mes leyendo el registro anterior
+                    if historico:
+                        ultimo_mes = historico[-1]["fecha"].split(" ")[1] if len(historico[-1]["fecha"].split(" ")) > 1 else ""
+                        mes_nuevo = fecha_corta.split(" ")[1] if len(fecha_corta.split(" ")) > 1 else ""
+                        if mes_nuevo and ultimo_mes and mes_nuevo != ultimo_mes:
+                            historico = []
 
-                        historico = CACHE_TASAS.get("bcv_historico_mes", [])
+                    # CORRECCIÓN DE LA TASA ANTERIOR
+                    if tasa_previa_guardada is not None and float(tasa_previa_guardada or 0) > 0:
+                        CACHE_TASAS["bcv_tasa_anterior"] = float(tasa_previa_guardada)
 
-                        # Detectamos si cambió el mes leyendo el registro anterior
-                        if historico:
-                            ultimo_mes = historico[-1]["fecha"].split(" ")[1] if len(historico[-1]["fecha"].split(" ")) > 1 else ""
-                            mes_nuevo = fecha_corta.split(" ")[1] if len(fecha_corta.split(" ")) > 1 else ""
-                            if mes_nuevo and ultimo_mes and mes_nuevo != ultimo_mes:
-                                historico = []
+                    variacion_bs = tasa_nueva - float(tasa_previa_guardada or tasa_nueva)
+                    porcentaje_inc = (variacion_bs / float(tasa_previa_guardada or 1)) * 100
 
-                        # 📌 CORRECCIÓN DE LA TASA ANTERIOR
-                        if tasa_previa_guardada is not None and float(tasa_previa_guardada) > 0:
-                            CACHE_TASAS["bcv_tasa_anterior"] = float(tasa_previa_guardada)
+                    nuevo_registro = {
+                        "fecha": fecha_corta,
+                        "porcentaje": f"{porcentaje_inc:.2f}%",
+                        "variacion": f"{variacion_bs:.2f} Bs"
+                    }
 
-                        variacion_bs = tasa_nueva - float(tasa_previa_guardada or tasa_nueva)
-                        porcentaje_inc = (variacion_bs / float(tasa_previa_guardada or 1)) * 100
+                    if not any(x.get("fecha") == fecha_corta for x in historico):
+                        historico.append(nuevo_registro)
+                        CACHE_TASAS["bcv_historico_mes"] = historico[-31:]
 
-                        nuevo_registro = {
-                            "fecha": fecha_corta,
-                            "porcentaje": f"{porcentaje_inc:.2f}%",
-                            "variacion": f"{variacion_bs:.2f} Bs"
-                        }
-
-                        if not any(x.get("fecha") == fecha_corta for x in historico):
-                            historico.append(nuevo_registro)
-                            CACHE_TASAS["bcv_historico_mes"] = historico[-31:]
-
-                    # 1. Rotación y actualización correcta de estructura (Hoy / Mañana)
-                    CACHE_TASAS["bcv_tasa_anterior"] = float(tasa_previa_guardada or tasa_nueva)
-                    CACHE_TASAS["bcv_tasa"] = float(tasa_previa_guardada or tasa_nueva)
+                    # 3. ROTACIÓN Y ASIGNACIÓN CORRECTA DE TASA MAÑANA
                     CACHE_TASAS["bcv_tasa_manana"] = tasa_nueva
-
-                    # Mantener registro de fechas
-                    CACHE_TASAS["bcv_fecha"] = fecha_previa_guardada or fecha_nueva
                     CACHE_TASAS["bcv_fecha_manana"] = fecha_nueva
 
-                    # Guardar inmediatamente en Redis y Disco para evitar que Redis quede en NULL
-                    guardar_cache_en_disco()
-                    try:
-                        if r:
-                            guardar_datos_cache_redis(r, CACHE_TASAS)
-                    except Exception as e:
-                        print(f"⚠️ No se pudo guardar en Redis desde webhook: {e}")
-    
+                    # Si hoy no tenía tasa inicializada, asignamos esta como base
+                    if not CACHE_TASAS.get("bcv_tasa") or float(CACHE_TASAS.get("bcv_tasa") or 0) == 0:
+                        CACHE_TASAS["bcv_tasa"] = tasa_nueva
+                        CACHE_TASAS["bcv_fecha"] = fecha_nueva
 
-                    # Guardamos la fecha en el historial para no volver a meterla
+                    # Guardar inmediatamente en Redis usando la función correcta
+                    guardar_cache_on_disco()
+
                     if fecha_nueva not in fechas_procesadas:
                         fechas_procesadas.append(fecha_nueva)
                         CACHE_TASAS["fechas_procesadas"] = fechas_procesadas[-10:]
-        
+
                     # Recalculamos rangos P2P inmediatamente
                     tasa_ajustada = tasa_nueva * 1.005
                     ranges_def = [
@@ -1912,9 +1903,8 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
                         nuevos_rangos[str(usd_ref)] = {"nombre": nombre, "compra": compra, "venta": venta}
 
                     CACHE_TASAS["rangos"] = nuevos_rangos
+                    guardar_cache_on_disco()
 
-                    # Guardamos copia física en Redis
-                    guardar_cache_en_disco()
                     print(f"🔥 [WEBHOOK] ¡FECHA NUEVA DETECTADA! Tasa BCV actualizada por El Cazador: {tasa_nueva} | Fecha: {fecha_nueva}")
 
                     # Anuncios automáticos sincronizados
@@ -1933,7 +1923,6 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
 
                             print("📣 [1/2] Tabla de Intervención enviada a los canales vía Webhook.")
 
-                            # Pausa de 15 segundos entre avisos
                             time.sleep(15)
 
                             # 2. Envío de Monitor P2P
@@ -1950,7 +1939,6 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
                         except Exception as e:
                             print(f"⚠️ Error general al publicar anuncios desde el webhook: {e}")
 
-                    # Se ejecuta en un hilo para responder rápido a GitHub Actions
                     threading.Thread(target=enviar_reportes_sincronizados, daemon=True).start()
 
                     self.send_response(200)
@@ -1968,9 +1956,8 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
                 print(f"❌ Error procesando webhook: {e}")
                 self.send_response(400)
                 self.send_header('Content-Type', 'application/json')
-                self.end_headers()  
-
-                        
+                self.end_headers()
+                   
 
 def iniciar_servidor_receptor():
     port = int(os.getenv("PORT", 8080))

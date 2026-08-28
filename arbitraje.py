@@ -591,7 +591,7 @@ def generar_y_enviar_resultado(chat_id, user_id, tasa_p2p_venta, bot, redis_clie
         
         msj += (
             f"-------------------\n"
-            f"<{TG_EMOJIS['click']}> <b>REPOSICIÓN PARA EL {proximo_dia.upper()}</b> (BCV Actualizado)\n\n"
+            f"<{TG_EMOJIS['clic']}> <b>REPOSICIÓN PARA EL {proximo_dia.upper()}</b> (BCV Actualizado)\n\n"
             f"<{TG_EMOJIS['bcv']}> <b>Tasa BCV (+0.5%):</b> {res['tasa_interv_manana']:.3f} Bs ({signo_dif}{diferencia_bcv:.2f} Bs)\n"
             f"<{TG_EMOJIS['bcv']}> <b>Bs necesarios:</b> {res['bs_necesarios_manana']:,.0f} Bs\n"
             f"<{TG_EMOJIS['binance']}> <b>Vender en P2P:</b> {res['usdt_recuperar_manana']:.2f} <{TG_EMOJIS['usdt']}>\n"

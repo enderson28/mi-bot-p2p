@@ -135,12 +135,13 @@ def obtener_tasa_p2p_por_rango(cache_data, monto_usd):
     return float(tasa_venta) if tasa_venta > 0 else 890.0
 
 
+
 def obtener_precio_spot_usdt_usd(cache_data=None):
     if cache_data and "usdt_usd_spot" in cache_data:
         try:
             val = float(cache_data["usdt_usd_spot"])
             if val > 0:
-                return val  # Retorna el valor real del par (ej. 1.00016)
+                return (1 / val) if val < 1 else val
         except (ValueError, TypeError):
             pass
 
@@ -148,7 +149,8 @@ def obtener_precio_spot_usdt_usd(cache_data=None):
         url = "https://api.binance.com/api/v3/ticker/price?symbol=USDTUSD"
         response = requests.get(url, timeout=3)
         if response.status_code == 200:
-            return float(response.json().get("price", 1.00016))
+            precio_raw = float(response.json().get("price", 1.00016))
+            return (1 / precio_raw) if precio_raw < 1 else precio_raw
     except Exception as e:
         logger.warning(f"No se pudo consultar Binance Spot USDTUSD: {e}")
 

@@ -253,17 +253,25 @@ def registrar_ia_consulta(bot, redis_client, obtener_teclado_func):
             parse_mode="HTML"
         )
 
-        # OBTENER BCV TASA DESDE REDIS
+        # OBTENER BCV TASA DESDE REDIS (Atómico)
         tasa_bcv = "No disponible"
         if redis_client:
             try:
-                data_raw = redis_client.get("CACHE_TASAS_STORAGE")
-                if data_raw:
-                    dato = json.loads(data_raw) if isinstance(data_raw, str) else json.loads(data_raw.decode('utf-8'))
-                    tasa_bcv = dato.get("bcv_tasa", "No disponible")
-            except Exception as err:
-                print(f"Error extrayendo tasa de Redis: {err}")
+                raw_hoy = redis_client.get("bcv_tasa_hoy")
+                raw_manana = redis_client.get("bcv_tasa_manana")
+        
+                # Convertir bytes/str a float si existen
+                v_hoy = float(raw_hoy.decode('utf-8') if isinstance(raw_hoy, bytes) else raw_hoy) if raw_hoy else 0.0
+                v_manana = float(raw_manana.decode('utf-8') if isinstance(raw_manana, bytes) else raw_manana) if raw_manana else 0.0
 
+        # Seleccionar la tasa activa (priorizar mañana si existe y es distinta de 0)
+        if v_manana > 0 and v_manana != v_hoy:
+            tasa_bcv = f"{v_manana:.2f} (Tasa Oficial de Mañana)"
+        elif v_hoy > 0:
+            tasa_bcv = f"{v_hoy:.2f}"
+    except Exception as err:
+        print(f"Error extrayendo tasa de Redis en IA: {err}")
+        
         # CONFIGURACIÓN DE PROMPT Y OPTIMIZACIÓN
         system_prompt = (
             f"Eres un asistente financiero y analista experto en arbitraje de criptomonedas y mercado P2P en Venezuela. "

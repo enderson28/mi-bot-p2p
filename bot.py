@@ -1673,17 +1673,17 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
                 tasa_raw = datos.get("tasa")
                 fecha = datos.get("fecha")
 
-                # Validación de seguridad
+                # Validación de clave
                 clave_esperada = globals().get("CLAVE_SECRETA_BCV", clave)
                 if clave != clave_esperada:
                     self.send_response(403)
                     self.send_header('Content-Type', 'application/json')
                     self.end_headers()
-                    self.send_wfile.write(b'{"status": "error", "message": "No autorizado"}')
+                    self.wfile.write(b'{"status": "error", "message": "No autorizado"}')
                     return
 
                 if tasa_raw and fecha:
-                    # Limpieza y conversión segura de la tasa
+                    # Sanitización de tasa
                     try:
                         tasa_limpia = str(tasa_raw).replace(",", ".").replace("Bs", "").strip()
                         tasa_nueva = float(tasa_limpia)
@@ -1693,7 +1693,7 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
 
                     fecha_nueva = str(fecha).strip()
 
-                    # Obtener datos de Redis de forma segura
+                    # Lectura Redis
                     datos_bcv = {}
                     if 'r' in globals() and r:
                         try:
@@ -1706,7 +1706,7 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
                     tasa_hoy_actual = float(datos_bcv.get("tasa_hoy", 0.0))
                     fecha_hoy_actual = str(datos_bcv.get("fecha_hoy", ""))
 
-                    # ROTACIÓN DE DATOS (Preserva Viernes en tasa_hoy / Lunes en tasa_manana)
+                    # ROTACIÓN ESTRUCTURADA DE DATOS
                     if fecha_nueva != fecha_hoy_actual:
                         if tasa_hoy_actual > 0:
                             datos_bcv["tasa_anterior"] = tasa_hoy_actual
@@ -1722,20 +1722,18 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
                     if 'r' in globals() and r:
                         r.set("bcv_datos", json.dumps(datos_bcv))
 
-                    print(f"🔥 [WEBHOOK] Tasa procesada: {tasa_nueva} | Fecha: {fecha_nueva}")
+                    print(f"🔥 [WEBHOOK] Tasa procesada exitosamente: {tasa_nueva} | Fecha: {fecha_nueva}")
 
-                    # Hilo en segundo plano para notificar SOLO al canal principal
+                    # Hilo diferido solo para el canal principal
                     def enviar_reportes_sincronizados():
                         try:
-                            # Único canal destino activo
                             canal_unico = globals().get("CANAL_PRUEBA")
-                            
                             if canal_unico and 'bot' in globals():
                                 try:
                                     texto_intervencion = construir_intervencion_texto_html()
                                     bot.send_message(canal_unico, texto_intervencion, parse_mode="HTML")
                                 except Exception as e_int:
-                                    print(f"⚠️ Error enviando mensaje Intervención: {e_int}")
+                                    print(f"⚠️ Error enviando Intervención: {e_int}")
 
                                 time.sleep(5)
 
@@ -1743,28 +1741,28 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
                                     texto_monitor = construir_monitor_texto_html()
                                     bot.send_message(canal_unico, texto_monitor, parse_mode="HTML")
                                 except Exception as e_mon:
-                                    print(f"⚠️ Error enviando mensaje Monitor: {e_mon}")
+                                    print(f"⚠️ Error enviando Monitor: {e_mon}")
                         except Exception as e_hilo:
-                            print(f"⚠️ Error en ejecucion del hilo de reportes: {e_hilo}")
+                            print(f"⚠️ Error en hilo de reportes: {e_hilo}")
 
                     threading.Thread(target=enviar_reportes_sincronizados, daemon=True).start()
 
-                    # Responder 200 OK
+                    # Respuesta 200 OK limpia
                     self.send_response(200)
                     self.send_header('Content-Type', 'application/json')
                     self.end_headers()
-                    self.send_wfile.write(b'{"status": "success", "message": "Tasa procesada exitosamente"}')
+                    self.wfile.write(b'{"status": "success", "message": "Tasa procesada"}')
                     return
                 else:
                     self.send_response(400)
                     self.end_headers()
 
             except Exception as e:
-                print(f"❌ Error interno en Webhook: {e}")
+                print(f"❌ Error crítico en Webhook: {e}")
                 self.send_response(500)
                 self.send_header('Content-Type', 'application/json')
                 self.end_headers()
-                self.send_wfile.write(b'{"status": "error", "message": "Error interno del servidor"}')
+                self.wfile.write(b'{"status": "error", "message": "Error interno"}')
 
 
 def iniciar_servidor_receptor():

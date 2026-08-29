@@ -522,7 +522,7 @@ def generar_y_enviar_resultado(chat_id, user_id, tasa_p2p_venta, bot, redis_clie
     try:
         tasa_bcv_hoy = float(val_bcv) if float(val_bcv) > 0 else 791.667
     except (ValueError, TypeError):
-        tasa_bcv_hoy = 791.667 
+        tasa_bcv_hoy = 791.667
 
     # 5. Extraer BCV Mañana
     val_manana = (

@@ -1656,10 +1656,12 @@ def filtro_seguridad_chat(message):
         return
             
 
-# ==================================
+# ==========================================
 # RECEPTOR WEBHOOK PARA EL CAZADOR
-# ==================================
+# ==========================================
+
 CLAVE_SECRETA_BCV = os.getenv("CLAVE_SECRETA_BCV")
+
 class WebhookHandler(http.server.BaseHTTPRequestHandler):
     def do_POST(self):
         if self.path == '/actualizar_bcv':
@@ -1683,14 +1685,29 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
                     tasa_nueva = float(tasa)
                     fecha_nueva = str(fecha).strip()
 
-                    # Rotación limpia en Redis
-                    tasa_hoy_actual = r.get("bcv_tasa_hoy")
-                    if tasa_hoy_actual:
-                        r.set("bcv_tasa_anterior", tasa_hoy_actual)
+                    # Lectura del diccionario centralizado de Redis
+                    datos_bcv = obtener_datos_bcv_validos()
                     
-                    # La nueva tasa del raspado se guarda como TASA MAÑANA o HOY según corresponda
-                    r.set("bcv_tasa_manana", str(tasa_nueva))
-                    r.set("bcv_fecha_manana", fecha_nueva)
+                    tasa_hoy_actual = datos_bcv.get("tasa_hoy", 0.0)
+                    fecha_hoy_actual = datos_bcv.get("fecha_hoy", "")
+
+                    # ROTACIÓN ESTRUCTURADA:
+                    # Si la fecha que entra es distinta a la fecha de hoy, la de hoy pasa a ser "anterior" (Viernes)
+                    # y la nueva entra como "mañana" (Lunes).
+                    if fecha_nueva != fecha_hoy_actual:
+                        if tasa_hoy_actual > 0:
+                            datos_bcv["tasa_anterior"] = tasa_hoy_actual
+                            datos_bcv["fecha_anterior"] = fecha_hoy_actual
+                        
+                        datos_bcv["tasa_manana"] = tasa_nueva
+                        datos_bcv["fecha_manana"] = fecha_nueva
+                    else:
+                        # Si es la misma fecha del día, actualiza tasa_hoy directamente
+                        datos_bcv["tasa_hoy"] = tasa_nueva
+                        datos_bcv["fecha_hoy"] = fecha_nueva
+
+                    # Guardar el diccionario completo actualizado en Redis
+                    r.set("bcv_datos", json.dumps(datos_bcv))
 
                     print(f"🔥 [WEBHOOK] Tasa recibida y guardada en Redis: {tasa_nueva} | Fecha: {fecha_nueva}")
 
@@ -1730,7 +1747,8 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
             except Exception as e:
                 print(f"❌ Error en Webhook: {e}")
                 self.send_response(500)
-                self.end_headers()           
+                self.end_headers()
+                                              
 
 def iniciar_servidor_receptor():
     port = int(os.getenv("PORT", 8080))

@@ -408,16 +408,22 @@ def obtener_tasa_binance_zinli(tipo_operacion, monto_usd=0):
             for elemento in datos:
                 adv = elemento.get('adv', {})
                 advertiser = elemento.get('advertiser', {})
-                
-                # Descartar bloqueados e inactivos
+                 
+                # 1. Descartar cuentas inactivas o bloqueadas
                 if advertiser.get('userStatus') in ["BLOCKED", "INACTIVE"]:
                     continue
-                # Descartar anuncios con condiciones especiales/restricciones
-                if adv.get('isRestricted') or bool(adv.get('tradeConditions')) or bool(adv.get('classConditions')) or bool(adv.get('advConditions')):
+
+                # 2. Descartar anuncios con restricciones de cuenta/clase
+                is_restricted = adv.get('isRestricted', False)
+                trade_conds = adv.get('tradeConditions') or []
+                class_conds = adv.get('classConditions') or []
+
+                if is_restricted or len(trade_conds) > 0 or len(class_conds) > 0:
                     continue
-                
+
+                # 3. Extraer precio válido
                 precio = adv.get('price')
-                if precio:
+                if precio and float(precio) > 0:
                     precios_validos.append(float(precio))
             
             if precios_validos:

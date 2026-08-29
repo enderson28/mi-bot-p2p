@@ -600,8 +600,8 @@ def construir_monitor_texto_html():
             raw_p2p = r.get("p2p_rangos")
             if raw_p2p:
                 rangos_cache = json.loads(raw_p2p.decode('utf-8') if isinstance(raw_p2p, bytes) else raw_p2p)
-        except Exception as e:
-            print(f"Error leyendo p2p_rangos de Redis: {e}") 
+        except Exception as err:
+            print(f"Error leyendo p2p_rangos de Redis: {err}") 
     
     # Asignación de rangos según la imagen:
     # 50.0 = Rango Menor (🥉), 150.0 = Rango Mediano (🥈), 500.0 = Rango Mayor (🥇)

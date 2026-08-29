@@ -619,4 +619,3 @@ def generar_y_enviar_resultado(chat_id, user_id, tasa_p2p_venta, bot, redis_clie
         del USER_ARBITRAJE_DATA[user_id]
         
         
-        

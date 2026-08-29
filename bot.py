@@ -578,7 +578,9 @@ def construir_monitor_canal_html():
 
 def construir_monitor_texto_html():
     # Solución limpia y sincronizada:
-    tasa_bcv, fecha_valor_bcv = obtener_datos_bcv_validos()
+    datos_bcv = obtener_datos_bcv_validos()
+    tasa_bcv = datos_bcv.get("tasa_hoy", 0.0)
+    fecha_valor_bcv = datos_bcv.get("fecha_hoy", "N/A")
 
     tasa_intervencion = tasa_bcv * 1.005
     

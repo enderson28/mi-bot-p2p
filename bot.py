@@ -577,10 +577,19 @@ def construir_monitor_canal_html():
     
 
 def construir_monitor_texto_html():
-    # Solución limpia y sincronizada:
+    # Extraer datos centralizados de Redis
     datos_bcv = obtener_datos_bcv_validos()
-    tasa_bcv = datos_bcv.get("tasa_hoy", 0.0)
-    fecha_valor_bcv = datos_bcv.get("fecha_hoy", "N/A")
+
+    tasa_hoy = datos_bcv.get("tasa_hoy", 0.0)
+    tasa_manana = datos_bcv.get("tasa_manana", 0.0)
+
+    # Lógica de decisión igual a Intervención:
+    if tasa_manana > 0 and tasa_manana != tasa_hoy:
+        tasa_bcv = tasa_manana
+        fecha_valor_bcv = datos_bcv.get("fecha_manana", "Mañana")
+    else:
+        tasa_bcv = tasa_hoy
+        fecha_valor_bcv = datos_bcv.get("fecha_hoy", "Hoy")
 
     tasa_intervencion = tasa_bcv * 1.005
     

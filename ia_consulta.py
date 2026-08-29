@@ -264,13 +264,13 @@ def registrar_ia_consulta(bot, redis_client, obtener_teclado_func):
                 v_hoy = float(raw_hoy.decode('utf-8') if isinstance(raw_hoy, bytes) else raw_hoy) if raw_hoy else 0.0
                 v_manana = float(raw_manana.decode('utf-8') if isinstance(raw_manana, bytes) else raw_manana) if raw_manana else 0.0
 
-        # Seleccionar la tasa activa (priorizar mañana si existe y es distinta de 0)
-        if v_manana > 0 and v_manana != v_hoy:
-            tasa_bcv = f"{v_manana:.2f} (Tasa Oficial de Mañana)"
-        elif v_hoy > 0:
-            tasa_bcv = f"{v_hoy:.2f}"
-    except Exception as err:
-        print(f"Error extrayendo tasa de Redis en IA: {err}")
+                # Seleccionar la tasa activa (priorizar mañana si existe y es distinta de 0)
+                if v_manana > 0 and v_manana != v_hoy:
+                    tasa_bcv = f"{v_manana:.2f} (Tasa Oficial de Mañana)"
+                elif v_hoy > 0:
+                    tasa_bcv = f"{v_hoy:.2f}"
+            except Exception as err:
+                print(f"Error extrayendo tasa de Redis en IA: {err}")
         
         # CONFIGURACIÓN DE PROMPT Y OPTIMIZACIÓN
         system_prompt = (

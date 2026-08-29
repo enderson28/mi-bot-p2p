@@ -141,23 +141,25 @@ def obtener_precio_spot_usdt_usd(cache_data=None):
         try:
             val = float(cache_data["usdt_usd_spot"])
             if val > 0:
-                return (1 / val) if val < 1 else val
+                return val  # Retorna directamente el valor ya ajustado por bot.py
         except (ValueError, TypeError):
             pass
 
+    # Respaldo con spread Convert directo si falla el caché
     try:
         url = "https://api.binance.com/api/v3/ticker/price?symbol=USDTUSD"
         response = requests.get(url, timeout=3)
         if response.status_code == 200:
-            precio_raw = float(response.json().get("price", 1.00016))
-            return (1 / precio_raw) if precio_raw < 1 else precio_raw
+            precio_raw = float(response.json().get("price", 0.9999))
+            tasa_spot = (1 / precio_raw) if precio_raw < 1 else precio_raw
+            return round(tasa_spot * 1.00018, 5)
     except Exception as e:
         logger.warning(f"No se pudo consultar Binance Spot USDTUSD: {e}")
 
-    return 1.00016
+    return 1.00015
 
 
-def calcular_arbitraje_reposicion(monto_usd, comision_banco, tasa_bcv_hoy, tasa_bcv_manana, tasa_p2p_venta, tasa_usd_usdt=1.00016, tasa_zinli=None):
+def calcular_arbitraje_reposicion(monto_usd, comision_banco, tasa_bcv_hoy, tasa_bcv_manana, tasa_p2p_venta, tasa_usd_usdt=1.00018, tasa_zinli=None):
     tasa_interv_hoy = tasa_bcv_hoy * 1.005
     bs_invertidos_hoy = monto_usd * tasa_interv_hoy
 

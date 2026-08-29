@@ -160,6 +160,10 @@ def obtener_precio_spot_usdt_usd(cache_data=None):
 
 
 def calcular_arbitraje_reposicion(monto_usd, comision_banco, tasa_bcv_hoy, tasa_bcv_manana, tasa_p2p_venta, tasa_usd_usdt=1.00018, tasa_zinli=None):
+    # Seguro anti-cero: Si tasa_bcv_hoy llega en 0, toma respaldo automático
+    if not tasa_bcv_hoy or float(tasa_bcv_hoy) <= 0:
+        tasa_bcv_hoy = 791.667
+        
     tasa_interv_hoy = tasa_bcv_hoy * 1.005
     bs_invertidos_hoy = monto_usd * tasa_interv_hoy
 
@@ -507,18 +511,18 @@ def generar_y_enviar_resultado(chat_id, user_id, tasa_p2p_venta, bot, redis_clie
     # 3. Extraer Zinli si aplica
     tasa_zinli_usada = data_user.get("tasa_zinli_usada", None)
 
-    # 4. Extraer BCV Hoy con respaldos cruzados
+    # #4. Extraer BCV Hoy con respaldos cruzados blindados
     val_bcv = (
         cache_data.get("bcv_tasa")
-        or cache_data.get("tasa_oficial")
+        or cache_data.get("bcv_tasa_anterior")
         or CACHE_TASAS.get("bcv_tasa")
-        or CACHE_TASAS.get("tasa_oficial")
-        or 0.0
+        or CACHE_TASAS.get("bcv_tasa_anterior")
+        or 791.667  # Respaldo fijo definitivo si la memoria falla
     )
     try:
-        tasa_bcv_hoy = float(val_bcv) if float(val_bcv) > 0 else 0.0
+        tasa_bcv_hoy = float(val_bcv) if float(val_bcv) > 0 else 791.667
     except (ValueError, TypeError):
-        tasa_bcv_hoy = 0.0
+        tasa_bcv_hoy = 791.667 
 
     # 5. Extraer BCV Mañana
     val_manana = (

@@ -173,7 +173,7 @@ def calcular_arbitraje_reposicion(monto_usd, comision_banco, tasa_bcv_hoy, tasa_
     # Si viene tasa_zinli se calcula la conversión Zinli -> USDT, si no, usa el cálculo de pasarela
     if tasa_zinli and tasa_zinli > 0:
         usdt_brutos = monto_usd / tasa_zinli
-        comision_taker = usdt_brutos * 0.00041  # Tarifa Taker de Binance (~0.08 USDT en $200)
+        comision_taker = 0.08  # Tarifa Taker de Binance (~0.08 USDT en todos los rangos)
         usdt_netos_binance = usdt_brutos - comision_taker
     else:
         comision_taker = 0.0

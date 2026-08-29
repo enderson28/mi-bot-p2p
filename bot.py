@@ -1773,8 +1773,6 @@ def iniciar_servidor_receptor():
 # ==========================================
 
 if __name__ == "__main__":
-    # Carga la tasa guardada en disco antes de iniciar
-    cargar_cache_de_disco()
 
     # Limpia webhooks y descarta actualizaciones pendientes
     try:

@@ -591,7 +591,15 @@ def construir_monitor_texto_html():
         f"-----------------------------------------\n\n"
     )
 
-    rangos_cache = CACHE_TASAS.get("rangos", {})
+    # LÍNEA 594 CORREGIDA:
+    rangos_cache = {}
+    if r:
+        try:
+            raw_p2p = r.get("p2p_rangos")
+            if raw_p2p:
+                rangos_cache = json.loads(raw_p2p.decode('utf-8') if isinstance(raw_p2p, bytes) else raw_p2p)
+        except Exception as e:
+            print(f"Error leyendo p2p_rangos de Redis: {e}") 
     
     # Asignación de rangos según la imagen:
     # 50.0 = Rango Menor (🥉), 150.0 = Rango Mediano (🥈), 500.0 = Rango Mayor (🥇)
@@ -935,53 +943,7 @@ def handle_zinli_comando(message):
             except Exception:
                 pass
                 
-# ==========================================
-# COMANDO EXCLUSIVO PROPIETARIO: /bcv_por
-# ==========================================
-@bot.message_handler(commands=['bcv_por'])
-def handle_bcv_porcentajes(message):
-    user_id = message.from_user.id
-    
-    # 🔒 Candado de seguridad exclusivo para ti
-    if str(user_id) != str(CREADOR_ID):
-        try:
-            bot.delete_message(message.chat.id, message.message_id)
-        except Exception:
-            pass
-        return
 
-    # Si eres tú, borramos el comando ejecutado para mantener la pulcritud del chat
-    try:
-        bot.delete_message(message.chat.id, message.message_id)
-    except Exception:
-        pass
-
-    historico = CACHE_TASAS.get("bcv_historico_mes", [])
-    
-    # Mapeo de meses dinámico
-    meses_nombre = {
-        "01": "ENERO", "02": "FEBRERO", "03": "MARZO", "04": "ABRIL",
-        "05": "MAYO", "06": "JUNIO", "07": "JULIO", "08": "AGOSTO",
-        "09": "SEPTIEMBRE", "10": "OCTUBRE", "11": "NOVIEMBRE", "12": "DICIEMBRE"
-    }
-    
-    # Lee el mes de los registros o toma el actual
-    mes_num = historico[-1]["fecha"].split("/")[1] if historico and "/" in historico[-1]["fecha"] else f"{datetime.now().month:02d}"
-    nombre_mes = meses_nombre.get(mes_num, "MES ACTUAL")
-
-    msj = (
-        f"<blockquote>{e('CALENDARIO', '📊')} <b>{nombre_mes}</b> | <b>Lista de</b> ( {e('PORCENTAJE', '⚖️')}/{e('BOLIVAR', '😌')} ) {e('ESTADISTICA', '🫠')} <b>Aumentos diarios del</b> {e('BCV', '🏛️')}</blockquote>\n\n"
-    )
-    
-    
-    emoji_flecha = e('FLECHA_DERECHA', '➡️')
-    for item in historico:
-        msj += f"{emoji_flecha} {item['fecha']}. {item['porcentaje']}. {item['variacion']}\n"
-        
-    msj += f"\n{e('BCV', '🏛️')} <b>@COMUNIDV</b> 🚀"
-
-    bot.send_message(message.chat.id, msj, parse_mode="HTML")
-    
 
 # Manejador para /p y el botón P2P
 @bot.message_handler(commands=['p', 'p2p'])

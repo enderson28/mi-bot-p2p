@@ -276,43 +276,33 @@ setup_verification_handlers(
 # --- CONEXIÓN A REDIS Y LECTURA DE FUENTE ÚNICA ---
 def obtener_datos_bcv_validos():
     """
-    Lee directamente de Redis las claves atómicas.
-    Si Redis no tiene datos o reinició, usa valores de resguardo.
+    Lee el diccionario de Redis. Si no existen claves guardadas,
+    retorna los datos base del día Viernes para asegurar la rotación.
     """
+    datos_defecto = {
+        "tasa_hoy": 791.667,         # Tasa base del Viernes
+        "fecha_hoy": "Viernes, 28 Agosto 2026",
+        "tasa_manana": 0.0,
+        "fecha_manana": "",
+        "tasa_anterior": 791.325,    # Tasa del Jueves
+        "fecha_anterior": "Jueves, 27 Agosto 2026"
+    }
+
     try:
-        t_hoy = r.get("bcv_tasa_hoy") if r else None
-        t_manana = r.get("bcv_tasa_manana") if r else None
-        t_anterior = r.get("bcv_tasa_anterior") if r else None
-        
-        f_hoy = r.get("bcv_fecha_hoy") if r else None
-        f_manana = r.get("bcv_fecha_manana") if r else None
+        if 'r' in globals() and r:
+            val = r.get("bcv_datos")
+            if val:
+                datos = json.loads(val)
+                # Si por alguna razón la tasa de hoy está en 0, asigna la base
+                if float(datos.get("tasa_hoy", 0.0)) == 0.0:
+                    datos["tasa_hoy"] = 791.667
+                return datos
+        return datos_defecto
 
-        # Decodificar bytes de Redis a string de manera segura
-        f_hoy_str = f_hoy.decode('utf-8') if isinstance(f_hoy, bytes) else (f_hoy or "Hoy")
-        f_manana_str = f_manana.decode('utf-8') if isinstance(f_manana, bytes) else (f_manana or "Mañana")
-
-        # Conversión segura a float (Valores base de prueba en entorno secundario)
-        tasa_hoy = float(t_hoy) if t_hoy and float(t_hoy) > 0 else 791.325
-        tasa_manana = float(t_manana) if t_manana and float(t_manana) > 0 else 791.667
-        tasa_anterior = float(t_anterior) if t_anterior and float(t_anterior) > 0 else 791.325
-
-        return {
-            "tasa_hoy": tasa_hoy,
-            "tasa_manana": tasa_manana,
-            "tasa_anterior": tasa_anterior,
-            "fecha_hoy": f_hoy_str,
-            "fecha_manana": f_manana_str
-        }
     except Exception as e:
         print(f"⚠️ Error leyendo Redis: {e}")
-        return {
-            "tasa_hoy": 791.325,
-            "tasa_manana": 791.667,
-            "tasa_anterior": 791.325,
-            "fecha_hoy": "Hoy",
-            "fecha_manana": "Mañana"
-        }
-    
+        return datos_defecto
+        
 
 def obtener_tasa_binance_p2p(tipo_operacion, monto_bs):
     url = "https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search"
@@ -1683,7 +1673,7 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
                     return
 
                 if tasa_raw and fecha:
-                    # Sanitización de tasa
+                    # Sanitización de la tasa recibida
                     try:
                         tasa_limpia = str(tasa_raw).replace(",", ".").replace("Bs", "").strip()
                         tasa_nueva = float(tasa_limpia)
@@ -1693,17 +1683,13 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
 
                     fecha_nueva = str(fecha).strip()
 
-                    # Lectura Redis
-                    datos_bcv = {}
-                    if 'r' in globals() and r:
-                        try:
-                            val = r.get("bcv_datos")
-                            if val:
-                                datos_bcv = json.loads(val)
-                        except Exception:
-                            datos_bcv = {}
+                    # Lectura con resguardo usando obtener_datos_bcv_validos
+                    if 'obtener_datos_bcv_validos' in globals():
+                        datos_bcv = obtener_datos_bcv_validos()
+                    else:
+                        datos_bcv = {}
 
-                    tasa_hoy_actual = float(datos_bcv.get("tasa_hoy", 0.0))
+                    tasa_hoy_actual = float(datos_bcv.get("tasa_hoy", 791.667))
                     fecha_hoy_actual = str(datos_bcv.get("fecha_hoy", ""))
 
                     # ROTACIÓN ESTRUCTURADA DE DATOS
@@ -1718,7 +1704,7 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
                         datos_bcv["tasa_manana"] = tasa_nueva
                         datos_bcv["fecha_manana"] = fecha_nueva
 
-                    # Guardar en Redis
+                    # Guardar estructura limpia en Redis
                     if 'r' in globals() and r:
                         r.set("bcv_datos", json.dumps(datos_bcv))
 

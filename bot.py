@@ -695,24 +695,24 @@ def construir_intervencion_texto_html(user=None, porcentaje=None):
         porcentaje = 1.0 if user and es_admin_especial(user) else 0.5
 
     porcentaje_txt = "1%" if porcentaje == 1.0 else "0.5%"
-    
+
     # Extraer datos centralizados de Redis
     datos_bcv = obtener_datos_bcv_validos()
-    
-    tasa_hoy = datos_bcv["tasa_hoy"]
-    tasa_manana = datos_bcv["tasa_manana"]
-    tasa_anterior = datos_bcv["tasa_anterior"]
 
-    # Lógica de decisión de tasa activa y fecha
+    tasa_hoy = float(datos_bcv.get("tasa_hoy", 0.0))
+    tasa_manana = float(datos_bcv.get("tasa_manana", 0.0))
+    tasa_anterior = float(datos_bcv.get("tasa_anterior", 0.0))
+
+    # Lógica de decisión de tasa activa y base de comparación
     if tasa_manana > 0 and tasa_manana != tasa_hoy:
         tasa_bcv = tasa_manana
         fecha_valor_bcv = datos_bcv.get("fecha_manana", "")
-        # Se compara la tasa nueva (Lunes) contra la tasa de hoy (Viernes)
+        # Tasa de Lunes se compara contra Viernes (tasa_hoy)
         tasa_base_comparar = tasa_hoy if tasa_hoy > 0 else tasa_anterior
     else:
         tasa_bcv = tasa_hoy
         fecha_valor_bcv = datos_bcv.get("fecha_hoy", "")
-        # Se compara la tasa de hoy (Viernes) contra la tasa anterior (Jueves)
+        # Tasa de hoy se compara contra el día hábil previo
         tasa_base_comparar = tasa_anterior if tasa_anterior > 0 else tasa_hoy
 
     if tasa_bcv == 0.0:

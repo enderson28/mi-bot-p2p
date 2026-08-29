@@ -479,7 +479,7 @@ def obtener_tasa_binance_spot_usdt():
     return 1.00015  # Tasa base de respaldo exacta para Convert
 
 # Registramos la calculadora usando la fuente única de verdad en Redis
-solicitar_calculadora = registrar_calculadora(bot, lambda: obtener_datos_bcv_validos().get("tasa_hoy", 0.0), obtener_teclado_privado)
+solicitar_calculadora = registrar_calculadora(bot, obtener_datos_bcv_validos, obtener_teclado_privado)
                 
 def actualizar_cache_segundo_plano():
     while True:

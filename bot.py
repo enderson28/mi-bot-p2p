@@ -15,6 +15,7 @@ from seguridad import validar_copia_pega, es_admin_vip, es_admin_especial, es_ad
 from seguridad import limpiar_comandos_chat, registrar_filtro_anti_raid, registrar_limpiador_servicio
 from calculadora import registrar_calculadora
 from ia_consulta import registrar_ia_consulta
+from arbitraje import registrar_handlers_arbitraje
 from anuncios import iniciar_modulo_anuncios, setup_comando_aviso
 from emojis import TG_EMOJIS, e
 import re
@@ -110,6 +111,7 @@ def obtener_teclado_privado(user=None):
     return markup
 
 solicitar_ia_consulta = registrar_ia_consulta(bot, r, obtener_teclado_privado)
+registrar_handlers_arbitraje(bot, r)
 
 def obtener_boton_actualizar_inline():
     markup = InlineKeyboardMarkup()

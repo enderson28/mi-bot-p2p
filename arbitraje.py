@@ -129,6 +129,7 @@ def obtener_tasa_p2p_por_rango(redis_client, monto_usd):
         logger.error(f"⚠️ Error leyendo p2p_rangos en arbitraje.py: {e}")
     return 890.0  # Resguardo por defecto
 
+FACTOR_SPREAD_CONVERT = 1.00018
 
 def obtener_precio_spot_usdt_usd(redis_client):
     """
@@ -151,10 +152,10 @@ def obtener_precio_spot_usdt_usd(redis_client):
         if response.status_code == 200:
             precio_raw = float(response.json().get("price", 0.9990))
             tasa_spot = (1 / precio_raw) if precio_raw < 1 else precio_raw
-            return round(tasa_spot * 1.00018, 5)
+            return round(tasa_spot * FACTOR_SPREAD_CONVERT, 5)
     except Exception as e:
         logger.warning(f"⚠️ No se pudo consultar Binance Spot USDTUSD en arbitraje: {e}")
-    return 1.00015
+    return (1.00015 * FACTOR_SPREAD_CONVERT, 5)
 
 
 # --- LÓGICA DE CÁLCULO Y ARBITRAJE ---

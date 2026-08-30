@@ -1661,7 +1661,7 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
                 tasa_raw = datos.get("tasa")
                 fecha = datos.get("fecha")
 
-                # Validación de clave
+                # Validación de clave secreta
                 clave_esperada = globals().get("CLAVE_SECRETA_BCV", clave)
                 if clave != clave_esperada:
                     self.send_response(403)
@@ -1671,7 +1671,7 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
                     return
 
                 if tasa_raw and fecha:
-                    # Sanitización de la tasa recibida
+                    # Sanitización de tasa
                     try:
                         tasa_limpia = str(tasa_raw).replace(",", ".").replace("Bs", "").strip()
                         tasa_nueva = float(tasa_limpia)
@@ -1681,7 +1681,7 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
 
                     fecha_nueva = str(fecha).strip()
 
-                    # Lectura con resguardo
+                    # Lectura actual de Redis
                     if 'obtener_datos_bcv_validos' in globals():
                         datos_bcv = obtener_datos_bcv_validos()
                     else:
@@ -1693,35 +1693,44 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
                     tasa_hoy_actual = float(datos_bcv.get("tasa_hoy", 791.667))
                     fecha_hoy_actual = str(datos_bcv.get("fecha_hoy", ""))
 
-                    # ROTACIÓN DE 3 TIEMPOS (Resuelve el atasco de fechas)
-                    if fecha_nueva != fecha_manana_actual and fecha_nueva != fecha_hoy_actual:
-                        # Si había una tasa registrada en 'mañana', esa pasa a ser la tasa de 'hoy' (Viernes)
-                        if tasa_manana_actual > 0:
-                            datos_bcv["tasa_anterior"] = tasa_hoy_actual
-                            datos_bcv["fecha_anterior"] = fecha_hoy_actual
-                            datos_bcv["tasa_hoy"] = tasa_manana_actual
-                            datos_bcv["fecha_hoy"] = fecha_manana_actual
-                        else:
-                            # Resguardo si no había tasa en mañana
-                            datos_bcv["tasa_hoy"] = 791.667
-                            datos_bcv["fecha_hoy"] = "Viernes, 28 Agosto 2026"
-                            datos_bcv["tasa_anterior"] = 791.325
-                            datos_bcv["fecha_anterior"] = "Jueves, 27 Agosto 2026"
+                    # 🔒 CANDADO 1: Si la fecha recibida YA existe (es la de mañana o la de hoy)
+                    if fecha_nueva == fecha_manana_actual or fecha_nueva == fecha_hoy_actual:
+                        print(f"ℹ️ [WEBHOOK] Tasa para '{fecha_nueva}' ya estaba registrada ({tasa_nueva} Bs). Se descarta el envío de anuncios.")
+                        
+                        # Actualizamos el valor por si acaso hubo corrección de centavitos, pero SIN enviar reportes
+                        if fecha_nueva == fecha_manana_actual:
+                            datos_bcv["tasa_manana"] = tasa_nueva
+                        if 'r' in globals() and r:
+                            r.set("bcv_datos", json.dumps(datos_bcv))
 
-                        datos_bcv["tasa_manana"] = tasa_nueva
-                        datos_bcv["fecha_manana"] = fecha_nueva
+                        self.send_response(200)
+                        self.send_header('Content-Type', 'application/json')
+                        self.end_headers()
+                        self.wfile.write(b'{"status": "ignored", "message": "Tasa ya conocida, sin anuncios"}')
+                        return  # 👈 CORTE: Aquì se detiene y NO ejecuta el hilo de Telegram
+
+                    # 🚀 SI LLEGA AQUÍ ES UNA FECHA TOTALMENTE NUEVA (Ej. Martes publicándose el Lunes tarde)
+                    if tasa_manana_actual > 0:
+                        datos_bcv["tasa_anterior"] = tasa_hoy_actual
+                        datos_bcv["fecha_anterior"] = fecha_hoy_actual
+                        datos_bcv["tasa_hoy"] = tasa_manana_actual
+                        datos_bcv["fecha_hoy"] = fecha_manana_actual
                     else:
-                        # Actualización en el mismo día
-                        datos_bcv["tasa_manana"] = tasa_nueva
-                        datos_bcv["fecha_manana"] = fecha_nueva
+                        datos_bcv["tasa_hoy"] = 791.667
+                        datos_bcv["fecha_hoy"] = "Viernes, 28 Agosto 2026"
+                        datos_bcv["tasa_anterior"] = 791.325
+                        datos_bcv["fecha_anterior"] = "Jueves, 27 Agosto 2026"
 
-                    # Guardar estructura corregida en Redis
+                    datos_bcv["tasa_manana"] = tasa_nueva
+                    datos_bcv["fecha_manana"] = fecha_nueva
+
+                    # Guardar estructura en Redis
                     if 'r' in globals() and r:
                         r.set("bcv_datos", json.dumps(datos_bcv))
 
-                    print(f"🔥 [WEBHOOK] Tasa procesada exitosamente: {tasa_nueva} | Fecha: {fecha_nueva}")
+                    print(f"🔥 [WEBHOOK] ¡FECHA NUEVA DETECTADA! Tasa: {tasa_nueva} | Fecha: {fecha_nueva}. Publicando anuncios...")
 
-                    # Hilo diferido solo para el canal principal
+                    # Hilo para enviar anuncios ÚNICAMENTE con fechas verdaderamente nuevas
                     def enviar_reportes_sincronizados():
                         try:
                             canal_unico = globals().get("CANAL_PRUEBA")
@@ -1744,15 +1753,11 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
 
                     threading.Thread(target=enviar_reportes_sincronizados, daemon=True).start()
 
-                    # Respuesta 200 OK limpia
                     self.send_response(200)
                     self.send_header('Content-Type', 'application/json')
                     self.end_headers()
-                    self.wfile.write(b'{"status": "success", "message": "Tasa procesada"}')
+                    self.wfile.write(b'{"status": "success", "message": "Tasa nueva procesada y anunciada"}')
                     return
-                else:
-                    self.send_response(400)
-                    self.end_headers()
 
             except Exception as e:
                 print(f"❌ Error crítico en Webhook: {e}")
@@ -1760,7 +1765,7 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
                 self.send_header('Content-Type', 'application/json')
                 self.end_headers()
                 self.wfile.write(b'{"status": "error", "message": "Error interno"}')
-
+                
 
 def iniciar_servidor_receptor():
     port = int(os.getenv("PORT", 8000))

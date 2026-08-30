@@ -1683,28 +1683,41 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
 
                     fecha_nueva = str(fecha).strip()
 
-                    # Lectura con resguardo usando obtener_datos_bcv_validos
+                    # Lectura con resguardo
                     if 'obtener_datos_bcv_validos' in globals():
                         datos_bcv = obtener_datos_bcv_validos()
                     else:
                         datos_bcv = {}
 
+                    tasa_manana_actual = float(datos_bcv.get("tasa_manana", 0.0))
+                    fecha_manana_actual = str(datos_bcv.get("fecha_manana", ""))
+                    
                     tasa_hoy_actual = float(datos_bcv.get("tasa_hoy", 791.667))
                     fecha_hoy_actual = str(datos_bcv.get("fecha_hoy", ""))
 
-                    # ROTACIÓN ESTRUCTURADA DE DATOS
-                    if fecha_nueva != fecha_hoy_actual:
-                        if tasa_hoy_actual > 0:
+                    # ROTACIÓN DE 3 TIEMPOS (Resuelve el atasco de fechas)
+                    if fecha_nueva != fecha_manana_actual and fecha_nueva != fecha_hoy_actual:
+                        # Si había una tasa registrada en 'mañana', esa pasa a ser la tasa de 'hoy' (Viernes)
+                        if tasa_manana_actual > 0:
                             datos_bcv["tasa_anterior"] = tasa_hoy_actual
                             datos_bcv["fecha_anterior"] = fecha_hoy_actual
+                            datos_bcv["tasa_hoy"] = tasa_manana_actual
+                            datos_bcv["fecha_hoy"] = fecha_manana_actual
+                        else:
+                            # Resguardo si no había tasa en mañana
+                            datos_bcv["tasa_hoy"] = 791.667
+                            datos_bcv["fecha_hoy"] = "Viernes, 28 Agosto 2026"
+                            datos_bcv["tasa_anterior"] = 791.325
+                            datos_bcv["fecha_anterior"] = "Jueves, 27 Agosto 2026"
 
                         datos_bcv["tasa_manana"] = tasa_nueva
                         datos_bcv["fecha_manana"] = fecha_nueva
                     else:
+                        # Actualización en el mismo día
                         datos_bcv["tasa_manana"] = tasa_nueva
                         datos_bcv["fecha_manana"] = fecha_nueva
 
-                    # Guardar estructura limpia en Redis
+                    # Guardar estructura corregida en Redis
                     if 'r' in globals() and r:
                         r.set("bcv_datos", json.dumps(datos_bcv))
 

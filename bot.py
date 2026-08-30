@@ -460,7 +460,7 @@ def obtener_tasa_binance_spot_usdt():
     except Exception:
         pass
 
-    return 1.00015  # Tasa base de respaldo exacta para Convert
+    return (1.00015 * FACTOR_SPREAD_CONVERT, 5) # Tasa base de respaldo exacta para Convert
 
 # Registramos la calculadora usando la fuente única de verdad en Redis
 solicitar_calculadora = registrar_calculadora(bot, obtener_datos_bcv_validos, obtener_teclado_privado)

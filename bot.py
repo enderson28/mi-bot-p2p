@@ -275,16 +275,12 @@ setup_verification_handlers(
 
 # --- CONEXIÓN A REDIS Y LECTURA DE FUENTE ÚNICA ---
 def obtener_datos_bcv_validos():
-    """
-    Lee el diccionario de Redis. Si no existen claves guardadas,
-    retorna los datos base del día Viernes para asegurar la rotación.
-    """
     datos_defecto = {
-        "tasa_hoy": 791.667,         # Tasa base del Viernes
+        "tasa_hoy": 791.667,
         "fecha_hoy": "Viernes, 28 Agosto 2026",
         "tasa_manana": 0.0,
         "fecha_manana": "",
-        "tasa_anterior": 791.325,    # Tasa del Jueves
+        "tasa_anterior": 791.325,
         "fecha_anterior": "Jueves, 27 Agosto 2026"
     }
 
@@ -293,9 +289,11 @@ def obtener_datos_bcv_validos():
             val = r.get("bcv_datos")
             if val:
                 datos = json.loads(val)
-                # Si por alguna razón la tasa de hoy está en 0, asigna la base
-                if float(datos.get("tasa_hoy", 0.0)) == 0.0:
+                # FIX: Si Redis tiene guardada la tasa vieja del Jueves o 0, forzamos la base del Viernes
+                tasa_h = float(datos.get("tasa_hoy", 0.0))
+                if tasa_h <= 791.325:
                     datos["tasa_hoy"] = 791.667
+                    datos["fecha_hoy"] = "Viernes, 28 Agosto 2026"
                 return datos
         return datos_defecto
 

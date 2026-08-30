@@ -438,15 +438,15 @@ def obtener_tasa_binance_zinli(tipo_operacion, monto_usd=0):
 def obtener_tasa_binance_spot_usdt():
     """Obtiene la tasa real del par USD/USDT ajustada al spread de Binance Convert."""
     # Factor de ajuste para emular el spread de Convert (~1.00015 en lugar del Spot directo)
-    FACTOR_SPREAD_CONVERT = 1.00018
+    FACTOR_SPREAD_CONVERT = 1.00025
 
     try:
         url_binance = "https://api.binance.com/api/v3/ticker/price?symbol=USDTUSD"
         r = requests.get(url_binance, timeout=3.0)
         if r.status_code == 200:
             precio_raw = float(r.json().get("price", 0.9999))
-            tasa_spot = (1 / precio_raw) if precio_raw < 1 else precio_raw
-            return round(tasa_spot * FACTOR_SPREAD_CONVERT, 5)
+            tasa_base = (1.0 / precio_raw) if precio_raw > 0 else 1.00015
+            return round(tasa_base * FACTOR_SPREAD_CONVERT, 5)
     except Exception:
         pass
 
@@ -460,7 +460,7 @@ def obtener_tasa_binance_spot_usdt():
     except Exception:
         pass
 
-    return (1.00015 * FACTOR_SPREAD_CONVERT, 5) # Tasa base de respaldo exacta para Convert
+    return (1.00018 * FACTOR_SPREAD_CONVERT, 5)
 
 # Registramos la calculadora usando la fuente única de verdad en Redis
 solicitar_calculadora = registrar_calculadora(bot, obtener_datos_bcv_validos, obtener_teclado_privado)

@@ -498,7 +498,7 @@ def generar_y_enviar_resultado(chat_id, user_id, tasa_p2p_venta, bot, redis_clie
 
     # --- BLOQUE 1: RESULTADO PRINCIPAL HOY ---
     msj = (
-        f"{TG_EMOJIS['chart']} <b>RESULTADO DE ARBITRAJE & {TG_EMOJIS['clic']} REPOSICIÓN</b>\n\n"
+        f"<blockquote>{TG_EMOJIS['chart']} <b>RESULTADO DE ARBITRAJE & {TG_EMOJIS['clic']} REPOSICIÓN</b></blockquote>\n\n"
         f"<b>Banco:</b> {data_user.get('nombre_banco', 'Banco')}\n"
         f"{TG_EMOJIS['dollar']} <b>Monto Comprado:</b> ${monto_usd:,.2f} USD\n"
         f"{TG_EMOJIS['bcv']} <b>Tasa Compra (0.5%):</b> {res['tasa_interv_hoy']:,.3f} Bs\n"
@@ -508,18 +508,18 @@ def generar_y_enviar_resultado(chat_id, user_id, tasa_p2p_venta, bot, redis_clie
         usdt_bruto_calc = monto_usd / tasa_zinli_usada
         comision_extra = usdt_bruto_calc - res['usdt_netos_binance']
         msj += f"{TG_EMOJIS['green_circle']} <b>Compra Zinli:</b> {tasa_zinli_usada:.3f} $\n"
-        msj += f"<blockquote>{TG_EMOJIS['usdt']} <b>USDT Brutos:</b> {usdt_bruto_calc:,.2f} T</blockquote>\n"
+        msj += f"<blockquote>{TG_EMOJIS['usdt']} <b>USDT Brutos:</b> {usdt_bruto_calc:,.2f}</blockquote>\n"
         msj += f"{TG_EMOJIS['calc']} <b>Comisión Binance P2P:</b> -{comision_extra:,.2f} T\n"
 
     msj += (
         f"\n{TG_EMOJIS['red_circle']} <b>Tasa Venta P2P:</b> {tasa_p2p_venta:,.2f} Bs/{TG_EMOJIS['usdt']}\n"
-        f"<blockquote>{TG_EMOJIS['usdt']} <b>Líquidos Binance:</b> "
+        f"<blockquote>{TG_EMOJIS['usdt']} <b>Líquidos {TG_EMOJIS['binance']} Binance</b>\n"
         f"<code>{res['usdt_netos_binance']:,.2f}</code> {TG_EMOJIS['usdt']} ({TG_EMOJIS['usd']}/{TG_EMOJIS['usdt']}: {tasa_usd_usdt:.5f})</blockquote>\n"
-        f"{TG_EMOJIS['hand']} <b>Inversión de Hoy:</b> <code>{res['bs_invertidos_hoy']:,.2f}</code> Bs\n"
+        f"<blockquote>{TG_EMOJIS['hand']} <b>Inversión de Hoy:</b> <code>{res['bs_invertidos_hoy']:,.2f}</code> Bs</blockquote>\n"
         f"-----------------------------\n"
         f"{TG_EMOJIS['briefcase']} <b>RECUPERAR CAPITAL HOY</b>\n"
-        f"{TG_EMOJIS['binance']} <b>Vender en P2P:</b> <code>{res['usdt_recuperar_hoy']:,.2f}</code> T\n"
-        f"{TG_EMOJIS['party']} <b>Ganancia Actual:</b> <code>{res['ganancia_usdt_hoy']:,.2f}</code> {TG_EMOJIS['usdt']}\n"
+        f"{TG_EMOJIS['binance']} <b>Vender en P2P:</b> <code>{res['usdt_recuperar_hoy']:,.2f}</code> {TG_EMOJIS['usdt']}\n"
+        f"<blockquote>{TG_EMOJIS['party']} <b>Ganancia Actual:</b> <code>{res['ganancia_usdt_hoy']:,.2f}</code> {TG_EMOJIS['usdt']}</blockquote>\n"
     )
 
     # --- DETECTAR PRÓXIMO DÍA HÁBIL REAL ---
@@ -541,11 +541,11 @@ def generar_y_enviar_resultado(chat_id, user_id, tasa_p2p_venta, bot, redis_clie
 
         msj += (
             f"-----------------------------\n"
-            f"{TG_EMOJIS['clic']} <b>REPOSICIÓN PARA EL {proximo_dia.upper()}</b> (BCV Actualizado)\n"
+            f"<blockquote>{TG_EMOJIS['clic']} <b>REPOSICIÓN PARA EL {proximo_dia.upper()}</b> (BCV Actualizado)</blockquote>\n"
             f"{TG_EMOJIS['bcv']} <b>Tasa BCV (+0.5%):</b> {res['tasa_interv_manana']:,.3f} Bs ({signo_dif}{diferencia_bcv:,.2f} Bs)\n"
-            f"{TG_EMOJIS['hand']} <b>Bs Necesarios:</b> <code>{res['bs_necesarios_manana']:,.2f}</code> Bs\n"
-            f"{TG_EMOJIS['binance']} <b>Vender en P2P:</b> <code>{res['usdt_recuperar_manana']:,.2f}</code> T\n"
-            f"{TG_EMOJIS['party']} <b>Ganancia Real Aislada:</b> <code>{res['ganancia_usdt_manana']:,.2f}</code> {TG_EMOJIS['usdt']}\n"
+            f"<blockquote>{TG_EMOJIS['hand']} <b>Bs Necesarios:</b> <code>{res['bs_necesarios_manana']:,.2f}</code> Bs</blockquote>\n"
+            f"{TG_EMOJIS['binance']} <b>Vender en P2P:</b> <code>{res['usdt_recuperar_manana']:,.2f}</code> {TG_EMOJIS['usdt']}\n"
+            f"<blockquote>{TG_EMOJIS['party']} <b>Ganancia Real Aislada:</b> <code>{res['ganancia_usdt_manana']:,.2f}</code> {TG_EMOJIS['usdt']}</blockquote>\n"
         )
     else:
         msj += (

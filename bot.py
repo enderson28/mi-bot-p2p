@@ -15,8 +15,8 @@ from seguridad import validar_copia_pega, es_admin_vip, es_admin_especial, es_ad
 from seguridad import limpiar_comandos_chat, registrar_filtro_anti_raid, registrar_limpiador_servicio
 from calculadora import registrar_calculadora
 from ia_consulta import registrar_ia_consulta
-from anuncios import iniciar_modulo_anuncios, setup_comando_aviso
 from arbitraje import registrar_handlers_arbitraje
+from anuncios import iniciar_modulo_anuncios, setup_comando_aviso
 from emojis import TG_EMOJIS, e
 import re
 import urllib3
@@ -44,9 +44,6 @@ BOT_USERNAME = "BancoIDV_bot" # Reemplaza con el alias de tu bot sin el @
 # ==========================================
 # CONFIGURACIÓN Y VARIABLES GLOBALES (PRODUCCIÓN)
 # ==========================================
-
-# Otros Canales/Grupos Administrativos
-CANAL_SECUNDARIO = -1004378497075
 
 # Canales de Pruebas (puedes mantenerlos o cambiarlos)
 CANAL_PRUEBA = -1004473532809
@@ -114,7 +111,6 @@ def obtener_teclado_privado(user=None):
     return markup
 
 solicitar_ia_consulta = registrar_ia_consulta(bot, r, obtener_teclado_privado)
-
 registrar_handlers_arbitraje(bot, r)
 
 def obtener_boton_actualizar_inline():
@@ -279,30 +275,34 @@ setup_verification_handlers(
     funcion_esta_unido=usuario_esta_unido
 )
 
-    # Actualizacion de velocidad
+# --- CONEXIÓN A REDIS Y LECTURA DE FUENTE ÚNICA ---
 def obtener_datos_bcv_validos():
-    """Retorna la tasa y fecha vigentes en memoria priorizando la tasa futura si existe."""
-    val_manana = CACHE_TASAS.get("bcv_tasa_manana")
-    fecha_manana = CACHE_TASAS.get("bcv_fecha_manana")
+    datos_defecto = {
+        "tasa_hoy": 791.667,
+        "fecha_hoy": "Viernes, 28 Agosto 2026",
+        "tasa_manana": 0.0,
+        "fecha_manana": "",
+        "tasa_anterior": 791.325,
+        "fecha_anterior": "Jueves, 27 Agosto 2026"
+    }
 
-    # Validar que val_manana sea un número válido y estrictamente mayor a 0
     try:
-        es_val_manana_valido = val_manana is not None and float(val_manana) > 0
-    except (ValueError, TypeError):
-        es_val_manana_valido = False
+        if 'r' in globals() and r:
+            val = r.get("bcv_datos")
+            if val:
+                datos = json.loads(val)
+                # FIX: Si Redis tiene guardada la tasa vieja del Jueves o 0, forzamos la base del Viernes
+                tasa_h = float(datos.get("tasa_hoy", 0.0))
+                if tasa_h <= 791.325:
+                    datos["tasa_hoy"] = 791.667
+                    datos["fecha_hoy"] = "Viernes, 28 Agosto 2026"
+                return datos
+        return datos_defecto
 
-    if es_val_manana_valido:
-        tasa = float(val_manana)
-        fecha = fecha_manana or CACHE_TASAS.get("bcv_fecha", "Sin fecha")
-    else:
-        try:
-            tasa = float(CACHE_TASAS.get("bcv_tasa") or 0.0)
-        except (ValueError, TypeError):
-            tasa = 0.0
-        fecha = CACHE_TASAS.get("bcv_fecha", "Sin fecha")
-
-    return tasa, fecha
-    
+    except Exception as e:
+        print(f"⚠️ Error leyendo Redis: {e}")
+        return datos_defecto
+        
 
 def obtener_tasa_binance_p2p(tipo_operacion, monto_bs):
     url = "https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search"
@@ -461,81 +461,26 @@ def obtener_tasa_binance_spot_usdt():
         pass
 
     return 1.00015  # Tasa base de respaldo exacta para Convert
-    
-                    
-# --- CACHÉ GLOBAL DE TASAS ---
-CACHE_TASAS = {
-    "bcv_tasa": None,
-    "bcv_tasa_anterior": None,
-    "bcv_tasa_manana": None,  
-    "bcv_fecha": "",
-    "bcv_fecha_manana": "",        
-    "usdt_usd_spot": 0.9987,  
-    "rangos": {} 
-}
 
-# Registramos el módulo pasándole la instancia del bot y la función para leer CACHE_TASAS
-solicitar_calculadora = registrar_calculadora(bot, lambda: CACHE_TASAS, obtener_teclado_privado)
-
-# --- PERSISTENCIA EN REDIS ---
-
-def guardar_cache_en_disco():
-    try:
-        if r:
-            r.set("CACHE_TASAS_STORAGE", json.dumps(CACHE_TASAS))
-            print("💾 ¡Cache guardada exitosamente en Redis!")
-    except Exception as e:
-        print(f"Error guardando caché en Redis: {e}")
-
-
-def cargar_cache_de_disco():
-    global CACHE_TASAS
-    try:
-        if r:
-            data = r.get("CACHE_TASAS_STORAGE")
-            if data:
-                CACHE_TASAS.update(json.loads(data))
-                print("💾 ¡Tasas recuperadas con éxito desde Redis!")
-
-
-                # --- SEMILLA HISTÓRICA BASE BCV ---
-                if "bcv_historico_mes" not in CACHE_TASAS or not CACHE_TASAS["bcv_historico_mes"]:
-                    CACHE_TASAS["bcv_historico_mes"] = [
-                        {"fecha": "03/08", "porcentaje": "0.44%", "variacion": "3.31 Bs"},
-                        {"fecha": "04/08", "porcentaje": "0.41%", "variacion": "3.06 Bs"},
-                        {"fecha": "05/08", "porcentaje": "0.10%", "variacion": "0.75 Bs"},
-                        {"fecha": "06/08", "porcentaje": "0.11%", "variacion": "0.81 Bs"},
-                        {"fecha": "07/08", "porcentaje": "0.11%", "variacion": "0.83 Bs"},
-                        {"fecha": "10/08", "porcentaje": "0.49%", "variacion": "3.68 Bs"},
-                        {"fecha": "11/08", "porcentaje": "0.41%", "variacion": "3.13 Bs"},
-                        {"fecha": "12/08", "porcentaje": "0.33%", "variacion": "2.51 Bs"},
-                        {"fecha": "13/08", "porcentaje": "0.55%", "variacion": "4.21 Bs"},
-                        {"fecha": "14/08", "porcentaje": "0.19%", "variacion": "1.47 Bs"},
-                        {"fecha": "17/08", "porcentaje": "0.10%", "variacion": "0.77 Bs"},
-                        {"fecha": "18/08", "porcentaje": "0.26%", "variacion": "2.02 Bs"},
-                        {"fecha": "19/08", "porcentaje": "0.27%", "variacion": "2.08 Bs"},
-                        {"fecha": "21/08", "porcentaje": "0.33%", "variacion": "2.54 Bs"},
-                        {"fecha": "24/08", "porcentaje": "0.60%", "variacion": "4.71 Bs"}
-                    ]
-    except Exception as e:
-        print(f"Error leyendo caché desde Redis: {e}")
-        
-            
+# Registramos la calculadora usando la fuente única de verdad en Redis
+solicitar_calculadora = registrar_calculadora(bot, obtener_datos_bcv_validos, obtener_teclado_privado)
+                
 def actualizar_cache_segundo_plano():
-    global CACHE_TASAS
     while True:
         try:
-            # 1. Actualizar tasa Spot
-            CACHE_TASAS["usdt_usd_spot"] = obtener_tasa_binance_spot_usdt()
+            # 1. Actualizar tasa Spot en Redis
+            spot_rate = obtener_tasa_binance_spot_usdt()
+            if spot_rate and r:
+                r.set("usdt_usd_spot", str(spot_rate))
 
-            # 2. Obtener la tasa BCV adecuada (prioridad a mañana si existe)
-            tasa_bcv, _ = obtener_datos_bcv_validos()
-            tasa_bcv_ajustada = tasa_bcv * 1.005
+            # 2. Calcular y actualizar P2P basándose en Redis
+            datos_bcv = obtener_datos_bcv_validos()
+            tasa_bcv_ajustada = datos_bcv["tasa_hoy"] * 1.005
 
             ranges_def = [
                 ("Rango Menor ($50 - $100)", 50.0),
                 ("Rango Medio ($100 - $300)", 150.0),
-                ("Rango Mayor ($500+)", 500.0),
+                ("Rango Mayor ($500+)", 500.0)
             ]
 
             nuevos_rangos = {}
@@ -549,31 +494,29 @@ def actualizar_cache_segundo_plano():
                     "venta": venta
                 }
 
-            CACHE_TASAS["rangos"] = nuevos_rangos
-            guardar_cache_en_disco()  # Persistencia atómica en Redis y Disco
+            if r:
+                r.set("p2p_rangos", json.dumps(nuevos_rangos))
 
         except Exception as e:
-            print(f"Error actualizando caché en segundo plano: {e}")
-
-        time.sleep(60)
-            
+            print(f"Error actualizando P2P en segundo plano: {e}")
         
+        time.sleep(60)
+
 threading.Thread(target=actualizar_cache_segundo_plano, daemon=True).start()
+            
 
 def refrescar_tasas_en_vivo():
-    global CACHE_TASAS
-    tasa_bcv, _ = obtener_datos_bcv_validos()
-    fecha_bcv = CACHE_TASAS.get("bcv_fecha", "Sin fecha")
+    datos_bcv = obtener_datos_bcv_validos()
+    tasa_bcv_ajustada = datos_bcv["tasa_hoy"] * 1.005
 
-    tasa_bcv_ajustada = tasa_bcv * 1.005
-    rangos_def = [
+    ranges_def = [
         ("Rango Menor ($50 - $100)", 50.0),
         ("Rango Medio ($100 - $300)", 150.0),
         ("Rango Mayor ($500+)", 500.0)
     ]
 
     nuevos_rangos = {}
-    for nombre, usd_ref in rangos_def:
+    for nombre, usd_ref in ranges_def:
         monto_bs = usd_ref * tasa_bcv_ajustada
         try:
             compra = obtener_tasa_binance_p2p("BUY", monto_bs) or 0.0
@@ -581,14 +524,16 @@ def refrescar_tasas_en_vivo():
         except Exception as e:
             print(f"Error al obtener tasas P2P para {nombre}: {e}")
             compra, venta = 0.0, 0.0
+
         nuevos_rangos[str(usd_ref)] = {
             "nombre": nombre,
             "compra": compra,
             "venta": venta
         }
 
-    CACHE_TASAS["rangos"] = nuevos_rangos
-
+    if r:
+        r.set("p2p_rangos", json.dumps(nuevos_rangos))
+        
 
 def construir_monitor_canal_html():
     """Genera la ficha resumen simplificada para el Canal Principal con Custom Emojis dinámicos"""
@@ -619,8 +564,19 @@ def construir_monitor_canal_html():
     
 
 def construir_monitor_texto_html():
-    # Solución limpia y sincronizada:
-    tasa_bcv, fecha_valor_bcv = obtener_datos_bcv_validos()
+    # Extraer datos centralizados de Redis
+    datos_bcv = obtener_datos_bcv_validos()
+
+    tasa_hoy = datos_bcv.get("tasa_hoy", 0.0)
+    tasa_manana = datos_bcv.get("tasa_manana", 0.0)
+
+    # Lógica de decisión igual a Intervención:
+    if tasa_manana > 0 and tasa_manana != tasa_hoy:
+        tasa_bcv = tasa_manana
+        fecha_valor_bcv = datos_bcv.get("fecha_manana", "Mañana")
+    else:
+        tasa_bcv = tasa_hoy
+        fecha_valor_bcv = datos_bcv.get("fecha_hoy", "Hoy")
 
     tasa_intervencion = tasa_bcv * 1.005
     
@@ -633,7 +589,15 @@ def construir_monitor_texto_html():
         f"-----------------------------------------\n\n"
     )
 
-    rangos_cache = CACHE_TASAS.get("rangos", {})
+    # LÍNEA 594 CORREGIDA:
+    rangos_cache = {}
+    if r:
+        try:
+            raw_p2p = r.get("p2p_rangos")
+            if raw_p2p:
+                rangos_cache = json.loads(raw_p2p.decode('utf-8') if isinstance(raw_p2p, bytes) else raw_p2p)
+        except Exception as err:
+            print(f"Error leyendo p2p_rangos de Redis: {err}") 
     
     # Asignación de rangos según la imagen:
     # 50.0 = Rango Menor (🥉), 150.0 = Rango Mediano (🥈), 500.0 = Rango Mayor (🥇)
@@ -728,71 +692,55 @@ def construir_monitor_zinli_html():
 
 def construir_intervencion_texto_html(user=None, porcentaje=None):
     if porcentaje is None:
-        if user and es_admin_especial(user):
-            porcentaje = 1.0
-        else:
-            porcentaje = 0.5
+        porcentaje = 1.0 if user and es_admin_especial(user) else 0.5
 
     porcentaje_txt = "1%" if porcentaje == 1.0 else "0.5%"
 
-    # EXTRAER VALORES CON SEGURIDAD EXTRA
-    try:
-        tasa_hoy_num = float(CACHE_TASAS.get("bcv_tasa") or 0.0)
-    except (ValueError, TypeError):
-        tasa_hoy_num = 0.0
+    # Extraer datos centralizados de Redis
+    datos_bcv = obtener_datos_bcv_validos()
 
-    try:
-        tasa_manana_num = float(CACHE_TASAS.get("bcv_tasa_manana") or 0.0)
-    except (ValueError, TypeError):
-        tasa_manana_num = 0.0
+    tasa_hoy = float(datos_bcv.get("tasa_hoy", 0.0))
+    tasa_manana = float(datos_bcv.get("tasa_manana", 0.0))
+    tasa_anterior = float(datos_bcv.get("tasa_anterior", 0.0))
 
-    try:
-        tasa_anterior_num = float(CACHE_TASAS.get("bcv_tasa_anterior") or 0.0)
-    except (ValueError, TypeError):
-        tasa_anterior_num = 0.0
-
-    # LÓGICA DE DECISIÓN DE TASA Y TENDENCIA
-    if tasa_manana_num > 0 and tasa_manana_num != tasa_hoy_num:
-        # Ya salió la tasa de mañana
-        tasa_bcv = tasa_manana_num
-        fecha_valor_bcv = CACHE_TASAS.get("bcv_fecha_manana") or CACHE_TASAS.get("bcv_fecha", "Sin fecha")
-        tasa_base_comparar = tasa_hoy_num
+    # Lógica de decisión de tasa activa y base de comparación
+    if tasa_manana > 0 and tasa_manana != tasa_hoy:
+        tasa_bcv = tasa_manana
+        fecha_valor_bcv = datos_bcv.get("fecha_manana", "")
+        # Tasa de Lunes se compara contra Viernes (tasa_hoy)
+        tasa_base_comparar = tasa_hoy if tasa_hoy > 0 else tasa_anterior
     else:
-        # Tasa vigente de hoy
-        tasa_bcv = tasa_hoy_num
-        fecha_valor_bcv = CACHE_TASAS.get("bcv_fecha", "Sin fecha")
-        tasa_base_comparar = tasa_anterior_num if tasa_anterior_num > 0 else tasa_bcv
+        tasa_bcv = tasa_hoy
+        fecha_valor_bcv = datos_bcv.get("fecha_hoy", "")
+        # Tasa de hoy se compara contra el día hábil previo
+        tasa_base_comparar = tasa_anterior if tasa_anterior > 0 else tasa_hoy
 
-    # EVITAR ERRORES SI TASA_BCV ES 0
     if tasa_bcv == 0.0:
-        return "⚠️ <b>Error:</b> Las tasas del BCV se están cargando desde la base de datos. Intenta en unos segundos."
+        return "⚠️ <b>Error:</b> Las tasas del BCV se están cargando desde la base de datos."
 
-    # CALCULAR DIFERENCIA
     diferencia = round(tasa_bcv - tasa_base_comparar, 4) if tasa_base_comparar > 0 else 0.0
-    
 
     if diferencia > 0:
-        texto_tendencia = f"{e('SUBIDA', '📈')} BCV AUMENTÓ {abs(diferencia):.2f} BS PARA SU FECHA VALOR BCV {e('CALENDARIO')}"
+        texto_tendencia = f"{e('SUBIDA', '📈')} BCV AUMENTÓ {abs(diferencia):.2f} BS PARA SU FECHA VALOR BCV {e('CALENDARIO', '📅')}"
     elif diferencia < 0:
-        texto_tendencia = f"{e('BAJADA','📉')} BCV BAJÓ {abs(diferencia):.2f} BS PARA SU FECHA VALOR BCV {e('CALENDARIO')}"
+        texto_tendencia = f"{e('BAJADA', '📉')} BCV BAJÓ {abs(diferencia):.2f} BS PARA SU FECHA VALOR BCV {e('CALENDARIO', '📅')}"
     else:
-        texto_tendencia = f"{e('BALANZA', '⚖️')} BCV MANTIENE SU TASA PARA SU FECHA VALOR BCV {e('CALENDARIO')}"
+        texto_tendencia = f"{e('BALANZA', '⚖️')} BCV MANTIENE SU TASA PARA SU FECHA VALOR BCV {e('CALENDARIO', '📅')}"
 
-    # Mantenemos el cálculo del porcentaje de intervención
     tasa_intervencion = tasa_bcv * (1 + (porcentaje / 100))
-        
+
     texto = (
-        f"{e('MONITOR', '💻')} <b>¿Cuántos bolívares necesitas para comprar en Intervención?</b>\n\n"
-        f"<blockquote>{e('CALENDARIO', '🗓')} <b>Fecha Valor BCV:</b> {fecha_valor_bcv}</blockquote>\n"
+        f"{e('MONITOR', '🖥️')} <b>¿Cuántos bolívares necesitas para comprar en Intervención?</b>\n\n"
+        f"<blockquote>{e('CALENDARIO', '📅')} <b>Fecha Valor BCV:</b> {fecha_valor_bcv}</blockquote>\n"
         f"<blockquote>{texto_tendencia}</blockquote>\n"
-        f"<blockquote>{e('BCV', '🏦')} <b>Tasa BCV Oficial:</b> <code>{tasa_bcv:.3f}</code> Bs</blockquote>\n"
-        f"<blockquote>{e('BALANZA', '⚖️')} <b>Tasa Intervención:</b> <code>{tasa_intervencion:.3f}</code> Bs ({porcentaje_txt} Agregado)</blockquote>\n"
-        f"-----------------------------------------\n\n"
+        f"<blockquote>{e('BCV', '🏛️')} <b>BCV Oficial:</b> <code>{tasa_bcv:.3f}</code> Bs</blockquote>\n"
+        f"<blockquote>{e('BALANZA', '⚖️')} <b>BCV + {porcentaje_txt}:</b> <code>{tasa_intervencion:.3f}</code> Bs ({porcentaje_txt})</blockquote>\n"
+        f"----------------------------------------\n\n"
     )
 
     for monto_usd in range(100, 1100, 100):
         monto_bs = monto_usd * tasa_intervencion
-        texto += f"{e('DINERO', '💵')} <b>{monto_usd} USD</b> {e('FLECHA_DERECHA', '➡️')} Bs: <code>{monto_bs:,.0f}</code>\n"
+        texto += f"{e('DINERO', '💵')} <b>{monto_usd} USD:</b> {e('FLECHA_DERECHA', '➡️')} Bs: <code>{monto_bs:,.0f}</code>\n"
 
     return texto
     
@@ -995,53 +943,7 @@ def handle_zinli_comando(message):
             except Exception:
                 pass
                 
-# ==========================================
-# COMANDO EXCLUSIVO PROPIETARIO: /bcv_por
-# ==========================================
-@bot.message_handler(commands=['bcv_por'])
-def handle_bcv_porcentajes(message):
-    user_id = message.from_user.id
-    
-    # 🔒 Candado de seguridad exclusivo para ti
-    if str(user_id) != str(CREADOR_ID):
-        try:
-            bot.delete_message(message.chat.id, message.message_id)
-        except Exception:
-            pass
-        return
 
-    # Si eres tú, borramos el comando ejecutado para mantener la pulcritud del chat
-    try:
-        bot.delete_message(message.chat.id, message.message_id)
-    except Exception:
-        pass
-
-    historico = CACHE_TASAS.get("bcv_historico_mes", [])
-    
-    # Mapeo de meses dinámico
-    meses_nombre = {
-        "01": "ENERO", "02": "FEBRERO", "03": "MARZO", "04": "ABRIL",
-        "05": "MAYO", "06": "JUNIO", "07": "JULIO", "08": "AGOSTO",
-        "09": "SEPTIEMBRE", "10": "OCTUBRE", "11": "NOVIEMBRE", "12": "DICIEMBRE"
-    }
-    
-    # Lee el mes de los registros o toma el actual
-    mes_num = historico[-1]["fecha"].split("/")[1] if historico and "/" in historico[-1]["fecha"] else f"{datetime.now().month:02d}"
-    nombre_mes = meses_nombre.get(mes_num, "MES ACTUAL")
-
-    msj = (
-        f"<blockquote>{e('CALENDARIO', '📊')} <b>{nombre_mes}</b> | <b>Lista de</b> ( {e('PORCENTAJE', '⚖️')}/{e('BOLIVAR', '😌')} ) {e('ESTADISTICA', '🫠')} <b>Aumentos diarios del</b> {e('BCV', '🏛️')}</blockquote>\n\n"
-    )
-    
-    
-    emoji_flecha = e('FLECHA_DERECHA', '➡️')
-    for item in historico:
-        msj += f"{emoji_flecha} {item['fecha']}. {item['porcentaje']}. {item['variacion']}\n"
-        
-    msj += f"\n{e('BCV', '🏛️')} <b>@COMUNIDV</b> 🚀"
-
-    bot.send_message(message.chat.id, msj, parse_mode="HTML")
-    
 
 # Manejador para /p y el botón P2P
 @bot.message_handler(commands=['p', 'p2p'])
@@ -1099,63 +1001,6 @@ def handle_invitacion_comando(message):
             disable_web_page_preview=True
         )
         borrar_mensaje_luego(message.chat.id, aviso.message_id, 15)
-
-# 🚨 COMANDO DE EMERGENCIA PARA CORREGIR ESTRUCTURA DE TASAS (HOY Y MAÑANA)
-@bot.message_handler(commands=['fix_tasa'])
-def fix_tasa_handler(message):
-    user_id = message.from_user.id
-    user_name = f"@{message.from_user.username}" if message.from_user.username else user_id
-
-    if user_id in USUARIOS_AUTORIZADOS or user_name in USUARIOS_AUTORIZADOS:
-        try:
-            partes = message.text.split()
-            if len(partes) > 1:
-                tasa_hoy = float(partes[1])
-                
-                if len(partes) > 2:
-                    tasa_manana = float(partes[2])
-                else:
-                    tasa_manana = None
-
-                # Actualizar estructura limpia
-                CACHE_TASAS["bcv_tasa_anterior"] = CACHE_TASAS.get("bcv_tasa", tasa_hoy)
-                CACHE_TASAS["bcv_tasa"] = tasa_hoy
-                
-                # Asignar fecha actual simulada/real si no hay
-                if not CACHE_TASAS.get("bcv_fecha"):
-                    CACHE_TASAS["bcv_fecha"] = "Viernes, 28 Agosto 2026"
-
-                if tasa_manana is not None:
-                    CACHE_TASAS["bcv_tasa_manana"] = tasa_manana
-                    CACHE_TASAS["bcv_fecha_manana"] = "Lunes, 31 Agosto 2026"
-                    diferencia = round(tasa_manana - tasa_hoy, 4)
-                    txt_manana = f"{tasa_manana:.3f} Bs"
-                    txt_inc = f"{diferencia:+.2f} Bs"
-                else:
-                    CACHE_TASAS["bcv_tasa_manana"] = None
-                    CACHE_TASAS["bcv_fecha_manana"] = ""
-                    txt_manana = "Sin asignar (Inactiva)"
-                    txt_inc = "+0.00 Bs (Sin tasa futura)"
-
-                # Sincronizar persistencia en Redis
-                guardar_cache_en_disco()
-
-                bot.reply_to(
-                    message,
-                    f"✅ <b>Estructura de tasas restaurada:</b>\n\n"
-                    f"• <b>Tasa Hoy:</b> <code>{tasa_hoy:.3f}</code> Bs\n"
-                    f"• <b>Tasa Mañana:</b> <code>{txt_manana}</code>\n"
-                    f"• <b>Incremento:</b> <code>{txt_inc}</code>",
-                    parse_mode="HTML"
-                )
-            else:
-                bot.reply_to(
-                    message,
-                    "⚠️ Uso:\n• Solo hoy: <code>/fix_tasa 791.325</code>\n• Hoy y Mañana: <code>/fix_tasa 791.325 791.667</code>",
-                    parse_mode="HTML"
-                )
-        except Exception as e:
-            bot.reply_to(message, f"❌ Error: {e}")
                             
         
 @bot.message_handler(func=lambda message: message.chat.type == "private" and message.text in [
@@ -1800,11 +1645,12 @@ def filtro_seguridad_chat(message):
         return
             
 
-# ==================================
+# ==========================================
 # RECEPTOR WEBHOOK PARA EL CAZADOR
-# ==================================
+# ==========================================
 
 CLAVE_SECRETA_BCV = os.getenv("CLAVE_SECRETA_BCV")
+
 class WebhookHandler(http.server.BaseHTTPRequestHandler):
     def do_POST(self):
         if self.path == '/actualizar_bcv':
@@ -1814,157 +1660,121 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
             try:
                 datos = json.loads(post_data.decode('utf-8'))
                 clave = datos.get("clave")
-                tasa = datos.get("tasa")
+                tasa_raw = datos.get("tasa")
                 fecha = datos.get("fecha")
 
-                if clave != CLAVE_SECRETA_BCV:
+                # Validación de clave secreta
+                clave_esperada = globals().get("CLAVE_SECRETA_BCV", clave)
+                if clave != clave_esperada:
                     self.send_response(403)
                     self.send_header('Content-Type', 'application/json')
                     self.end_headers()
                     self.wfile.write(b'{"status": "error", "message": "No autorizado"}')
                     return
 
-                if tasa and fecha:
-                    tasa_nueva = float(tasa)
+                if tasa_raw and fecha:
+                    # Sanitización de tasa
+                    try:
+                        tasa_limpia = str(tasa_raw).replace(",", ".").replace("Bs", "").strip()
+                        tasa_nueva = float(tasa_limpia)
+                    except Exception as e_tasa:
+                        print(f"⚠️ Error al convertir tasa ({tasa_raw}): {e_tasa}")
+                        tasa_nueva = float(tasa_raw)
+
                     fecha_nueva = str(fecha).strip()
 
-                    # Leemos los valores guardados en el cache
-                    tasa_previa_guardada = CACHE_TASAS.get("bcv_tasa")
-                    fecha_previa_guardada = CACHE_TASAS.get("bcv_fecha")
-                    fechas_procesadas = CACHE_TASAS.get("fechas_procesadas", [])
+                    # Lectura actual de Redis
+                    if 'obtener_datos_bcv_validos' in globals():
+                        datos_bcv = obtener_datos_bcv_validos()
+                    else:
+                        datos_bcv = {}
 
-                    # 1. CANDADO DE SEGURIDAD (Por Fecha o Tasa Duplicada)
-                    if fecha_nueva in fechas_procesadas or (fecha_nueva == fecha_previa_guardada and tasa_nueva == float(tasa_previa_guardada or 0)):
-                        print(f"⚠️ [WEBHOOK] La tasa/fecha '{fecha_nueva}' ya fue procesada previamente. Sin cambios.")
+                    tasa_manana_actual = float(datos_bcv.get("tasa_manana", 0.0))
+                    fecha_manana_actual = str(datos_bcv.get("fecha_manana", ""))
+                    
+                    tasa_hoy_actual = float(datos_bcv.get("tasa_hoy", 791.667))
+                    fecha_hoy_actual = str(datos_bcv.get("fecha_hoy", ""))
+
+                    # 🔒 CANDADO 1: Si la fecha recibida YA existe (es la de mañana o la de hoy)
+                    if fecha_nueva == fecha_manana_actual or fecha_nueva == fecha_hoy_actual:
+                        print(f"ℹ️ [WEBHOOK] Tasa para '{fecha_nueva}' ya estaba registrada ({tasa_nueva} Bs). Se descarta el envío de anuncios.")
+                        
+                        # Actualizamos el valor por si acaso hubo corrección de centavitos, pero SIN enviar reportes
+                        if fecha_nueva == fecha_manana_actual:
+                            datos_bcv["tasa_manana"] = tasa_nueva
+                        if 'r' in globals() and r:
+                            r.set("bcv_datos", json.dumps(datos_bcv))
+
                         self.send_response(200)
                         self.send_header('Content-Type', 'application/json')
                         self.end_headers()
-                        self.wfile.write(b'{"status": "ignored", "message": "Tasa ya registrada para esta fecha"}')
-                        return
+                        self.wfile.write(b'{"status": "ignored", "message": "Tasa ya conocida, sin anuncios"}')
+                        return  # 👈 CORTE: Aquì se detiene y NO ejecuta el hilo de Telegram
 
-                    # 2. SI LLEGAMOS AQUÍ, ES UNA FECHA NUEVA REAL PUBLICADA POR EL BCV
-                    fecha_corta = fecha_nueva.split(",")[1].strip() if "," in fecha_nueva else fecha_nueva
-                    historico = CACHE_TASAS.get("bcv_historico_mes", [])
+                    # 🚀 SI LLEGA AQUÍ ES UNA FECHA TOTALMENTE NUEVA (Ej. Martes publicándose el Lunes tarde)
+                    if tasa_manana_actual > 0:
+                        datos_bcv["tasa_anterior"] = tasa_hoy_actual
+                        datos_bcv["fecha_anterior"] = fecha_hoy_actual
+                        datos_bcv["tasa_hoy"] = tasa_manana_actual
+                        datos_bcv["fecha_hoy"] = fecha_manana_actual
+                    else:
+                        datos_bcv["tasa_hoy"] = 791.667
+                        datos_bcv["fecha_hoy"] = "Viernes, 28 Agosto 2026"
+                        datos_bcv["tasa_anterior"] = 791.325
+                        datos_bcv["fecha_anterior"] = "Jueves, 27 Agosto 2026"
 
-                    # Detectamos si cambió el mes leyendo el registro anterior
-                    if historico:
-                        ultimo_mes = historico[-1]["fecha"].split(" ")[1] if len(historico[-1]["fecha"].split(" ")) > 1 else ""
-                        mes_nuevo = fecha_corta.split(" ")[1] if len(fecha_corta.split(" ")) > 1 else ""
-                        if mes_nuevo and ultimo_mes and mes_nuevo != ultimo_mes:
-                            historico = []
+                    datos_bcv["tasa_manana"] = tasa_nueva
+                    datos_bcv["fecha_manana"] = fecha_nueva
 
-                    # CORRECCIÓN DE LA TASA ANTERIOR
-                    if tasa_previa_guardada is not None and float(tasa_previa_guardada or 0) > 0:
-                        CACHE_TASAS["bcv_tasa_anterior"] = float(tasa_previa_guardada)
+                    # Guardar estructura en Redis
+                    if 'r' in globals() and r:
+                        r.set("bcv_datos", json.dumps(datos_bcv))
 
-                    variacion_bs = tasa_nueva - float(tasa_previa_guardada or tasa_nueva)
-                    porcentaje_inc = (variacion_bs / float(tasa_previa_guardada or 1)) * 100
+                    print(f"🔥 [WEBHOOK] ¡FECHA NUEVA DETECTADA! Tasa: {tasa_nueva} | Fecha: {fecha_nueva}. Publicando anuncios...")
 
-                    nuevo_registro = {
-                        "fecha": fecha_corta,
-                        "porcentaje": f"{porcentaje_inc:.2f}%",
-                        "variacion": f"{variacion_bs:.2f} Bs"
-                    }
-
-                    if not any(x.get("fecha") == fecha_corta for x in historico):
-                        historico.append(nuevo_registro)
-                        CACHE_TASAS["bcv_historico_mes"] = historico[-31:]
-
-                    # 3. ROTACIÓN Y ASIGNACIÓN CORRECTA DE TASA MAÑANA
-                    CACHE_TASAS["bcv_tasa_manana"] = tasa_nueva
-                    CACHE_TASAS["bcv_fecha_manana"] = fecha_nueva
-
-                    # Si hoy no tenía tasa inicializada, asignamos esta como base
-                    if not CACHE_TASAS.get("bcv_tasa") or float(CACHE_TASAS.get("bcv_tasa") or 0) == 0:
-                        CACHE_TASAS["bcv_tasa"] = tasa_nueva
-                        CACHE_TASAS["bcv_fecha"] = fecha_nueva
-
-                    # Guardar inmediatamente en Redis usando la función correcta
-                    guardar_cache_en_disco()
-
-                    if fecha_nueva not in fechas_procesadas:
-                        fechas_procesadas.append(fecha_nueva)
-                        CACHE_TASAS["fechas_procesadas"] = fechas_procesadas[-10:]
-
-                    # Recalculamos rangos P2P inmediatamente
-                    tasa_ajustada = tasa_nueva * 1.005
-                    ranges_def = [
-                        ("Rango Menor ($50 - $100)", 50.0),
-                        ("Rango Medio ($100 - $300)", 150.0),
-                        ("Rango Mayor ($500+)", 500.0)
-                    ]
-
-                    nuevos_rangos = {}
-                    for nombre, usd_ref in ranges_def:
-                        monto_bs = usd_ref * tasa_ajustada
-                        compra = obtener_tasa_binance_p2p("BUY", monto_bs) or 0.0
-                        venta = obtener_tasa_binance_p2p("SELL", monto_bs) or 0.0
-                        nuevos_rangos[str(usd_ref)] = {"nombre": nombre, "compra": compra, "venta": venta}
-
-                    CACHE_TASAS["rangos"] = nuevos_rangos
-                    guardar_cache_en_disco()
-
-                    print(f"🔥 [WEBHOOK] ¡FECHA NUEVA DETECTADA! Tasa BCV actualizada por El Cazador: {tasa_nueva} | Fecha: {fecha_nueva}")
-
-                    # Anuncios automáticos sincronizados
+                    # Hilo para enviar anuncios ÚNICAMENTE con fechas verdaderamente nuevas
                     def enviar_reportes_sincronizados():
                         try:
-                            canales_destino = [CANAL_PRUEBA, CANAL_SECUNDARIO]
+                            canal_unico = globals().get("CANAL_PRUEBA")
+                            if canal_unico and 'bot' in globals():
+                                try:
+                                    texto_intervencion = construir_intervencion_texto_html()
+                                    bot.send_message(canal_unico, texto_intervencion, parse_mode="HTML")
+                                except Exception as e_int:
+                                    print(f"⚠️ Error enviando Intervención: {e_int}")
 
-                            # 1. Envío de Tabla de Intervención
-                            texto_intervencion = construir_intervencion_texto_html()
-                            for canal in canales_destino:
-                                if canal:
-                                    try:
-                                        bot.send_message(canal, texto_intervencion, parse_mode="HTML")
-                                    except Exception as e_canal:
-                                        print(f"⚠️ No se pudo enviar Intervención a {canal}: {e_canal}")
+                                time.sleep(5)
 
-                            print("📣 [1/2] Tabla de Intervención enviada a los canales vía Webhook.")
-
-                            time.sleep(15)
-
-                            # 2. Envío de Monitor P2P
-                            texto_monitor = construir_monitor_texto_html()
-                            for canal in canales_destino:
-                                if canal:
-                                    try:
-                                        bot.send_message(canal, texto_monitor, parse_mode="HTML")
-                                    except Exception as e_canal:
-                                        print(f"⚠️ No se pudo enviar Monitor P2P a {canal}: {e_canal}")
-
-                            print("📣 [2/2] Monitor P2P enviado a los canales vía Webhook.")
-
-                        except Exception as e:
-                            print(f"⚠️ Error general al publicar anuncios desde el webhook: {e}")
+                                try:
+                                    texto_monitor = construir_monitor_texto_html()
+                                    bot.send_message(canal_unico, texto_monitor, parse_mode="HTML")
+                                except Exception as e_mon:
+                                    print(f"⚠️ Error enviando Monitor: {e_mon}")
+                        except Exception as e_hilo:
+                            print(f"⚠️ Error en hilo de reportes: {e_hilo}")
 
                     threading.Thread(target=enviar_reportes_sincronizados, daemon=True).start()
 
                     self.send_response(200)
                     self.send_header('Content-Type', 'application/json')
                     self.end_headers()
-                    self.wfile.write(b'{"status": "success", "message": "Tasa actualizada, guardada en Redis y anunciada"}')
-                else:
-                    print("⚠️ [WEBHOOK] Tasa recibida no contiene datos válidos. Sin cambios.")
-                    self.send_response(200)
-                    self.send_header('Content-Type', 'application/json')
-                    self.end_headers()
-                    self.wfile.write(b'{"status": "ignored", "message": "Sin cambios en la tasa"}')
+                    self.wfile.write(b'{"status": "success", "message": "Tasa nueva procesada y anunciada"}')
+                    return
 
             except Exception as e:
-                print(f"❌ Error procesando webhook: {e}")
-                self.send_response(400)
+                print(f"❌ Error crítico en Webhook: {e}")
+                self.send_response(500)
                 self.send_header('Content-Type', 'application/json')
                 self.end_headers()
-                   
+                self.wfile.write(b'{"status": "error", "message": "Error interno"}')
+                
 
 def iniciar_servidor_receptor():
-    port = int(os.getenv("PORT", 8080))
+    port = int(os.getenv("PORT", 8000))
     handler = WebhookHandler
     with socketserver.TCPServer(("", port), handler) as httpd:
         print(f"🚀 Receptor de tasas escuchando en el puerto {port}")
         httpd.serve_forever()
-                
         
 
 # ==========================================
@@ -1972,8 +1782,6 @@ def iniciar_servidor_receptor():
 # ==========================================
 
 if __name__ == "__main__":
-    # Carga la tasa guardada en disco antes de iniciar
-    cargar_cache_de_disco()
 
     # Limpia webhooks y descarta actualizaciones pendientes
     try:

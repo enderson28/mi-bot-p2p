@@ -90,24 +90,28 @@ def registrar_calculadora(bot, obtener_cache_func, obtener_teclado_func):
             bot.register_next_step_handler(msg_err, lambda m: procesar_calculo(m, modo))
             return
 
-        # 4. Obtener tasa BCV
-        cache = obtener_cache_func()
-        val_manana = cache.get("bcv_tasa_manana")
-        fecha_manana = cache.get("bcv_fecha_manana")
-
-        try:
-            val_manana_float = float(val_manana) if val_manana else 0.0
-        except ValueError:
-            val_manana_float = 0.0
+        # 4. Obtener datos de tasa desde Redis/Bot
+        datos_bcv = obtener_cache_func()
+        
+        # Validación de seguridad por si datos_bcv llega como número o diccionario
+        if isinstance(datos_bcv, dict):
+            tasa_hoy = datos_bcv.get("tasa_hoy", 0.0)
+            tasa_manana = datos_bcv.get("tasa_manana", 0.0)
             
-        if val_manana_float > 0:
-            tasa_bcv = val_manana_float
-            fecha_valor_bcv = fecha_manana or cache.get("bcv_fecha", "Sin fecha")
+            # Si existe tasa de mañana válida, se le da prioridad
+            if tasa_manana > 0 and tasa_manana != tasa_hoy:
+                tasa_bcv = tasa_manana
+                fecha_valor_bcv = datos_bcv.get("fecha_manana", "Mañana")
+            else:
+                tasa_bcv = tasa_hoy
+                fecha_valor_bcv = datos_bcv.get("fecha_hoy", "Hoy")
         else:
-            tasa_bcv = float(cache.get("bcv_tasa", 780.00))
-            fecha_valor_bcv = cache.get("bcv_fecha", "BCV")
+            # Resguardo si se pasa un float directo
+            tasa_bcv = float(datos_bcv) if datos_bcv else 0.0
+            fecha_valor_bcv = "BCV"
 
         tasa_con_intervencion = tasa_bcv * 1.005
+        
 
         # 5. Cálculo según el modo
         if modo == "USD_BS":

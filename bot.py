@@ -7,7 +7,7 @@ import telebot
 import time
 import threading
 import locale
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 from telebot.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
 from telebot import types
 from captcha import setup_verification_handlers
@@ -276,14 +276,15 @@ setup_verification_handlers(
 )
 
 # --- CONEXIÓN A REDIS Y LECTURA DE FUENTE ÚNICA ---
+
 def obtener_datos_bcv_validos():
     datos_defecto = {
-        "tasa_hoy": 794.992,
-        "fecha_hoy": "Lunes, 31 Agosto 2026",
+        "tasa_hoy": 798.326,
+        "fecha_hoy": "Martes, 01 Septiembre 2026",
         "tasa_manana": 0.0,
         "fecha_manana": "",
-        "tasa_anterior": 791.667,
-        "fecha_anterior": "Viernes, 28 Agosto 2026"
+        "tasa_anterior": 794.992,
+        "fecha_anterior": "Lunes, 31 Agosto 2026"
     }
 
     try:
@@ -291,14 +292,37 @@ def obtener_datos_bcv_validos():
             val = r.get("bcv_datos")
             if val:
                 datos = json.loads(val)
+                
+                # --- ROTACIÓN AUTOMÁTICA DE MEDIANOCHE (Hora Venezuela UTC-4) ---
+                hora_ve = datetime.now(timezone.utc) - timedelta(hours=4)
+                fecha_hoy_sistema = hora_ve.strftime("%Y-%m-%d")
+                
+                # Leemos la última fecha registrada en Redis
+                ultima_fecha_rotada = datos.get("fecha_ultima_rotacion", "")
+                
+                # Si amaneció un nuevo día Y hay una tasa_manana raspada lista para promover:
+                if datos.get("tasa_manana", 0.0) > 0 and ultima_fecha_rotada != fecha_hoy_sistema:
+                    # Promovemos la tasa raspada a tasa_hoy
+                    datos["tasa_anterior"] = datos.get("tasa_hoy", 0.0)
+                    datos["tasa_hoy"] = datos.get("tasa_manana")
+                    if datos.get("fecha_manana"):
+                        datos["fecha_hoy"] = datos.get("fecha_manana")
+                    
+                    # Limpiamos mañana para esperar el próximo raspado de la tarde
+                    datos["tasa_manana"] = 0.0
+                    datos["fecha_manana"] = ""
+                    datos["fecha_ultima_rotacion"] = fecha_hoy_sistema
+                    
+                    # Guardar estado limpio en Redis
+                    r.set("bcv_datos", json.dumps(datos))
+
                 return datos
         return datos_defecto
 
     except Exception as e:
-        print(f"⚠️ Error leyendo Redis: {e}")
+        print(f"⚠️ Error leyendo/rotando Redis: {e}")
         return datos_defecto
-        
-
+                
 def obtener_tasa_binance_p2p(tipo_operacion, monto_bs):
     url = "https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search"
     headers = {

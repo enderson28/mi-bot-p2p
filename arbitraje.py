@@ -3,6 +3,7 @@ import logging
 import requests
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 from datetime import datetime, time, timedelta, timezone
+from bot import obtener_datos_bcv_validos
 
 logger = logging.getLogger(__name__)
 
@@ -469,15 +470,22 @@ def generar_y_enviar_resultado(chat_id, user_id, tasa_p2p_venta, bot, redis_clie
     comision_banco = data_user.get("comision_banco", 0)
 
     # 1. Lectura centralizada de la fuente única de BCV
-    try:
-        from bot import obtener_datos_bcv_validos
+    try: 
         datos_bcv = obtener_datos_bcv_validos()
     except Exception:
-        datos_bcv = {}
+       datos_bcv = {}
 
-    tasa_bcv_hoy = float(datos_bcv.get("tasa_hoy", 794.992))
-    tasa_bcv_manana_raw = datos_bcv.get("tasa_manana", 0.0)
-    tasa_bcv_manana = float(tasa_bcv_manana_raw) if float(tasa_bcv_manana_raw or 0.0) > 0 else None
+    tasa_hoy_raw = float(datos_bcv.get("tasa_hoy", 794.992))
+    tasa_manana_raw = float(datos_bcv.get("tasa_manana", 0.0))
+
+    # Lógica igual a bot.py: Determinar cuál es la tasa activa de HOY
+    if tasa_manana_raw > 0 and tasa_manana_raw != tasa_hoy_raw:
+        tasa_bcv_hoy = tasa_manana_raw
+    else:
+        tasa_bcv_hoy = tasa_hoy_raw
+
+    # Tasa de mañana SOLO si existe y es diferente a la activa
+    tasa_bcv_manana = tasa_manana_raw if (tasa_manana_raw > 0 and tasa_manana_raw != tasa_bcv_hoy) else None
 
     # 2. Extraer Spot
     tasa_usd_usdt = obtener_precio_spot_usdt_usd(redis_client)
@@ -490,7 +498,7 @@ def generar_y_enviar_resultado(chat_id, user_id, tasa_p2p_venta, bot, redis_clie
         monto_usd=monto_usd,
         comision_banco=comision_banco,
         tasa_bcv_hoy=tasa_bcv_hoy,
-        tasa_bcv_manana=tasa_bcv_manana if tasa_bcv_manana else tasa_bcv_hoy,
+        tasa_bcv_manana=tasa_bcv_manana,
         tasa_p2p_venta=tasa_p2p_venta,
         tasa_usd_usdt=tasa_usd_usdt,
         tasa_zinli=tasa_zinli_usada

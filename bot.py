@@ -278,12 +278,12 @@ setup_verification_handlers(
 # --- CONEXIÓN A REDIS Y LECTURA DE FUENTE ÚNICA ---
 def obtener_datos_bcv_validos():
     datos_defecto = {
-        "tasa_hoy": 791.667,
-        "fecha_hoy": "Viernes, 28 Agosto 2026",
+        "tasa_hoy": 794.992,
+        "fecha_hoy": "Lunes, 31 Agosto 2026",
         "tasa_manana": 0.0,
         "fecha_manana": "",
-        "tasa_anterior": 791.325,
-        "fecha_anterior": "Jueves, 27 Agosto 2026"
+        "tasa_anterior": 791.667,
+        "fecha_anterior": "Viernes, 28 Agosto 2026"
     }
 
     try:
@@ -291,11 +291,6 @@ def obtener_datos_bcv_validos():
             val = r.get("bcv_datos")
             if val:
                 datos = json.loads(val)
-                # FIX: Si Redis tiene guardada la tasa vieja del Jueves o 0, forzamos la base del Viernes
-                tasa_h = float(datos.get("tasa_hoy", 0.0))
-                if tasa_h <= 791.325:
-                    datos["tasa_hoy"] = 791.667
-                    datos["fecha_hoy"] = "Viernes, 28 Agosto 2026"
                 return datos
         return datos_defecto
 
@@ -1711,20 +1706,23 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
                         self.wfile.write(b'{"status": "ignored", "message": "Tasa ya conocida, sin anuncios"}')
                         return  # 👈 CORTE: Aquì se detiene y NO ejecuta el hilo de Telegram
 
-                    # 🚀 SI LLEGA AQUÍ ES UNA FECHA TOTALMENTE NUEVA (Ej. Martes publicándose el Lunes tarde)
+                    # SI LLEGA AQUÍ ES UNA FECHA TOTALMENTE NUEVA (Ej. Martes publicándose el Lunes tarde)
                     if tasa_manana_actual > 0:
                         datos_bcv["tasa_anterior"] = tasa_hoy_actual
                         datos_bcv["fecha_anterior"] = fecha_hoy_actual
                         datos_bcv["tasa_hoy"] = tasa_manana_actual
                         datos_bcv["fecha_hoy"] = fecha_manana_actual
                     else:
-                        datos_bcv["tasa_hoy"] = 791.667
-                        datos_bcv["fecha_hoy"] = "Viernes, 28 Agosto 2026"
-                        datos_bcv["tasa_anterior"] = 791.325
-                        datos_bcv["fecha_anterior"] = "Jueves, 27 Agosto 2026"
+                        # Mantiene lo que ya estaba en 'hoy' antes de desplazarlo a 'anterior'
+                        datos_bcv["tasa_anterior"] = tasa_hoy_actual
+                        datos_bcv["fecha_anterior"] = fecha_hoy_actual
+                        datos_bcv["tasa_hoy"] = tasa_hoy_actual
+                        datos_bcv["fecha_hoy"] = fecha_hoy_actual
 
+                    # Asigna la nueva tasa raspada del cazador a 'manana'
                     datos_bcv["tasa_manana"] = tasa_nueva
                     datos_bcv["fecha_manana"] = fecha_nueva
+
 
                     # Guardar estructura en Redis
                     if 'r' in globals() and r:

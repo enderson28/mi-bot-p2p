@@ -162,7 +162,7 @@ def obtener_precio_spot_usdt_usd(redis_client):
 
 def calcular_arbitraje_reposicion(monto_usd, comision_banco, tasa_bcv_hoy, tasa_bcv_manana, tasa_p2p_venta, tasa_usd_usdt=1.00018, tasa_zinli=None):
     if not tasa_bcv_hoy or float(tasa_bcv_hoy) <= 0:
-        tasa_bcv_hoy = 791.667
+        tasa_bcv_hoy = 794.992
 
     tasa_interv_hoy = tasa_bcv_hoy * 1.005
     bs_invertidos_hoy = monto_usd * tasa_interv_hoy
@@ -475,7 +475,7 @@ def generar_y_enviar_resultado(chat_id, user_id, tasa_p2p_venta, bot, redis_clie
     except Exception:
         datos_bcv = {}
 
-    tasa_bcv_hoy = float(datos_bcv.get("tasa_hoy", 791.667))
+    tasa_bcv_hoy = float(datos_bcv.get("tasa_hoy", 794.992))
     tasa_bcv_manana_raw = datos_bcv.get("tasa_manana", 0.0)
     tasa_bcv_manana = float(tasa_bcv_manana_raw) if float(tasa_bcv_manana_raw or 0.0) > 0 else None
 

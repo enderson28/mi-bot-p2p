@@ -3,7 +3,6 @@ import logging
 import requests
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 from datetime import datetime, time, timedelta, timezone
-from bot import obtener_datos_bcv_validos
 
 logger = logging.getLogger(__name__)
 
@@ -471,6 +470,7 @@ def generar_y_enviar_resultado(chat_id, user_id, tasa_p2p_venta, bot, redis_clie
 
     # 1. Lectura centralizada de la fuente única de BCV
     try: 
+        from bot import obtener_datos_bcv_validos
         datos_bcv = obtener_datos_bcv_validos()
     except Exception:
        datos_bcv = {}

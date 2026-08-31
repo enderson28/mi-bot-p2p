@@ -184,7 +184,7 @@ def calcular_arbitraje_reposicion(monto_usd, comision_banco, tasa_bcv_hoy, tasa_
     ganancia_usdt_hoy = usdt_netos_binance - usdt_recuperar_hoy
     ganancia_bs_hoy = ganancia_usdt_hoy * tasa_p2p_venta
 
-    base_manana = tasa_bcv_manana if tasa_bcv_manana else tasa_bcv_hoy
+    base_manana = tasa_bcv_manana if tasa_bcv_manana else 0.0
     tasa_interv_manana = base_manana * 1.005
     bs_necesarios_manana = monto_usd * tasa_interv_manana
     usdt_recuperar_manana = bs_necesarios_manana / tasa_p2p_venta if tasa_p2p_venta > 0 else 0
@@ -467,25 +467,22 @@ def generar_y_enviar_resultado(chat_id, user_id, tasa_p2p_venta, bot, redis_clie
     data_user = USER_ARBITRAJE_DATA.get(user_id, {})
     monto_usd = data_user.get("monto_usd", 0)
     comision_banco = data_user.get("comision_banco", 0)
-
-    # 1. Lectura centralizada de la fuente única de BCV
-    try: 
+    
+    # 1. Lectura directa y separada para Arbitraje y Reposición
+    try:
         from bot import obtener_datos_bcv_validos
         datos_bcv = obtener_datos_bcv_validos()
     except Exception:
-       datos_bcv = {}
+        datos_bcv = {}
 
-    tasa_hoy_raw = float(datos_bcv.get("tasa_hoy", 794.992))
-    tasa_manana_raw = float(datos_bcv.get("tasa_manana", 0.0))
+    tasa_hoy_val = float(datos_bcv.get("tasa_hoy", 794.992))
+    tasa_manana_val = float(datos_bcv.get("tasa_manana", 0.0))
 
-    # Lógica igual a bot.py: Determinar cuál es la tasa activa de HOY
-    if tasa_manana_raw > 0 and tasa_manana_raw != tasa_hoy_raw:
-        tasa_bcv_hoy = tasa_manana_raw
-    else:
-        tasa_bcv_hoy = tasa_hoy_raw
+    # BLOQUE 1 (Hoy): Usa estrictamente la tasa de hoy
+    tasa_bcv_hoy = tasa_hoy_val
 
-    # Tasa de mañana SOLO si existe y es diferente a la activa
-    tasa_bcv_manana = tasa_manana_raw if (tasa_manana_raw > 0 and tasa_manana_raw != tasa_bcv_hoy) else None
+    # BLOQUE 2 (Reposición): Usa la tasa de mañana SOLO si existe (> 0) y es diferente
+    tasa_bcv_manana = tasa_manana_val if (tasa_manana_val > 0 and tasa_manana_val != tasa_hoy_val) else None
 
     # 2. Extraer Spot
     tasa_usd_usdt = obtener_precio_spot_usdt_usd(redis_client)
@@ -493,7 +490,7 @@ def generar_y_enviar_resultado(chat_id, user_id, tasa_p2p_venta, bot, redis_clie
     # 3. Extraer Zinli si aplica
     tasa_zinli_usada = data_user.get("tasa_zinli_usada", None)
 
-    # 4. Ejecutar Cálculo de Arbitraje y Reposición
+    # 4. Ejecutar Cálculo
     res = calcular_arbitraje_reposicion(
         monto_usd=monto_usd,
         comision_banco=comision_banco,
@@ -541,11 +538,7 @@ def generar_y_enviar_resultado(chat_id, user_id, tasa_p2p_venta, bot, redis_clie
         proximo_dia = dias_semana[dia_semana_num + 1]
 
     # --- BLOQUE 2: REPOSICIÓN O AVISO DE TASA NO PUBLICADA ---
-    hay_tasa_manana_publicada = (
-        tasa_bcv_manana is not None 
-        and tasa_bcv_manana > 0 
-        and tasa_bcv_manana != tasa_bcv_hoy
-    )
+    hay_tasa_manana_publicada = bool(tasa_bcv_manana and float(tasa_bcv_manana) > 0 and float(tasa_bcv_manana) != float(tasa_bcv_hoy))
 
     if hay_tasa_manana_publicada:
         diferencia_bcv = tasa_bcv_manana - tasa_bcv_hoy

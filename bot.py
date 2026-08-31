@@ -1687,7 +1687,7 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
                     tasa_manana_actual = float(datos_bcv.get("tasa_manana", 0.0))
                     fecha_manana_actual = str(datos_bcv.get("fecha_manana", ""))
                     
-                    tasa_hoy_actual = float(datos_bcv.get("tasa_hoy", 791.667))
+                    tasa_hoy_actual = float(datos_bcv.get("tasa_hoy", 0.0))
                     fecha_hoy_actual = str(datos_bcv.get("fecha_hoy", ""))
 
                     # 🔒 CANDADO 1: Si la fecha recibida YA existe (es la de mañana o la de hoy)

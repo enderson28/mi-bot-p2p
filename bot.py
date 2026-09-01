@@ -1762,6 +1762,15 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
                     # Guardar estructura en Redis
                     if 'r' in globals() and r:
                         r.set("bcv_datos_v7", json.dumps(datos_bcv))
+                        
+                    print(f"🔥 [WEBHOOK] Tasa actualizada en Redis ({tasa_nueva} Bs). Anuncio omitido.")
+
+                    # Responder OK al Cazador para cerrar la petición correctamente
+                    self.send_response(200)
+                    self.send_header('Content-Type', 'application/json')
+                    self.end_headers()
+                    self.wfile.write(b'{"status": "success", "message": "Tasa actualizada sin anuncio."}')
+                    return
                 
 
 def iniciar_servidor_receptor():

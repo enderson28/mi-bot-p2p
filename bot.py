@@ -1724,7 +1724,15 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
                     fm_norm = str(fecha_manana_actual or '').strip().lower()
                     fh_norm = str(fecha_hoy_actual or '').strip().lower()
 
-                    if fn_norm and ((fm_norm and fn_norm == fm_norm) or (fh_norm and fn_norm == fh_norm) or (fm_norm and fn_norm in fm_norm)):
+                    # Bloquea si la fecha ya existe O si la tasa mañana ya es idéntica a la raspada
+                    ya_registrada = (
+                        (fm_norm and fn_norm == fm_norm) or 
+                        (fh_norm and fn_norm == fh_norm) or 
+                        (fm_norm and fn_norm in fm_norm) or
+                        (tasa_manana_actual > 0 and abs(tasa_nueva - tasa_manana_actual) < 0.0001)
+                    )
+
+                    if ya_registrada:
                         print(f"ℹ️ [WEBHOOK] Tasa para '{fecha_nueva}' ya estaba registrada ({tasa_nueva} Bs). Se descarta el envío de anuncios.")
                         
                         self.send_response(200)

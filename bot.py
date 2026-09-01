@@ -1722,7 +1722,7 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
                         if fecha_nueva == fecha_manana_actual:
                             datos_bcv["tasa_manana"] = tasa_nueva
                         if 'r' in globals() and r:
-                            r.set("bcv_datos_v4", json.dumps(datos_bcv))
+                            r.set("bcv_datos_v3", json.dumps(datos_bcv))
 
                         self.send_response(200)
                         self.send_header('Content-Type', 'application/json')
@@ -1750,7 +1750,7 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
 
                     # Guardar estructura en Redis
                     if 'r' in globals() and r:
-                        r.set("bcv_datos_v4", json.dumps(datos_bcv))
+                        r.set("bcv_datos_v3", json.dumps(datos_bcv))
 
                     print(f"🔥 [WEBHOOK] ¡FECHA NUEVA DETECTADA! Tasa: {tasa_nueva} | Fecha: {fecha_nueva}. Publicando anuncios...")
 

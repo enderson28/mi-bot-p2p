@@ -1771,15 +1771,14 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
                     self.end_headers()
                     self.wfile.write(b'{"status": "success", "message": "Tasa actualizada sin anuncio."}')
                     return
-                
+                    
+            def iniciar_servidor_receptor():
+                port = int(os.getenv("PORT", 8000))
+                handler = WebhookHandler
+                with socketserver.TCPServer(("", port), handler) as httpd:
+                    print(f"🚀 Receptor de tasas escuchando en el puerto {port}")
+                    httpd.serve_forever()
 
-def iniciar_servidor_receptor():
-    port = int(os.getenv("PORT", 8000))
-    handler = WebhookHandler
-    with socketserver.TCPServer(("", port), handler) as httpd:
-        print(f"🚀 Receptor de tasas escuchando en el puerto {port}")
-        httpd.serve_forever()
-        
 
 # ==========================================
 #            EJECUCIÓN DEL BOT

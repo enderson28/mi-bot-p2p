@@ -275,7 +275,9 @@ setup_verification_handlers(
     funcion_esta_unido=usuario_esta_unido
 )
 
-# --- CONEXIÓN A REDIS Y LECTURA DE FUENTE ÚNICA ---
+# ===============================================
+# CONEXION A REDIS + LECTURA DE FUENTE UNICA
+# ===============================================
 
 def obtener_datos_bcv_validos():
     datos_defecto = {
@@ -294,36 +296,29 @@ def obtener_datos_bcv_validos():
             if val:
                 datos = json.loads(val)
             else:
-                # Si la clave v7 no existe en Redis, guardamos los defaults limpios
                 r.set("bcv_datos_v7", json.dumps(datos_defecto))
                 datos = datos_defecto.copy()
-                
-                # --- ROTACIÓN AUTOMÁTICA DE MEDIANOCHE (Hora Venezuela UTC-4) ---
-                hora_ve = datetime.now(timezone.utc) - timedelta(hours=4)
-                fecha_hoy_sistema = hora_ve.strftime("%Y-%m-%d")
-                
-                # Leemos la última fecha registrada en Redis
-                ultima_fecha_rotada = datos.get("fecha_ultima_rotacion", "")
-                
-                # Si amaneció un nuevo día Y hay una tasa_manana raspada lista para promover:
-                if datos.get("tasa_manana", 0.0) > 0 and ultima_fecha_rotada != fecha_hoy_sistema:
-                    # Promovemos la tasa raspada a tasa_hoy
-                    datos["tasa_anterior"] = datos.get("tasa_hoy", 0.0)
-                    datos["tasa_hoy"] = datos.get("tasa_manana")
-                    if datos.get("fecha_manana"):
-                        datos["fecha_hoy"] = datos.get("fecha_manana")
-                    
-                    # Limpiamos mañana para esperar el próximo raspado de la tarde
-                    datos["tasa_manana"] = 0.0
-                    datos["fecha_manana"] = ""
-                    datos["fecha_ultima_rotacion"] = fecha_hoy_sistema
-                    
-                    # Guardar estado limpio en Redis
-                    r.set("bcv_datos_v7", json.dumps(datos))
 
-                return datos
+            # ROTACION AUTOMATICA DE MEDIANOCHE
+            hora_ve = datetime.now(timezone.utc) - timedelta(hours=4)
+            fecha_hoy_sistema = hora_ve.strftime("%Y-%m-%d")
+            ultima_fecha_rotada = datos.get("fecha_ultima_rotacion", "")
+
+            if datos.get("tasa_manana", 0.0) > 0 and ultima_fecha_rotada != fecha_hoy_sistema:
+                datos["tasa_anterior"] = datos.get("tasa_hoy", 0.0)
+                datos["fecha_anterior"] = datos.get("fecha_hoy", "")
+                datos["tasa_hoy"] = datos.get("tasa_manana")
+                datos["fecha_hoy"] = datos.get("fecha_manana")
+
+                # Se limpia la tasa de mañana para esperar el próximo raspado
+                datos["tasa_manana"] = 0.0
+                datos["fecha_manana"] = ""
+                datos["fecha_ultima_rotacion"] = fecha_hoy_sistema
+
+                r.set("bcv_datos_v7", json.dumps(datos))
+
+            return datos
         return datos_defecto
-
     except Exception as e:
         print(f"⚠️ Error leyendo/rotando Redis: {e}")
         return datos_defecto
@@ -1687,7 +1682,6 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
                 tasa_raw = datos.get("tasa")
                 fecha = datos.get("fecha")
 
-                # Validacion de clave secreta
                 clave_esperada = globals().get("CLAVE_SECRETA_BCV", clave)
                 if clave != clave_esperada:
                     self.send_response(403)
@@ -1697,7 +1691,6 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
                     return
 
                 if tasa_raw and fecha:
-                    # Sanitizacion de tasa
                     try:
                         tasa_limpia = str(tasa_raw).replace(".", "").replace("Bs", "").strip()
                         tasa_nueva = float(tasa_limpia)
@@ -1707,19 +1700,13 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
 
                     fecha_nueva = str(fecha).strip()
 
-                    # Lectura actual de Redis
-                    if 'obtener_datos_bcv_validos' in globals():
-                        datos_bcv = obtener_datos_bcv_validos()
-                    else:
-                        datos_bcv = {}
+                    datos_bcv = obtener_datos_bcv_validos() if 'obtener_datos_bcv_validos' in globals() else {}
 
                     tasa_manana_actual = float(datos_bcv.get("tasa_manana", 0.0))
                     fecha_manana_actual = str(datos_bcv.get("fecha_manana", "")).strip()
-
                     tasa_hoy_actual = float(datos_bcv.get("tasa_hoy", 0.0))
                     fecha_hoy_actual = str(datos_bcv.get("fecha_hoy", "")).strip()
 
-                    # CANDADO BLINDADO
                     fn_norm = str(fecha_nueva or '').strip().lower()
                     fm_norm = str(fecha_manana_actual or '').strip().lower()
                     fh_norm = str(fecha_hoy_actual or '').strip().lower()
@@ -1732,14 +1719,13 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
                     )
 
                     if ya_registrada:
-                        print(f"🔒 [WEBHOOK] Tasa para '{fecha_nueva}' ya estaba registrada ({tasa_nueva} Bs). Se descarta el envio.")
+                        print(f"🔒 [WEBHOOK] Tasa para '{fecha_nueva}' ya registrada. Se ignora.")
                         self.send_response(200)
                         self.send_header('Content-Type', 'application/json')
                         self.end_headers()
-                        self.wfile.write(b'{"status": "ignored", "message": "Tasa ya conocida, sin anuncios"}')
+                        self.wfile.write(b'{"status": "ignored", "message": "Tasa ya conocida"}')
                         return
 
-                    # SI LLEGA AQUI ES UNA FECHA TOTALMENTE NUEVA
                     if tasa_manana_actual > 0:
                         datos_bcv["tasa_anterior"] = tasa_hoy_actual
                         datos_bcv["fecha_anterior"] = fecha_hoy_actual
@@ -1751,17 +1737,14 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
                         datos_bcv["tasa_hoy"] = tasa_hoy_actual
                         datos_bcv["fecha_hoy"] = fecha_hoy_actual
 
-                    # Asigna la nueva tasa raspada del cazador a 'manana'
                     datos_bcv["tasa_manana"] = tasa_nueva
                     datos_bcv["fecha_manana"] = fecha_nueva
 
-                    # Guardar estructura en Redis
                     if 'r' in globals() and r:
                         r.set("bcv_datos_v7", json.dumps(datos_bcv))
 
-                    print(f"🔥 [WEBHOOK] Tasa actualizada en Redis ({tasa_nueva} Bs). Anuncio omitido.")
+                    print(f"🔥 [WEBHOOK] Tasa actualizada en Redis ({tasa_nueva} Bs).")
 
-                    # Responder OK al Cazador para cerrar la peticion correctamente
                     self.send_response(200)
                     self.send_header('Content-Type', 'application/json')
                     self.end_headers()
@@ -1772,7 +1755,6 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
                 print(f"⚠️ Error general en Webhook: {e_general}")
                 self.send_response(500)
                 self.end_headers()
-
 
 def iniciar_servidor_receptor():
     port = int(os.getenv("PORT", 8080))

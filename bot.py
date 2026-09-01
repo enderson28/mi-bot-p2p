@@ -1715,7 +1715,7 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
                     fecha_hoy_actual = str(datos_bcv.get("fecha_hoy", ""))
 
                     # 🔒 CANDADO 1: Si la fecha recibida YA existe (es la de mañana o la de hoy)
-                    if fecha_nueva == fecha_manana_actual or fecha_nueva == fecha_hoy_actual:
+                    if fecha_nueva != fecha_manana_actual or fecha_nueva == fecha_hoy_actual:
                         print(f"ℹ️ [WEBHOOK] Tasa para '{fecha_nueva}' ya estaba registrada ({tasa_nueva} Bs). Se descarta el envío de anuncios.")
                         
                         # Actualizamos el valor por si acaso hubo corrección de centavitos, pero SIN enviar reportes

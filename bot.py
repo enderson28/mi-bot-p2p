@@ -292,11 +292,11 @@ def obtener_datos_bcv_validos():
 
     try:
         if 'r' in globals() and r:
-            val = r.get("bcv_datos_v9")
+            val = r.get("bcv_datos_v10")
             if val:
                 datos = json.loads(val)
             else:
-                r.set("bcv_datos_v9", json.dumps(datos_defecto))
+                r.set("bcv_datos_v10", json.dumps(datos_defecto))
                 datos = datos_defecto.copy()
 
             # ROTACION AUTOMATICA DE MEDIANOCHE
@@ -315,7 +315,7 @@ def obtener_datos_bcv_validos():
                 datos["fecha_manana"] = ""
                 datos["fecha_ultima_rotacion"] = fecha_hoy_sistema
 
-                r.set("bcv_datos_v9", json.dumps(datos))
+                r.set("bcv_datos_v10", json.dumps(datos))
 
             return datos
         return datos_defecto

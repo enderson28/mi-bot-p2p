@@ -1669,25 +1669,25 @@ def filtro_seguridad_chat(message):
         return
             
 
-# ==========================================
+# ===============================================
 # RECEPTOR WEBHOOK PARA EL CAZADOR
-# ==========================================
+# ===============================================
 
 CLAVE_SECRETA_BCV = os.getenv("CLAVE_SECRETA_BCV")
 
 class WebhookHandler(http.server.BaseHTTPRequestHandler):
     def do_POST(self):
         if self.path == '/actualizar_bcv':
-            content_length = int(self.headers.get('Content-Length', 0))
-            post_data = self.rfile.read(content_length)
-
             try:
-                datos = json.loads(post_data.decode('utf-8'))
+                content_length = int(self.headers.get('Content-Length', 0))
+                post_data = self.rfile.read(content_length)
+
+                datos = json.loads(post_data.decode("utf-8"))
                 clave = datos.get("clave")
                 tasa_raw = datos.get("tasa")
                 fecha = datos.get("fecha")
 
-                # Validación de clave secreta
+                # Validacion de clave secreta
                 clave_esperada = globals().get("CLAVE_SECRETA_BCV", clave)
                 if clave != clave_esperada:
                     self.send_response(403)
@@ -1697,9 +1697,9 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
                     return
 
                 if tasa_raw and fecha:
-                    # Sanitización de tasa
+                    # Sanitizacion de tasa
                     try:
-                        tasa_limpia = str(tasa_raw).replace(",", ".").replace("Bs", "").strip()
+                        tasa_limpia = str(tasa_raw).replace(".", "").replace("Bs", "").strip()
                         tasa_nueva = float(tasa_limpia)
                     except Exception as e_tasa:
                         print(f"⚠️ Error al convertir tasa ({tasa_raw}): {e_tasa}")
@@ -1719,36 +1719,33 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
                     tasa_hoy_actual = float(datos_bcv.get("tasa_hoy", 0.0))
                     fecha_hoy_actual = str(datos_bcv.get("fecha_hoy", "")).strip()
 
-                    # 2. CANDADO BLINDADO (AHORA SÍ, DESPUÉS DE DEFINIR LAS VARIABLES)
+                    # CANDADO BLINDADO
                     fn_norm = str(fecha_nueva or '').strip().lower()
                     fm_norm = str(fecha_manana_actual or '').strip().lower()
                     fh_norm = str(fecha_hoy_actual or '').strip().lower()
 
-                    # Bloquea si la fecha ya existe O si la tasa mañana ya es idéntica a la raspada
                     ya_registrada = (
-                        (fm_norm and fn_norm == fm_norm) or 
-                        (fh_norm and fn_norm == fh_norm) or 
+                        (fn_norm and fn_norm == fm_norm) or
+                        (fn_norm and fn_norm == fh_norm) or
                         (fm_norm and fn_norm in fm_norm) or
                         (tasa_manana_actual > 0 and abs(tasa_nueva - tasa_manana_actual) < 0.0001)
                     )
 
                     if ya_registrada:
-                        print(f"ℹ️ [WEBHOOK] Tasa para '{fecha_nueva}' ya estaba registrada ({tasa_nueva} Bs). Se descarta el envío de anuncios.")
-                        
+                        print(f"🔒 [WEBHOOK] Tasa para '{fecha_nueva}' ya estaba registrada ({tasa_nueva} Bs). Se descarta el envio.")
                         self.send_response(200)
                         self.send_header('Content-Type', 'application/json')
                         self.end_headers()
                         self.wfile.write(b'{"status": "ignored", "message": "Tasa ya conocida, sin anuncios"}')
-                        return  # 👈 CORTE: Aquì se detiene y NO ejecuta el hilo de Telegram
+                        return
 
-                    # SI LLEGA AQUÍ ES UNA FECHA TOTALMENTE NUEVA (Ej. Martes publicándose el Lunes tarde)
+                    # SI LLEGA AQUI ES UNA FECHA TOTALMENTE NUEVA
                     if tasa_manana_actual > 0:
                         datos_bcv["tasa_anterior"] = tasa_hoy_actual
                         datos_bcv["fecha_anterior"] = fecha_hoy_actual
                         datos_bcv["tasa_hoy"] = tasa_manana_actual
                         datos_bcv["fecha_hoy"] = fecha_manana_actual
                     else:
-                        # Mantiene lo que ya estaba en 'hoy' antes de desplazarlo a 'anterior'
                         datos_bcv["tasa_anterior"] = tasa_hoy_actual
                         datos_bcv["fecha_anterior"] = fecha_hoy_actual
                         datos_bcv["tasa_hoy"] = tasa_hoy_actual
@@ -1758,26 +1755,33 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
                     datos_bcv["tasa_manana"] = tasa_nueva
                     datos_bcv["fecha_manana"] = fecha_nueva
 
-
                     # Guardar estructura en Redis
                     if 'r' in globals() and r:
                         r.set("bcv_datos_v7", json.dumps(datos_bcv))
-                        
+
                     print(f"🔥 [WEBHOOK] Tasa actualizada en Redis ({tasa_nueva} Bs). Anuncio omitido.")
 
-                    # Responder OK al Cazador para cerrar la petición correctamente
+                    # Responder OK al Cazador para cerrar la peticion correctamente
                     self.send_response(200)
                     self.send_header('Content-Type', 'application/json')
                     self.end_headers()
                     self.wfile.write(b'{"status": "success", "message": "Tasa actualizada sin anuncio."}')
                     return
+
+            except Exception as e_general:
+                print(f"⚠️ Error general en Webhook: {e_general}")
+                self.send_response(500)
+                self.end_headers()
+
+
+def iniciar_servidor_receptor():
+    port = int(os.getenv("PORT", 8080))
+    handler = WebhookHandler
+    with socketserver.TCPServer(("", port), handler) as httpd:
+        print(f"📡 Receptor de tasas escuchando en el puerto {port}")
+        httpd.serve_forever()
                     
-            def iniciar_servidor_receptor():
-                port = int(os.getenv("PORT", 8000))
-                handler = WebhookHandler
-                with socketserver.TCPServer(("", port), handler) as httpd:
-                    print(f"🚀 Receptor de tasas escuchando en el puerto {port}")
-                    httpd.serve_forever()
+                    
 
 
 # ==========================================

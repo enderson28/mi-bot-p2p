@@ -290,9 +290,13 @@ def obtener_datos_bcv_validos():
 
     try:
         if 'r' in globals() and r:
-            val = r.get("bcv_datos_v6")
+            val = r.get("bcv_datos_v7")
             if val:
                 datos = json.loads(val)
+            else:
+                # Si la clave v7 no existe en Redis, guardamos los defaults limpios
+                r.set("bcv_datos_v7", json.dumps(datos_defecto))
+                datos = datos_defecto.copy()
                 
                 # --- ROTACIÓN AUTOMÁTICA DE MEDIANOCHE (Hora Venezuela UTC-4) ---
                 hora_ve = datetime.now(timezone.utc) - timedelta(hours=4)
@@ -315,7 +319,7 @@ def obtener_datos_bcv_validos():
                     datos["fecha_ultima_rotacion"] = fecha_hoy_sistema
                     
                     # Guardar estado limpio en Redis
-                    r.set("bcv_datos_v6", json.dumps(datos))
+                    r.set("bcv_datos_v7", json.dumps(datos))
 
                 return datos
         return datos_defecto
@@ -1709,14 +1713,12 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
                     else:
                         datos_bcv = {}
 
-                    tasa_manana_actual = float(datos_bcv.get("tasa_manana", 0.0))
-                    fecha_manana_actual = str(datos_bcv.get("fecha_manana", "")).strip()
-                    
-                    tasa_hoy_actual = float(datos_bcv.get("tasa_hoy", 0.0))
-                    fecha_hoy_actual = str(datos_bcv.get("fecha_hoy", "")).strip()
+                    # CANDADO REFORZADO: Normaliza texto para evitar falsos negativos
+                    fn_norm = fecha_nueva.strip().lower()
+                    fm_norm = fecha_manana_actual.strip().lower()
+                    fh_norm = fecha_hoy_actual.strip().lower()
 
-                    # 🔒 CANDADO 1: Si la fecha recibida YA existe (es la de mañana o la de hoy)
-                    if fecha_nueva == fecha_manana_actual or fecha_nueva == fecha_hoy_actual:
+                    if (fm_norm and fn_norm == fm_norm) or (fh_norm and fn_norm == fh_norm) or (fm_norm and fn_norm in fm_norm):
                         print(f"ℹ️ [WEBHOOK] Tasa para '{fecha_nueva}' ya estaba registrada ({tasa_nueva} Bs). Se descarta el envío de anuncios.")
                         
                         self.send_response(200)
@@ -1745,7 +1747,7 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
 
                     # Guardar estructura en Redis
                     if 'r' in globals() and r:
-                        r.set("bcv_datos_v6", json.dumps(datos_bcv))
+                        r.set("bcv_datos_v7", json.dumps(datos_bcv))
 
                     print(f"🔥 [WEBHOOK] ¡FECHA NUEVA DETECTADA! Tasa: {tasa_nueva} | Fecha: {fecha_nueva}. Publicando anuncios...")
 

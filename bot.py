@@ -284,7 +284,8 @@ def obtener_datos_bcv_validos():
         "tasa_manana": 798.326,
         "fecha_manana": "Martes, 01 Septiembre 2026",
         "tasa_anterior": 791.667,
-        "fecha_anterior": "Viernes, 28 Agosto 2026"
+        "fecha_anterior": "Viernes, 28 Agosto 2026",
+        "fecha_ultima_rotacion": ""
     }
 
     try:
@@ -1709,18 +1710,14 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
                         datos_bcv = {}
 
                     tasa_manana_actual = float(datos_bcv.get("tasa_manana", 0.0))
-                    fecha_manana_actual = str(datos_bcv.get("fecha_manana", ""))
+                    fecha_manana_actual = str(datos_bcv.get("fecha_manana", "")).strip()
                     
                     tasa_hoy_actual = float(datos_bcv.get("tasa_hoy", 0.0))
-                    fecha_hoy_actual = str(datos_bcv.get("fecha_hoy", ""))
+                    fecha_hoy_actual = str(datos_bcv.get("fecha_hoy", "")).strip()
 
                     # 🔒 CANDADO 1: Si la fecha recibida YA existe (es la de mañana o la de hoy)
                     if fecha_nueva == fecha_manana_actual or fecha_nueva == fecha_hoy_actual:
                         print(f"ℹ️ [WEBHOOK] Tasa para '{fecha_nueva}' ya estaba registrada ({tasa_nueva} Bs). Se descarta el envío de anuncios.")
-                        
-                        # Actualizamos el valor por si acaso hubo corrección de centavitos, pero SIN enviar reportes
-                        if fecha_nueva == fecha_manana_actual:
-                            datos_bcv["tasa_manana"] = tasa_nueva
                         
                         self.send_response(200)
                         self.send_header('Content-Type', 'application/json')

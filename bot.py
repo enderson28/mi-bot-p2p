@@ -1715,15 +1715,13 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
                     fecha_hoy_actual = str(datos_bcv.get("fecha_hoy", ""))
 
                     # 🔒 CANDADO 1: Si la fecha recibida YA existe (es la de mañana o la de hoy)
-                    if fecha_nueva != fecha_manana_actual or fecha_nueva == fecha_hoy_actual:
+                    if fecha_nueva == fecha_manana_actual or fecha_nueva == fecha_hoy_actual:
                         print(f"ℹ️ [WEBHOOK] Tasa para '{fecha_nueva}' ya estaba registrada ({tasa_nueva} Bs). Se descarta el envío de anuncios.")
                         
                         # Actualizamos el valor por si acaso hubo corrección de centavitos, pero SIN enviar reportes
                         if fecha_nueva == fecha_manana_actual:
                             datos_bcv["tasa_manana"] = tasa_nueva
-                        if 'r' in globals() and r:
-                            r.set("bcv_datos_v4", json.dumps(datos_bcv))
-
+                        
                         self.send_response(200)
                         self.send_header('Content-Type', 'application/json')
                         self.end_headers()
@@ -1750,7 +1748,7 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
 
                     # Guardar estructura en Redis
                     if 'r' in globals() and r:
-                        r.set("bcv_datos_v4", json.dumps(datos_bcv))
+                        r.set("bcv_datos_v5", json.dumps(datos_bcv))
 
                     print(f"🔥 [WEBHOOK] ¡FECHA NUEVA DETECTADA! Tasa: {tasa_nueva} | Fecha: {fecha_nueva}. Publicando anuncios...")
 

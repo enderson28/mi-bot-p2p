@@ -279,12 +279,12 @@ setup_verification_handlers(
 
 def obtener_datos_bcv_validos():
     datos_defecto = {
-        "tasa_hoy": 794.992,
-        "fecha_hoy": "Lunes, 31 Agosto 2026",
-        "tasa_manana": 798.326,
-        "fecha_manana": "Martes, 01 Septiembre 2026",
-        "tasa_anterior": 791.667,
-        "fecha_anterior": "Viernes, 28 Agosto 2026",
+        "tasa_hoy": 798.326,
+        "fecha_hoy": "Martes, 01 Septiembre 2026",
+        "tasa_manana": 801.175,
+        "fecha_manana": "Miércoles, 02 Septiembre 2026",
+        "tasa_anterior": 794.992,
+        "fecha_anterior": "Lunes, 31 Agosto 2026",
         "fecha_ultima_rotacion": ""
     }
 

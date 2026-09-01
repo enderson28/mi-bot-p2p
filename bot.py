@@ -290,7 +290,7 @@ def obtener_datos_bcv_validos():
 
     try:
         if 'r' in globals() and r:
-            val = r.get("bcv_datos_v5")
+            val = r.get("bcv_datos_v6")
             if val:
                 datos = json.loads(val)
                 
@@ -315,7 +315,7 @@ def obtener_datos_bcv_validos():
                     datos["fecha_ultima_rotacion"] = fecha_hoy_sistema
                     
                     # Guardar estado limpio en Redis
-                    r.set("bcv_datos_v5", json.dumps(datos))
+                    r.set("bcv_datos_v6", json.dumps(datos))
 
                 return datos
         return datos_defecto
@@ -1745,7 +1745,7 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
 
                     # Guardar estructura en Redis
                     if 'r' in globals() and r:
-                        r.set("bcv_datos_v5", json.dumps(datos_bcv))
+                        r.set("bcv_datos_v6", json.dumps(datos_bcv))
 
                     print(f"🔥 [WEBHOOK] ¡FECHA NUEVA DETECTADA! Tasa: {tasa_nueva} | Fecha: {fecha_nueva}. Publicando anuncios...")
 

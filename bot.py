@@ -289,7 +289,7 @@ def obtener_datos_bcv_validos():
 
     try:
         if 'r' in globals() and r:
-            val = r.get("bcv_datos_v2")
+            val = r.get("bcv_datos_v3")
             if val:
                 datos = json.loads(val)
                 
@@ -314,7 +314,7 @@ def obtener_datos_bcv_validos():
                     datos["fecha_ultima_rotacion"] = fecha_hoy_sistema
                     
                     # Guardar estado limpio en Redis
-                    r.set("bcv_datos_v2", json.dumps(datos))
+                    r.set("bcv_datos_v3", json.dumps(datos))
 
                 return datos
         return datos_defecto

@@ -283,7 +283,7 @@ def obtener_datos_bcv_validos():
     datos_defecto = {
         "tasa_hoy": 798.326,
         "fecha_hoy": "Martes, 01 Septiembre 2026",
-        "tasa_manana": 801.175,
+        "tasa_manana": 801.1752,
         "fecha_manana": "Miércoles, 02 Septiembre 2026",
         "tasa_anterior": 794.992,
         "fecha_anterior": "Lunes, 31 Agosto 2026",
@@ -292,11 +292,11 @@ def obtener_datos_bcv_validos():
 
     try:
         if 'r' in globals() and r:
-            val = r.get("bcv_datos_v8")
+            val = r.get("bcv_datos_v7")
             if val:
                 datos = json.loads(val)
             else:
-                r.set("bcv_datos_v8", json.dumps(datos_defecto))
+                r.set("bcv_datos_v7", json.dumps(datos_defecto))
                 datos = datos_defecto.copy()
 
             # ROTACION AUTOMATICA DE MEDIANOCHE
@@ -1741,7 +1741,7 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
                     datos_bcv["fecha_manana"] = fecha_nueva
 
                     if 'r' in globals() and r:
-                        r.set("bcv_datos_v8", json.dumps(datos_bcv))
+                        r.set("bcv_datos_v7", json.dumps(datos_bcv))
 
                     print(f"🔥 [WEBHOOK] Tasa actualizada en Redis ({tasa_nueva} Bs).")
 

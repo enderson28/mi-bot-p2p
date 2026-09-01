@@ -1762,44 +1762,6 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
                     # Guardar estructura en Redis
                     if 'r' in globals() and r:
                         r.set("bcv_datos_v7", json.dumps(datos_bcv))
-
-                    print(f"🔥 [WEBHOOK] ¡FECHA NUEVA DETECTADA! Tasa: {tasa_nueva} | Fecha: {fecha_nueva}. Publicando anuncios...")
-
-                    # Hilo para enviar anuncios ÚNICAMENTE con fechas verdaderamente nuevas
-                    def enviar_reportes_sincronizados():
-                        try:
-                            canal_unico = globals().get("CANAL_PRUEBA")
-                            if canal_unico and 'bot' in globals():
-                                try:
-                                    texto_intervencion = construir_intervencion_texto_html()
-                                    bot.send_message(canal_unico, texto_intervencion, parse_mode="HTML")
-                                except Exception as e_int:
-                                    print(f"⚠️ Error enviando Intervención: {e_int}")
-
-                                time.sleep(5)
-
-                                try:
-                                    texto_monitor = construir_monitor_texto_html()
-                                    bot.send_message(canal_unico, texto_monitor, parse_mode="HTML")
-                                except Exception as e_mon:
-                                    print(f"⚠️ Error enviando Monitor: {e_mon}")
-                        except Exception as e_hilo:
-                            print(f"⚠️ Error en hilo de reportes: {e_hilo}")
-
-                    threading.Thread(target=enviar_reportes_sincronizados, daemon=True).start()
-
-                    self.send_response(200)
-                    self.send_header('Content-Type', 'application/json')
-                    self.end_headers()
-                    self.wfile.write(b'{"status": "success", "message": "Tasa nueva procesada y anunciada"}')
-                    return
-
-            except Exception as e:
-                print(f"❌ Error crítico en Webhook: {e}")
-                self.send_response(500)
-                self.send_header('Content-Type', 'application/json')
-                self.end_headers()
-                self.wfile.write(b'{"status": "error", "message": "Error interno"}')
                 
 
 def iniciar_servidor_receptor():

@@ -315,7 +315,7 @@ def obtener_datos_bcv_validos():
                 datos["fecha_manana"] = ""
                 datos["fecha_ultima_rotacion"] = fecha_hoy_sistema
 
-                r.set("bcv_datos_v8", json.dumps(datos))
+                r.set("bcv_datos_v7", json.dumps(datos))
 
             return datos
         return datos_defecto

@@ -1713,12 +1713,18 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
                     else:
                         datos_bcv = {}
 
-                    # CANDADO REFORZADO: Normaliza texto para evitar falsos negativos
-                    fn_norm = fecha_nueva.strip().lower()
-                    fm_norm = fecha_manana_actual.strip().lower()
-                    fh_norm = fecha_hoy_actual.strip().lower()
+                    tasa_manana_actual = float(datos_bcv.get("tasa_manana", 0.0))
+                    fecha_manana_actual = str(datos_bcv.get("fecha_manana", "")).strip()
 
-                    if (fm_norm and fn_norm == fm_norm) or (fh_norm and fn_norm == fh_norm) or (fm_norm and fn_norm in fm_norm):
+                    tasa_hoy_actual = float(datos_bcv.get("tasa_hoy", 0.0))
+                    fecha_hoy_actual = str(datos_bcv.get("fecha_hoy", "")).strip()
+
+                    # 2. CANDADO BLINDADO (AHORA SÍ, DESPUÉS DE DEFINIR LAS VARIABLES)
+                    fn_norm = str(fecha_nueva or '').strip().lower()
+                    fm_norm = str(fecha_manana_actual or '').strip().lower()
+                    fh_norm = str(fecha_hoy_actual or '').strip().lower()
+
+                    if fn_norm and ((fm_norm and fn_norm == fm_norm) or (fh_norm and fn_norm == fh_norm) or (fm_norm and fn_norm in fm_norm)):
                         print(f"ℹ️ [WEBHOOK] Tasa para '{fecha_nueva}' ya estaba registrada ({tasa_nueva} Bs). Se descarta el envío de anuncios.")
                         
                         self.send_response(200)

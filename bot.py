@@ -304,7 +304,7 @@ def obtener_datos_bcv_validos():
             fecha_hoy_sistema = hora_ve.strftime("%Y-%m-%d")
             ultima_fecha_rotada = datos.get("fecha_ultima_rotacion", "")
 
-            if datos.get("tasa_manana", 0.0) > 0 and ultima_fecha_rotada != fecha_hoy_sistema:
+            if datos.get("tasa_manana", 0.0) > 0 and ultima_fecha_rotada != fecha_hoy_sistema and ultima_fecha_rotada != "":
                 datos["tasa_anterior"] = datos.get("tasa_hoy", 0.0)
                 datos["fecha_anterior"] = datos.get("fecha_hoy", "")
                 datos["tasa_hoy"] = datos.get("tasa_manana")
@@ -1741,7 +1741,7 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
                     datos_bcv["fecha_manana"] = fecha_nueva
 
                     if 'r' in globals() and r:
-                        r.set("bcv_datos_v9", json.dumps(datos_bcv))
+                        r.set("bcv_datos_v10", json.dumps(datos_bcv))
 
                     print(f"🔥 [WEBHOOK] Tasa actualizada en Redis ({tasa_nueva} Bs).")
 

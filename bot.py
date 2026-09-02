@@ -292,11 +292,11 @@ def obtener_datos_bcv_validos():
 
     try:
         if 'r' in globals() and r:
-            val = r.get("bcv_datos_v10")
+            val = r.get("bcv_datos_v11")
             if val:
                 datos = json.loads(val)
             else:
-                r.set("bcv_datos_v10", json.dumps(datos_defecto))
+                r.set("bcv_datos_v11", json.dumps(datos_defecto))
                 datos = datos_defecto.copy()
 
             # ROTACION AUTOMATICA DE MEDIANOCHE
@@ -315,7 +315,7 @@ def obtener_datos_bcv_validos():
                 datos["fecha_manana"] = ""
                 datos["fecha_ultima_rotacion"] = fecha_hoy_sistema
 
-                r.set("bcv_datos_v10", json.dumps(datos))
+                r.set("bcv_datos_v11", json.dumps(datos))
 
             return datos
         return datos_defecto
@@ -1676,8 +1676,8 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
             try:
                 content_length = int(self.headers.get('Content-Length', 0))
                 post_data = self.rfile.read(content_length)
-
-                datos = json.loads(post_data.decode("utf-8"))
+                
+                datos = json.loads(post_data.decode('utf-8'))
                 clave = datos.get("clave")
                 tasa_raw = datos.get("tasa")
                 fecha = datos.get("fecha")
@@ -1692,8 +1692,14 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
 
                 if tasa_raw and fecha:
                     try:
-                        tasa_limpia = str(tasa_raw).replace(".", "").replace("Bs", "").strip()
-                        tasa_nueva = float(tasa_limpia)
+                        # Limpieza correcta sin destruir el punto decimal
+                        tasa_str = str(tasa_raw).replace("Bs", "").replace("bs", "").strip()
+                        if "," in tasa_str and "." in tasa_str:
+                            tasa_str = tasa_str.replace(".", "").replace(",", ".")
+                        elif "," in tasa_str:
+                            tasa_str = tasa_str.replace(",", ".")
+                        
+                        tasa_nueva = float(tasa_str)
                     except Exception as e_tasa:
                         print(f"⚠️ Error al convertir tasa ({tasa_raw}): {e_tasa}")
                         tasa_nueva = float(tasa_raw)
@@ -1714,12 +1720,12 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
                     ya_registrada = (
                         (fn_norm and fn_norm == fm_norm) or
                         (fn_norm and fn_norm == fh_norm) or
-                        (fm_norm and fn_norm in fm_norm) or
+                        (fn_norm and fn_norm in fh_norm) or
                         (tasa_manana_actual > 0 and abs(tasa_nueva - tasa_manana_actual) < 0.0001)
                     )
 
                     if ya_registrada:
-                        print(f"🔒 [WEBHOOK] Tasa para '{fecha_nueva}' ya registrada. Se ignora.")
+                        print(f"ℹ️ [WEBHOOK] Tasa para '{fecha_nueva}' ya registrada. Se ignora.")
                         self.send_response(200)
                         self.send_header('Content-Type', 'application/json')
                         self.end_headers()
@@ -1740,10 +1746,11 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
                     datos_bcv["tasa_manana"] = tasa_nueva
                     datos_bcv["fecha_manana"] = fecha_nueva
 
+                    # Clave v11 para purgar cache con valores corruptos
                     if 'r' in globals() and r:
-                        r.set("bcv_datos_v10", json.dumps(datos_bcv))
+                        r.set("bcv_datos_v11", json.dumps(datos_bcv))
 
-                    print(f"🔥 [WEBHOOK] Tasa actualizada en Redis ({tasa_nueva} Bs).")
+                    print(f"🔥 [WEBHOOK] Tasa actualizada en Redis: {tasa_nueva} Bs.")
 
                     self.send_response(200)
                     self.send_header('Content-Type', 'application/json')
@@ -1751,10 +1758,11 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
                     self.wfile.write(b'{"status": "success", "message": "Tasa actualizada sin anuncio."}')
                     return
 
-            except Exception as e_general:
-                print(f"⚠️ Error general en Webhook: {e_general}")
+            except Exception as e:
+                print(f"❌ Error en Webhook: {e}")
                 self.send_response(500)
                 self.end_headers()
+                        
 
 def iniciar_servidor_receptor():
     port = int(os.getenv("PORT", 8080))

@@ -1686,7 +1686,7 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
             try:
                 content_length = int(self.headers.get('Content-Length', 0))
                 post_data = self.rfile.read(content_length)
-                
+
                 datos = json.loads(post_data.decode('utf-8'))
                 clave = datos.get("clave")
                 tasa_raw = datos.get("tasa")
@@ -1694,7 +1694,7 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
 
                 clave_esperada = globals().get("CLAVE_SECRETA_BCV", clave)
                 if clave != clave_esperada:
-                    self.send_response(403)
+                    self.send_response(401)
                     self.send_header('Content-Type', 'application/json')
                     self.end_headers()
                     self.wfile.write(b'{"status": "error", "message": "No autorizado"}')
@@ -1702,16 +1702,15 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
 
                 if tasa_raw and fecha:
                     try:
-                        # Limpieza correcta sin destruir el punto decimal
-                        tasa_str = str(tasa_raw).replace("Bs", "").replace("bs", "").strip()
+                        tasa_str = str(tasa_raw).replace("Bs.", "").replace("Bs", "").strip()
                         if "," in tasa_str and "." in tasa_str:
                             tasa_str = tasa_str.replace(".", "").replace(",", ".")
                         elif "," in tasa_str:
                             tasa_str = tasa_str.replace(",", ".")
                         
                         tasa_nueva = float(tasa_str)
-                    except Exception as e_tasa:
-                        print(f"⚠️ Error al convertir tasa ({tasa_raw}): {e_tasa}")
+                    except Exception as e:
+                        print(f"⚠️ Error al convertir tasa ({tasa_raw}): {e}")
                         tasa_nueva = float(tasa_raw)
 
                     fecha_nueva = str(fecha).strip()
@@ -1723,18 +1722,33 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
                     tasa_hoy_actual = float(datos_bcv.get("tasa_hoy", 0.0))
                     fecha_hoy_actual = str(datos_bcv.get("fecha_hoy", "")).strip()
 
-                    fn_norm = str(fecha_nueva or '').strip().lower()
-                    fm_norm = str(fecha_manana_actual or '').strip().lower()
-                    fh_norm = str(fecha_hoy_actual or '').strip().lower()
+                    fn_norm = str(fecha_nueva or "").strip().lower()
+                    fm_norm = str(fecha_manana_actual or "").strip().lower()
+                    fh_norm = str(fecha_hoy_actual or "").strip().lower()
 
+                    # Verificar si la fecha capturada ya existe en Hoy o Mañana
                     ya_registrada = (
-                        (fn_norm and fn_norm == fm_norm) or
                         (fn_norm and fn_norm == fh_norm) or
-                        (fn_norm and fn_norm in fh_norm) or
+                        (fn_norm and fn_norm == fm_norm) or
                         (tasa_manana_actual > 0 and abs(tasa_nueva - tasa_manana_actual) < 0.0001)
                     )
 
-                    if ya_registrada:
+                    # SI NO ESTÁ REGISTRADA: Asignarla estrictamente como Tasa de Mañana (para encender Bloque 2)
+                    if not ya_registrada:
+                        datos_bcv["tasa_manana"] = tasa_nueva
+                        datos_bcv["fecha_manana"] = fecha_nueva
+
+                        if 'r' in globals() and r:
+                            r.set("bcv_datos_v11", json.dumps(datos_bcv))
+
+                        print(f"🔥 [WEBHOOK] Tasa de mañana ({tasa_nueva} Bs) guardada exitosamente en Redis.")
+
+                        self.send_response(200)
+                        self.send_header('Content-Type', 'application/json')
+                        self.end_headers()
+                        self.wfile.write(b'{"status": "success", "message": "Tasa de manana guardada exitosamente"}')
+                        return
+                    else:
                         print(f"ℹ️ [WEBHOOK] Tasa para '{fecha_nueva}' ya registrada. Se ignora.")
                         self.send_response(200)
                         self.send_header('Content-Type', 'application/json')
@@ -1742,37 +1756,12 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
                         self.wfile.write(b'{"status": "ignored", "message": "Tasa ya conocida"}')
                         return
 
-                    if tasa_manana_actual > 0:
-                        datos_bcv["tasa_anterior"] = tasa_hoy_actual
-                        datos_bcv["fecha_anterior"] = fecha_hoy_actual
-                        datos_bcv["tasa_hoy"] = tasa_manana_actual
-                        datos_bcv["fecha_hoy"] = fecha_manana_actual
-                    else:
-                        datos_bcv["tasa_anterior"] = tasa_hoy_actual
-                        datos_bcv["fecha_anterior"] = fecha_hoy_actual
-                        datos_bcv["tasa_hoy"] = tasa_hoy_actual
-                        datos_bcv["fecha_hoy"] = fecha_hoy_actual
-
-                    datos_bcv["tasa_manana"] = tasa_nueva
-                    datos_bcv["fecha_manana"] = fecha_nueva
-
-                    # Clave v11 para purgar cache con valores corruptos
-                    if 'r' in globals() and r:
-                        r.set("bcv_datos_v11", json.dumps(datos_bcv))
-
-                    print(f"🔥 [WEBHOOK] Tasa actualizada en Redis: {tasa_nueva} Bs.")
-
-                    self.send_response(200)
-                    self.send_header('Content-Type', 'application/json')
-                    self.end_headers()
-                    self.wfile.write(b'{"status": "success", "message": "Tasa actualizada sin anuncio."}')
-                    return
-
             except Exception as e:
                 print(f"❌ Error en Webhook: {e}")
                 self.send_response(500)
+                self.send_header('Content-Type', 'application/json')
                 self.end_headers()
-                        
+                                  
 
 def iniciar_servidor_receptor():
     port = int(os.getenv("PORT", 8080))
@@ -1781,8 +1770,6 @@ def iniciar_servidor_receptor():
         print(f"📡 Receptor de tasas escuchando en el puerto {port}")
         httpd.serve_forever()
                     
-                    
-
 
 # ==========================================
 #            EJECUCIÓN DEL BOT

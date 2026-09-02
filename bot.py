@@ -281,13 +281,13 @@ setup_verification_handlers(
 
 def obtener_datos_bcv_validos():
     datos_defecto = {
-        "tasa_hoy": 798.326,
-        "fecha_hoy": "Martes, 01 Septiembre 2026",
-        "tasa_manana": 801.1752,
-        "fecha_manana": "Miércoles, 02 Septiembre 2026",
-        "tasa_anterior": 794.892,
-        "fecha_anterior": "Lunes, 31 Agosto 2026",
-        "fecha_ultima_rotacion": ""
+        "tasa_hoy": 801.1752,
+        "fecha_hoy": "Miércoles, 02 Septiembre 2026",
+        "tasa_manana": 0.0,
+        "fecha_manana": "",
+        "tasa_anterior": 798.326,
+        "fecha_anterior": "Martes, 01 Septiembre 2026",
+        "fecha_ultima_rotacion": "Miércoles, 02 Septiembre 2026"
     }
 
     try:

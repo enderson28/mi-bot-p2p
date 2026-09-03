@@ -1,39 +1,26 @@
-from telegram import Update
-from telegram.ext import ContextTypes
-from telegram.constants import ParseMode
+import telebot
 
-# ==========================================
-# CONFIGURACIÓN DE IDs Y PERMISOS
-# ==========================================
-# Tu ID numérico como Propietario
-PROPIETARIO_ID = 5073264705  # <-- REEMPLAZA CON TU ID REAL
+PROPIETARIO_ID = 5073264705  # Tu ID
 
-# Lista de IDs numéricos de tus Administradores
 ADMINS_IDS = [
-    8418460698,  # Carlos V <-- Reemplaza con los IDs de tus admins
-    5470672620,  # Alejadro
-    5971008307,  # dip
-    6299629267,  # Osvaldo 
-    693849279,   # sylar
-    6422576568,  # J D
-    7816422089   # Enderson secundario 
+    841846098,  # Carlos
+    5470672620, # Alejandro
+    5971008307, # dip
+    6299629267, # Osvaldo
+    693849279,  # Sylar
+    6422576568, # J D
+    7816422089  # Enderson secundario
 ]
 
-
-# ==========================================
-# COMANDO /comandos
-# ==========================================
-async def comando_comandos(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Muestra el manual de comandos jerarquizado por rangos y área de uso."""
-    # Autodestruir el mensaje ejecutor del usuario
+def comando_comandos(bot, message):
+    # Autodestruir el mensaje ejecutor /comandos
     try:
-        await update.message.delete()
+        bot.delete_message(message.chat.id, message.message_id)
     except Exception:
         pass
-      
+
     texto = (
         "<b>📋 GUÍA OFICIAL DE COMANDOS</b>\n\n"
-        
         "<b>🥷🏽 PROPIETARIO (Uso exclusivo en Grupo):</b>\n"
         "▫️ <code>/aviso</code> ➡️ Pasos y resolución de Captcha para aprobación automática.\n"
         "▫️ <code>/ia</code> ➡️ Info del botón 🤖 IA Consulta, límites y rotación diaria.\n"
@@ -62,30 +49,21 @@ async def comando_comandos(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "<i>Usa /comandos para consultar este panel cuando lo necesites.</i>"
     )
     
-    await context.bot.send_message(
-        chat_id=update.effective_chat.id, 
-        text=texto, 
-        parse_mode=ParseMode.HTML
-    )
+    bot.send_message(message.chat.id, texto, parse_mode="HTML")
 
 
-# ==========================================
-# COMANDO /admin
-# ==========================================
-async def comando_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Obtiene los nombres de Telegram del Propietario y Admins mediante su ID."""
-    # Autodestruir el mensaje ejecutor del usuario
+def comando_admin(bot, message):
+    # Autodestruir el mensaje ejecutor /admin
     try:
-        await update.message.delete()
+        bot.delete_message(message.chat.id, message.message_id)
     except Exception:
         pass
-      
-    bot = context.bot
-    chat_id = update.effective_chat.id
+
+    chat_id = message.chat.id
 
     # 1. Mención dinámica del Propietario
     try:
-        user_prop = await bot.get_chat_member(chat_id, PROPIETARIO_ID)
+        user_prop = bot.get_chat_member(chat_id, PROPIETARIO_ID)
         nombre_prop = user_prop.user.first_name
     except Exception:
         nombre_prop = "Propietario"
@@ -96,11 +74,10 @@ async def comando_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
     menciones_admins = []
     for admin_id in ADMINS_IDS:
         try:
-            user_admin = await bot.get_chat_member(chat_id, admin_id)
+            user_admin = bot.get_chat_member(chat_id, admin_id)
             nombre_admin = user_admin.user.first_name
             menciones_admins.append(f'▫️ <a href="tg://user?id={admin_id}">{nombre_admin}</a>')
         except Exception:
-            # Respaldo si el bot no puede consultar el nombre en ese momento
             menciones_admins.append(f'▫️ <a href="tg://user?id={admin_id}">Admin [{admin_id}]</a>')
 
     lista_admins_texto = "\n".join(menciones_admins) if menciones_admins else "<i>No hay administradores configurados.</i>"
@@ -116,8 +93,5 @@ async def comando_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "<i>Si necesitas asistencia, contacta a cualquiera de nuestros administradores activos.</i>"
     )
 
-    await context.bot.send_message(
-        chat_id=update.effective_chat.id, 
-        text=texto, 
-        parse_mode=ParseMode.HTML
-    )
+    bot.send_message(chat_id, texto, parse_mode="HTML")
+    

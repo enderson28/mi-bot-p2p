@@ -3,7 +3,7 @@ import telebot
 PROPIETARIO_ID = 5073264705  # Tu ID
 
 ADMINS_IDS = [
-    841846098,  # Carlos
+    8418460698,  # Carlos
     5470672620, # Alejandro
     5971008307, # dip
     6299629267, # Osvaldo

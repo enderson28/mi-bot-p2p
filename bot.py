@@ -18,6 +18,7 @@ from ia_consulta import registrar_ia_consulta
 from arbitraje import registrar_handlers_arbitraje
 from anuncios import iniciar_modulo_anuncios, setup_comando_aviso
 from emojis import TG_EMOJIS, e
+from comandos import comando_comandos, comando_admin
 import re
 import urllib3
 from bs4 import BeautifulSoup
@@ -1649,6 +1650,17 @@ def callback_borrar_tabla_admin(call):
             text="⚠️ No se pudo eliminar el mensaje o ya fue borrado."
         )
         
+# ==========================================
+# COMANDOS INFORMATIVOS (GROUP HELP)
+# ==========================================
+@bot.message_handler(commands=['comandos'])
+def handle_comando_comandos(message):
+    comando_comandos(bot, message)
+
+@bot.message_handler(commands=['admin'])
+def handle_comando_admin(message):
+    comando_admin(bot, message)
+    
 # ==========================================
 # FILTRO DE SEGURIDAD GENERAL (ABAJO)
 # ==========================================

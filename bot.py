@@ -51,7 +51,7 @@ CANAL_PRUEBA = -1004473532809
 CANAL_PRINCIPAL_IDV = -1003950050807
 
 # USUARIOS AUTORIZADOS Y CREADOR (¡Restaurar estas líneas!)
-USUARIOS_AUTORIZADOS = [5073264705, 791436853]
+USUARIOS_AUTORIZADOS = [5073264705]
 CREADOR_ID = 5073264705
 
 # 🟢 REGISTRAR COMANDOS PRIORITARIOS AQUÍ (Arriba de los demás handlers)
@@ -1024,9 +1024,8 @@ def handle_invitacion_comando(message):
         # 3. Si no es autorizado (usuario normal u otro admin), desintegra el aviso en 5 segundos
         aviso = bot.send_message(
             message.chat.id,
-            f'👮🏼‍♀️ <b>Comando exclusivo de los administradores principales:</b>\n'
-            f'✨ <a href="tg://user?id=5073264705">Enderson</a>\n'
-            f'⭐ <a href="tg://user?id=791436853">Sarita</a>',
+            f'👮🏼‍♀️ <b>Comando exclusivo de El administrador principal:</b>\n'
+            f'✨ <a href="tg://user?id=5073264705">Enderson</a>\n',
             parse_mode="HTML",
             disable_web_page_preview=True
         )

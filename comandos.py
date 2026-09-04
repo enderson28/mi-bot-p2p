@@ -9,7 +9,8 @@ ADMINS_IDS = [
     6299629267, # Osvaldo
     693849279,  # Sylar
     6422576568, # J D
-    7816422089  # Enderson secundario
+    7816422089, # Enderson secundario
+    1676933074  #Antony
 ]
 
 def comando_comandos(bot, message):

@@ -820,12 +820,12 @@ def construir_monitor_brecha_html():
     hora_actual = (datetime.now(timezone.utc) - timedelta(hours=4)).strftime("%I:%M:%S %p")
 
     texto = (
-        f"{e('MONITOR', '🖥️')} <b>MONITOR DE BRECHA BCV vs USDT VENTA</b>\n\n"
-        f"<code>{e('CALENDARIO', '📆')} Vigencia BCV: {fecha_bcv}</code>\n"
-        f"<code>{e('BCV', '🪙')} Tasa + 0.5%: {tasa_intervencion:.3f} Bs</code>\n"
+        f"{e('MONITOR', '🖥️')} <b>MONITOR DE BRECHA {e('BCV', '🪙')} vs {e('USDT', '🪙')} VENTA</b>\n\n"
+        f"{e('CALENDARIO', '📆')} Vigencia BCV: {fecha_bcv}\n"
+        f"{e('BCV', '🪙')} Tasa + 0.5%: {tasa_intervencion:.3f} Bs\n"
         f"----------------------------------------\n\n"
-        f"{e('BINANCE_P2P', '💳')} <b>Venta P2P Global:</b> {venta_global:.2f} Bs\n"
-        f"<code>{e('PORCENTAJE', '💾')} Brecha: {calcular_brecha(venta_global)}</code>\n\n"
+        f"{e('BINANCE_P2P', '💳')} {e('ROJO', '🔴')} <b>Venta P2P Global:</b> {venta_global:.2f} Bs\n"
+        f"{e('BCV', '🪙')} Brecha: {calcular_brecha(venta_global)}\n\n"
     )
 
     emojis_rangos = {
@@ -847,10 +847,10 @@ def construir_monitor_brecha_html():
             v_rango = float(datos_rango.get("venta"))
             texto += (
                 f"{emoji_rango} <b>{nombre_def}:</b> {v_rango:.2f} Bs\n"
-                f"<code>{e('PORCENTAJE', '💾')} Brecha: {calcular_brecha(v_rango)}</code>\n\n"
+                f"{e('BCV', '🪙')} Brecha: {calcular_brecha(v_rango)}\n\n"
             )
 
-    texto += f"<code>{e('MUNDO', '🌏')} Última actualización: {hora_actual}</code>"
+    texto += f"{e('MUNDO', '🌏')} Última actualización: {hora_actual}"
     return texto
 
 

@@ -775,6 +775,142 @@ def construir_intervencion_texto_html(user=None, porcentaje=None):
         texto += f"{e('DINERO', '💵')} <b>{monto_usd} USD:</b> {e('FLECHA_DERECHA', '➡️')} Bs: <code>{monto_bs:,.0f}</code>\n"
 
     return texto
+
+
+# ==============================================================================
+# MONITOR DE BRECHA BCV vs USDT VENTA (EXCLUSIVO PARA CANAL DE PRUEBAS)
+# ==============================================================================
+
+def construir_monitor_brecha_html():
+    """Genera el texto formateado del Monitor de Brechas entre BCV+0.5% y Venta USDT."""
+    datos_bcv = obtener_datos_bcv_validos()
+    tasa_hoy = float(datos_bcv.get("tasa_hoy", 0.0))
+    tasa_manana = float(datos_bcv.get("tasa_manana", 0.0))
+
+    if tasa_manana > 0 and tasa_manana != tasa_hoy:
+        tasa_bcv = tasa_manana
+        fecha_bcv = datos_bcv.get("fecha_manana", "Mañana")
+    else:
+        tasa_bcv = tasa_hoy
+        fecha_bcv = datos_bcv.get("fecha_hoy", "Hoy")
+
+    tasa_intervencion = round(tasa_bcv * 1.005, 3)
+
+    # Venta P2P Global
+    venta_global = obtener_tasa_binance_p2p('SELL', 0) or 0.0
+
+    # Lectura de Rangos desde Redis
+    rangos_cache = {}
+    if r:
+        try:
+            raw_p2p = r.get("p2p_rangos")
+            if raw_p2p:
+                rangos_cache = json.loads(raw_p2p.decode('utf-8') if isinstance(raw_p2p, bytes) else raw_p2p)
+        except Exception as err:
+            print(f"Error leyendo p2p_rangos en monitor brecha: {err}")
+
+    def calcular_brecha(tasa_venta):
+        if not tasa_venta or tasa_intervencion == 0:
+            return "0.00 Bs (0.00%)"
+        dif = tasa_venta - tasa_intervencion
+        pct = (dif / tasa_intervencion) * 100
+        signo = "+" if dif >= 0 else ""
+        return f"{signo}{dif:.2f} Bs ({signo}{pct:.2f}%)"
+
+    hora_actual = (datetime.now(timezone.utc) - timedelta(hours=4)).strftime("%I:%M:%S %p")
+
+    texto = (
+        f"{e('MONITOR', '🖥️')} <b>MONITOR DE BRECHA BCV vs USDT VENTA</b>\n\n"
+        f"<code>{e('CALENDARIO', '📆')} Vigencia BCV: {fecha_bcv}</code>\n"
+        f"<code>{e('BCV', '🪙')} Tasa + 0.5%: {tasa_intervencion:.3f} Bs</code>\n"
+        f"----------------------------------------\n\n"
+        f"{e('BINANCE_P2P', '💳')} <b>Venta P2P Global:</b> {venta_global:.2f} Bs\n"
+        f"<code>{e('PORCENTAJE', '💾')} Brecha: {calcular_brecha(venta_global)}</code>\n\n"
+    )
+
+    emojis_rangos = {
+        50.0: (e('RANGO_3', '🥉'), "Rango Menor ($50 - $100)"),
+        150.0: (e('RANGO_2', '🥈'), "Rango Medio ($100 - $300)"),
+        500.0: (e('RANGO_1', '🥇'), "Rango Mayor ($500+)")
+    }
+
+    for usd_ref in [50.0, 150.0, 500.0]:
+        emoji_rango, nombre_def = emojis_rangos.get(usd_ref)
+        datos_rango = (
+            rangos_cache.get(str(usd_ref)) or 
+            rangos_cache.get(usd_ref) or 
+            rangos_cache.get(str(int(usd_ref))) or 
+            rangos_cache.get(int(usd_ref))
+        )
+
+        if datos_rango and datos_rango.get("venta", 0) > 0:
+            v_rango = float(datos_rango.get("venta"))
+            texto += (
+                f"{emoji_rango} <b>{nombre_def}:</b> {v_rango:.2f} Bs\n"
+                f"<code>{e('PORCENTAJE', '💾')} Brecha: {calcular_brecha(v_rango)}</code>\n\n"
+            )
+
+    texto += f"<code>{e('MUNDO', '🌏')} Última actualización: {hora_actual}</code>"
+    return texto
+
+
+def obtener_teclado_brecha():
+    markup = InlineKeyboardMarkup()
+    markup.add(InlineKeyboardButton("🔄 Actualizar Brecha", callback_data="refrescar_brecha"))
+    return markup
+
+
+@bot.message_handler(commands=['brecha'])
+def comando_brecha_canal(message):
+    chat_id = message.chat.id
+    user_id = message.from_user.id
+
+    if chat_id != CANAL_PRUEBA:
+        return
+
+    if not es_administrador(bot, chat_id, user_id):
+        return
+
+    msg_texto = construir_monitor_brecha_html()
+    bot.send_message(
+        chat_id, 
+        msg_texto, 
+        parse_mode="HTML", 
+        reply_markup=obtener_teclado_brecha()
+    )
+
+
+@bot.callback_query_handler(func=lambda call: call.data == "refrescar_brecha")
+def callback_refrescar_brecha(call):
+    chat_id = call.message.chat.id
+    user_id = call.from_user.id
+
+    if not es_administrador(bot, chat_id, user_id):
+        bot.answer_callback_query(
+            call.id, 
+            "⚠️ Este botón es exclusivo para administradores.", 
+            show_alert=True
+        )
+        return
+
+    try:
+        refrescar_tasas_en_vivo()
+    except Exception as e:
+        print(f"Error refrescando tasas desde botón brecha: {e}")
+
+    nuevo_texto = construir_monitor_brecha_html()
+    try:
+        bot.edit_message_text(
+            chat_id=chat_id,
+            message_id=call.message.message_id,
+            text=nuevo_texto,
+            parse_mode="HTML",
+            reply_markup=obtener_teclado_brecha()
+        )
+        bot.answer_callback_query(call.id, "✅ Brechas actualizadas al instante")
+    except Exception as e:
+        bot.answer_callback_query(call.id, "✅ Tasas verificadas sin cambios")
+        
     
     
 # ==========================================

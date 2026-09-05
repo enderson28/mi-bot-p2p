@@ -531,8 +531,11 @@ def generar_y_enviar_resultado(chat_id, user_id, tasa_p2p_venta, bot, redis_clie
     hora_ve = datetime.now(timezone.utc) - timedelta(hours=4)
     dia_semana_num = hora_ve.weekday()
 
-    if dia_semana_num in [4, 5, 6]:
+    if dia_semana_num in [4, 5]:
         proximo_dia = "Lunes"
+    elif dia_semana_num == 6:
+        proximo_dia = "Martes"
+    
     else:
         dias_semana = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"]
         proximo_dia = dias_semana[dia_semana_num + 1]

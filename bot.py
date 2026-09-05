@@ -776,9 +776,8 @@ def construir_intervencion_texto_html(user=None, porcentaje=None):
 
     return texto
 
-
 # ==============================================================================
-# MONITOR DE BRECHA BCV vs USDT VENTA (EXCLUSIVO PARA CANAL DE PRUEBAS)
+# MONITOR DE BRECHA BCV vs USDT VENTA (EXCLUSIVO PARA CANAL DE PRUEBAS Y ADMIN)
 # ==============================================================================
 
 def construir_monitor_brecha_html():
@@ -801,37 +800,55 @@ def construir_monitor_brecha_html():
 
     # Lectura de Rangos desde Redis
     rangos_cache = {}
+    brecha_prev_pct = 0.0
     if r:
         try:
             raw_p2p = r.get("p2p_rangos")
             if raw_p2p:
                 rangos_cache = json.loads(raw_p2p.decode('utf-8') if isinstance(raw_p2p, bytes) else raw_p2p)
+            
+            val_prev = r.get("ultima_brecha_pct")
+            if val_prev:
+                brecha_prev_pct = float(val_prev.decode('utf-8') if isinstance(val_prev, bytes) else val_prev)
         except Exception as err:
-            print(f"Error leyendo p2p_rangos en monitor brecha: {err}")
+            print(f"Error leyendo Redis en monitor brecha: {err}")
 
     def calcular_brecha(tasa_venta):
         if not tasa_venta or tasa_intervencion == 0:
             return "0.00 Bs (0.00%)"
+        
         dif = tasa_venta - tasa_intervencion
         pct = (dif / tasa_intervencion) * 100
         signo = "+" if dif >= 0 else ""
-        return f"{signo}{dif:.2f} Bs ({signo}{pct:.2f}%)"
+
+        # Indicador visual según tendencia de la brecha
+        if brecha_prev_pct > 0:
+            if pct < brecha_prev_pct:
+                indicador = "🔻" # La brecha se acorta
+            elif pct > brecha_prev_pct:
+                indicador = "🔺" # La brecha se expande
+            else:
+                indicador = "🔹"
+        else:
+            indicador = "🔻" if pct < 20.0 else "🔺"
+
+        return f"{signo}{dif:.2f} Bs ({signo}{pct:.2f}%) {indicador}"
 
     hora_actual = (datetime.now(timezone.utc) - timedelta(hours=4)).strftime("%I:%M:%S %p")
 
     texto = (
-        f"{e('MONITOR', '🖥️')} <b>MONITOR DE BRECHA {e('BCV', '🪙')} vs {e('USDT', '🪙')} VENTA</b>\n\n"
-        f"{e('CALENDARIO', '📆')} Vigencia BCV: {fecha_bcv}\n"
-        f"{e('BCV', '🪙')} Tasa + 0.5%: {tasa_intervencion:.3f} Bs\n"
+        f"<blockquote>{e('MONITOR', 'emoji')} <b>MONITOR DE BRECHA {e('BCV', 'emoji')} vs {e('USDT', 'emoji')} VENTA</b></blockquote>\n\n"
+        f"{e('CALENDARIO', 'emoji')} Vigencia BCV: {fecha_bcv}\n"
+        f"{e('BCV', 'emoji')} Tasa + 0.5%: {tasa_intervencion:.3f} Bs\n"
         f"----------------------------------------\n\n"
-        f"{e('BINANCE_P2P', '💳')} {e('ROJO', '🔴')} <b>Venta P2P Global:</b> {venta_global:.2f} Bs\n"
-        f"{e('BCV', '🪙')} Brecha: {calcular_brecha(venta_global)}\n\n"
+        f"{e('BINANCE_P2P', 'emoji')} {e('ROJO', 'emoji')}<b>Venta P2P Global:</b> {venta_global:.2f}\n"
+        f"<blockquote>{e('BCV', 'emoji')} Brecha: {calcular_brecha(venta_global)}</blockquote>\n\n"
     )
 
     emojis_rangos = {
-        50.0: (e('RANGO_3', '🥉'), "Rango Menor ($50 - $100)"),
-        150.0: (e('RANGO_2', '🥈'), "Rango Medio ($100 - $300)"),
-        500.0: (e('RANGO_1', '🥇'), "Rango Mayor ($500+)")
+        50.0: (e('RANGO_3', 'emoji'), "Rango Menor ($50 - $100)"),
+        150.0: (e('RANGO_2', 'emoji'), "Rango Medio ($100 - $300)"),
+        500.0: (e('RANGO_1', 'emoji'), "Rango Mayor ($500+)")
     }
 
     for usd_ref in [50.0, 150.0, 500.0]:
@@ -846,11 +863,19 @@ def construir_monitor_brecha_html():
         if datos_rango and datos_rango.get("venta", 0) > 0:
             v_rango = float(datos_rango.get("venta"))
             texto += (
-                f"{emoji_rango} <b>{nombre_def}:</b> {v_rango:.2f} Bs\n"
-                f"{e('BCV', '🪙')} Brecha: {calcular_brecha(v_rango)}\n\n"
+                f"{emoji_rango} <b>{nombre_def}:</b> {v_rango:.2f}\n"
+                f"<blockquote>{e('BCV', 'emoji')} Brecha: {calcular_brecha(v_rango)}</blockquote>\n\n"
             )
 
-    texto += f"{e('MUNDO', '🌏')} Última actualización: {hora_actual}"
+    # Guardar última brecha global en Redis para la siguiente comparación
+    if r and venta_global > 0 and tasa_intervencion > 0:
+        pct_actual = ((venta_global - tasa_intervencion) / tasa_intervencion) * 100
+        try:
+            r.set("ultima_brecha_pct", str(pct_actual))
+        except Exception as err:
+            print(f"Error guardando ultima_brecha_pct: {err}")
+
+    texto += f"{e('MUNDO', 'emoji')} Última actualización: {hora_actual}"
     return texto
 
 
@@ -865,14 +890,14 @@ def comando_brecha_canal(message):
     chat_id = message.chat.id
     user_id = message.from_user.id
 
-    # Permite uso en Chat Privado (si eres creador/admin) O en el CANAL_PRUEBA (para administradores)
+    # Permitir en Chat Privado O en el CANAL_PRUEBA
     es_privado = message.chat.type == "private"
     es_canal_autorizado = (chat_id == CANAL_PRUEBA)
 
     if not (es_privado or es_canal_autorizado):
         return
 
-    # Validar permisos de administrador
+    # Validar permisos de administrador en canal
     if es_canal_autorizado and not es_administrador(bot, chat_id, user_id):
         return
 
@@ -916,7 +941,6 @@ def callback_refrescar_brecha(call):
         bot.answer_callback_query(call.id, "✅ Brechas actualizadas al instante")
     except Exception as e:
         bot.answer_callback_query(call.id, "✅ Tasas verificadas sin cambios")
-        
     
     
 # ==========================================

@@ -865,10 +865,15 @@ def comando_brecha_canal(message):
     chat_id = message.chat.id
     user_id = message.from_user.id
 
-    if chat_id != CANAL_PRUEBA:
+    # Permite uso en Chat Privado (si eres creador/admin) O en el CANAL_PRUEBA (para administradores)
+    es_privado = message.chat.type == "private"
+    es_canal_autorizado = (chat_id == CANAL_PRUEBA)
+
+    if not (es_privado or es_canal_autorizado):
         return
 
-    if not es_administrador(bot, chat_id, user_id):
+    # Validar permisos de administrador
+    if es_canal_autorizado and not es_administrador(bot, chat_id, user_id):
         return
 
     msg_texto = construir_monitor_brecha_html()
@@ -885,7 +890,8 @@ def callback_refrescar_brecha(call):
     chat_id = call.message.chat.id
     user_id = call.from_user.id
 
-    if not es_administrador(bot, chat_id, user_id):
+    # Si es el canal de pruebas, valida admin; en privado lo deja pasar
+    if chat_id == CANAL_PRUEBA and not es_administrador(bot, chat_id, user_id):
         bot.answer_callback_query(
             call.id, 
             "⚠️ Este botón es exclusivo para administradores.", 

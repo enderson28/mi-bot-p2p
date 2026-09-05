@@ -837,18 +837,18 @@ def construir_monitor_brecha_html():
     hora_actual = (datetime.now(timezone.utc) - timedelta(hours=4)).strftime("%I:%M:%S %p")
 
     texto = (
-        f"<blockquote>{e('MONITOR', 'emoji')} <b>MONITOR DE BRECHA {e('BCV', 'emoji')} vs {e('USDT', 'emoji')} VENTA</b></blockquote>\n\n"
-        f"{e('CALENDARIO', 'emoji')} Vigencia BCV: {fecha_bcv}\n"
-        f"{e('BCV', 'emoji')} Tasa + 0.5%: {tasa_intervencion:.3f} Bs\n"
+        f"<blockquote>{e('MONITOR', '🖥️')} <b>MONITOR DE BRECHA {e('BCV', '🪙')} vs {e('USDT', '🪙')} VENTA</b></blockquote>\n\n"
+        f"{e('CALENDARIO', '📆')} Vigencia BCV: {fecha_bcv}\n"
+        f"{e('BCV', '🪙')} Tasa + 0.5%: {tasa_intervencion:.3f} Bs\n"
         f"----------------------------------------\n\n"
-        f"{e('BINANCE_P2P', 'emoji')} {e('ROJO', 'emoji')}<b>Venta P2P Global:</b> {venta_global:.2f}\n"
-        f"<blockquote>{e('BCV', 'emoji')} Brecha: {calcular_brecha(venta_global)}</blockquote>\n\n"
+        f"{e('BINANCE_P2P', '🪙')} {e('ROJO', '🔴')}<b>Venta P2P Global:</b> {venta_global:.2f}\n"
+        f"<blockquote>{e('BCV', '🪙')} Brecha: {calcular_brecha(venta_global)}</blockquote>\n\n"
     )
 
     emojis_rangos = {
-        50.0: (e('RANGO_3', 'emoji'), "Rango Menor ($50 - $100)"),
-        150.0: (e('RANGO_2', 'emoji'), "Rango Medio ($100 - $300)"),
-        500.0: (e('RANGO_1', 'emoji'), "Rango Mayor ($500+)")
+        50.0: (e('RANGO_3', '🥉'), "Rango Menor ($50 - $100)"),
+        150.0: (e('RANGO_2', '🥈'), "Rango Medio ($100 - $300)"),
+        500.0: (e('RANGO_1', '🥇'), "Rango Mayor ($500+)")
     }
 
     for usd_ref in [50.0, 150.0, 500.0]:
@@ -864,7 +864,7 @@ def construir_monitor_brecha_html():
             v_rango = float(datos_rango.get("venta"))
             texto += (
                 f"{emoji_rango} <b>{nombre_def}:</b> {v_rango:.2f}\n"
-                f"<blockquote>{e('BCV', 'emoji')} Brecha: {calcular_brecha(v_rango)}</blockquote>\n\n"
+                f"<blockquote>{e('BCV', '🪙')} Brecha: {calcular_brecha(v_rango)}</blockquote>\n\n"
             )
 
     # Guardar última brecha global en Redis para la siguiente comparación
@@ -875,7 +875,7 @@ def construir_monitor_brecha_html():
         except Exception as err:
             print(f"Error guardando ultima_brecha_pct: {err}")
 
-    texto += f"{e('MUNDO', 'emoji')} Última actualización: {hora_actual}"
+    texto += f"{e('MUNDO', '🌏')} Última actualización: {hora_actual}"
     return texto
 
 

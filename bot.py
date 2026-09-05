@@ -311,9 +311,11 @@ def obtener_datos_bcv_validos():
         
             tasa_manana_val = float(datos.get("tasa_manana", 0.0))
             ultima_fecha_rotada = datos.get("fecha_ultima_rotacion", "")
+            
+            es_fin_de_semana = hora_ve.weekday() in [5, 6]
 
             # Si hay una tasa de mañana acumulada y hoy es un nuevo día en comparación a la última rotación
-            if tasa_manana_val > 0 and ultima_fecha_rotada != fecha_hoy_sistema:
+            if tasa_manana_val > 0 and ultima_fecha_rotada != fecha_hoy_sistema and not es_fin_de_semana:
                 datos["tasa_anterior"] = float(datos.get("tasa_hoy", 0.0))
                 datos["fecha_anterior"] = datos.get("fecha_hoy", "")
                 datos["tasa_hoy"] = tasa_manana_val

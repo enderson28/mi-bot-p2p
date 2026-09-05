@@ -1,4 +1,5 @@
 import telebot
+from emojis import TG_EMOJIS, e
 
 PROPIETARIO_ID = 5073264705  # Tu ID
 
@@ -21,33 +22,47 @@ def comando_comandos(bot, message):
         pass
 
     texto = (
-        "<b>📋 GUÍA OFICIAL DE COMANDOS</b>\n\n"
-        "<b>🥷🏽 PROPIETARIO (Uso exclusivo en Grupo):</b>\n"
-        "▫️ <code>/aviso</code> ➡️ Pasos y resolución de Captcha para aprobación automática.\n"
-        "▫️ <code>/ia</code> ➡️ Info del botón 🤖 IA Consulta, límites y rotación diaria.\n"
-        "▫️ <code>/i</code> ➡️ Monitor de Intervención (Día actual y día siguiente).\n"
-        "▫️ <code>/p</code> ➡️ Monitor P2P completo por rangos.\n"
-        "▫️ <code>/zinli</code> ➡️ Monitor Zinli completo.\n"
-        "▫️ <code>/bot</code> ➡️ Funciones del bot en su chat privado.\n"
-        "▫️ <code>/tasa</code> ➡️ Monitor P2P Global.\n\n"
+        f"<blockquote>{e('GUIAS', '❇️')} <b>GUÍA OFICIAL DE COMANDOS</b></blockquote>\n\n"
+        f"<blockquote>{e('PROGRAMADOR', '❇️')} <b>PROPIETARIO (Uso exclusivo en Grupo):</b></blockquote>\n"
+        f"───────────────\n"
+        f"▫️ <code>/aviso</code> {e('FLECHA_DERECHA', '❇️')} {e('PASOS', '❇️')} Pasos y resolución de Captcha {e('CAPTCHA', '❇️')} para aprobación automática.\n"
+        f"───────────────\n"
+        f"▫️ <code>/ia</code> {e('FLECHA_DERECHA', '❇️')}  {e('GUIAS', '❇️')} Info del botón 🤖 IA Consulta, límites y rotación diaria.\n"
+        f"───────────────\n"
+        f"▫️ <code>/i</code> {e('FLECHA_DERECHA', '❇️')} {e('BCV', '❇️')} Monitor de Intervención (Día actual y día siguiente).\n"
+        f"───────────────\n"
+        f"▫️ <code>/p</code> {e('FLECHA_DERECHA', '❇️')}  {e('BINANCE_ESPEJO', '❇️')} Monitor P2P completo por rangos.\n"
+        f"───────────────\n"
+        f"▫️ <code>/zinli</code> {e('FLECHA_DERECHA', '❇️')} {e('zinli', '❇️')} Monitor Zinli completo.\n"
+        f"───────────────\n"
+        f"▫️ <code>/bot</code> {e('FLECHA_DERECHA', '❇️')} {e('ROBOTICO', '❇️')} Funciones del bot en su chat privado.\n"
+        f"───────────────\n"
+        f"▫️ <code>/brecha</code> {e('FLECHA_DERECHA', '❇️')} {e('USDT', '❇️')}/{e('ROJO', '❇️')} Brecha entre VENTA y BCV 0.5%\n"
+        f"───────────────\n"
+        f"▫️ <code>/tasa</code> {e('FLECHA_DERECHA', '❇️')} {e('BINANCE_P2P', '❇️')} Monitor P2P Global.\n\n"
         
-        "<b>👮🏽‍♂️ ADMINISTRADORES (Comandos para el Grupo):</b>\n"
-        "▫️ <code>/aviso</code>\n"
-        "▫️ <code>/zinli</code>\n"
-        "▫️ <code>/i</code>\n"
-        "▫️ <code>/p</code>\n"
-        "▫️ <code>/tasa</code>\n\n"
+        f"<blockquote>{e('REVISION', '❇️')} <b>ADMINISTRADORES (Comandos para el Grupo):</b>\n</blockquote>"
+        f"▫️ <code>/aviso</code>\n"
+        f"▫️ <code>/zinli</code>\n"
+        f"▫️ <code>/i</code>\n"
+        f"▫️ <code>/p</code>\n"
+        f"▫️ <code>/brecha</code>\n"
+        f"▫️ <code>/tasa</code>\n\n"
         
-        "<b>👤 USUARIOS ACTIVOS DEL GRUPO:</b>\n"
-        "Uso directo de sus 9 botones en el chat interno del bot.\n\n"
+        f"<blockquote>{e('BOTS', '❇️')} <b>USUARIOS ACTIVOS DEL GRUPO:</b></blockquote>\n"
+        f"───────────────\n"
+        f"Uso directo de sus 9 botones en el chat interno del bot.\n\n"
         
-        "<b>🤖 Comandos en Chat Privado del Bot (Alternativa):</b>\n"
-        "▫️ <code>/i</code> ➡️ Monitor de Intervención.\n"
-        "▫️ <code>/p</code> ➡️ Monitor P2P <i>(Usa este botón con la 📜 Regla de Oro 📜)</i>\n"
-        "▫️ <code>/bp</code> ➡️ Guía práctica de uso sobre BPay.\n"
-        "▫️ <code>/gp</code> ➡️ Guía práctica de uso sobre GPay.\n\n"
-        "───────────────\n"
-        "<i>Usa /comandos para consultar este panel cuando lo necesites.</i>"
+        f"{e('ROBOTICO', '❇️')} <b>Comandos en Chat Privado del Bot (Alternativa):</b>\n"
+        f"───────────────\n"
+        f"▫️ <code>/i</code> {e('FLECHA_DERECHA', '❇️')} Monitor de Intervención.\n"
+        f"───────────────\n"
+        f"▫️ <code>/p</code> {e('FLECHA_DERECHA', '❇️')} Monitor P2P <i>(Usa este botón con la 📜 Regla de Oro 📜)</i>\n"
+        f"───────────────\n"
+        f"▫️ <code>/bp</code> {e('FLECHA_DERECHA', '❇️')} Guía práctica de uso sobre BPay.\n"
+        f"▫️ <code>/gp</code> {e('FLECHA_DERECHA', '❇️')} Guía práctica de uso sobre GPay.\n\n"
+        f"───────────────\n"
+        f"{e('clic', '❇️')}<i>Usa /comandos para consultar este panel cuando lo necesites.</i>"
     )
     
     bot.send_message(message.chat.id, texto, parse_mode="HTML")
@@ -85,13 +100,13 @@ def comando_admin(bot, message):
 
     # 3. Construcción del mensaje final
     texto = (
-        "<b>🛡️ EQUIPO DE ADMINISTRACIÓN</b>\n\n"
-        f"<b>🥷🏽 Propietario:</b>\n"
+        f"{e('ESCUDO', '❇️')} <b>EQUIPO DE ADMINISTRACIÓN</b>\n\n"
+        f"{e('PROGRAMADOR', '❇️')} <b>Propietario:</b>\n"
         f"👑 {mencion_propietario}\n\n"
-        f"<b>👮🏽‍♂️ Administradores:</b>\n"
+        f"{e('REVISION', '❇️')} <b>Administradores:</b>\n"
         f"{lista_admins_texto}\n\n"
-        "───────────────\n"
-        "<i>Si necesitas asistencia, contacta a cualquiera de nuestros administradores activos.</i>"
+        f"───────────────\n"
+        f"<i>Si necesitas asistencia, {e('pago_movil', '❇️')} contacta a cualquiera de nuestros administradores activos.</i>"
     )
 
     bot.send_message(chat_id, texto, parse_mode="HTML")

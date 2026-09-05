@@ -890,6 +890,12 @@ def comando_brecha_canal(message):
     chat_id = message.chat.id
     user_id = message.from_user.id
 
+    # Intentar eliminar de inmediato el mensaje que activó el comando (/brecha)
+    try:
+        bot.delete_message(chat_id, message.message_id)
+    except Exception as err:
+        print(f"No se pudo eliminar el mensaje del comando /brecha: {err}")
+
     # Permitir en Chat Privado O en el CANAL_PRUEBA
     es_privado = message.chat.type == "private"
     es_canal_autorizado = (chat_id == CANAL_PRUEBA)

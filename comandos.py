@@ -13,7 +13,8 @@ ADMINS_IDS = [
     7816422089, # Enderson secundario
     1676933074,  #Antony
     8166481937, # Cilita
-    8573557834 # Lionel messi
+    8573557834, # Lionel messi
+    1920750484 # CR7
 ]
 
 def comando_comandos(bot, message):

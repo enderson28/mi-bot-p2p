@@ -206,6 +206,31 @@ TEXTO_SOPORTE = (
     f"-----------------------------------------\n"
 )
 
+TEXTO_ANUNCIO_VIP = (
+    "📢 <b>ANUNCIO OFICIAL: ACTUALIZACIÓN Y MODELO DE SOSTENIBILIDAD</b>\n\n"
+    "Estimada comunidad,\n\n"
+    "Para garantizar el funcionamiento 24/7 de nuestro bot, mantener la rapidez de respuesta "
+    "y asegurar la actualización constante de los monitores en servidores dedicados, hemos "
+    "implementado un modelo de suscripción <b>VIP a bajo costo</b> para las funciones avanzadas.\n\n"
+    "🔓 <b>HERRAMIENTAS GRATUITAS (Para todos):</b>\n"
+    "• 📜 <b>Regla de Oro</b>\n"
+    "• 🟠 <b>BPay</b>\n"
+    "• 🔵 <b>GPay</b>\n"
+    "• ⚙️ <b>Soporte</b>\n\n"
+    "• 🤖 <b>Ia Consulta</b>\n"
+    "🔒 <b>MÓDULOS EXCLUSIVOS VIP:</b>\n"
+    "• 🟢 <b>P2P - USDT</b> 🔴\n"
+    "• 📊 <b>Intervención</b>\n"
+    "• 📟 <b>Calculadora</b>\n"
+    "• 📊 <b>Arbitraje & Reposición</b>\n\n"
+    "💡 <i>Uso optimizado en grupos para Administradores VIP o en chat privado.</i>\n\n"
+    "💎 <b>TARIFA ACCESIBLE:</b>\n"
+    "• <b>Suscripción VIP:</b> <code>2 USDT / Quincenal</code> (o equivalente en Bs).\n"
+    "• <b>Activación:</b> Toca en ⚙️ <b>Soporte</b> para ver las cuentas de pago y envía tu comprobante.\n\n"
+    "¡Gracias por su constante apoyo para mantener este proyecto activo y en evolución! 🚀"
+)
+
+
 # ==========================================
 #  LÓGICA DE PROCESAMIENTO Y APIS
 # ==========================================
@@ -1227,6 +1252,26 @@ def callback_soporte_vip(call):
     # Llama a tu función procesar_soporte que ya envía TEXTO_SOPORTE
     procesar_soporte(call.message)
 
+@bot.message_handler(commands=['anuncio_vip'])
+def handle_anuncio_vip(message):
+    user_id = message.from_user.id
+    chat_id = message.chat.id
+    
+    # Si es chat privado, se envía directo
+    if message.chat.type == "private":
+        bot.send_message(chat_id, TEXTO_ANUNCIO_VIP, parse_mode="HTML")
+        return
+        
+    # En grupos, verificamos que quien ejecuta sea Admin o Creador
+    if es_admin_o_vip(user_id) or str(user_id) == str(CREADOR_ID):
+        # Opcional: borrar el comando del usuario para mantener limpio el chat
+        try:
+            bot.delete_message(chat_id, message.message_id)
+        except Exception:
+            pass
+            
+        bot.send_message(chat_id, TEXTO_ANUNCIO_VIP, parse_mode="HTML")
+        
 
 # Manejador para /p y el botón P2P
 @bot.message_handler(commands=['p', 'p2p'])

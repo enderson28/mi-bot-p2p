@@ -273,36 +273,39 @@ def registrar_limpiador_servicio(bot):
 OWNER_ID = int(os.getenv("OWNER_ID", "5073264705")) 
 
 def es_usuario_vip_activo(bot, user, r):
-    """
-    1. Si es el Owner/Creador -> Acceso total siempre (True).
-    2. Si es Admin VIP -> Devuelve True.
-    3. Si tiene clave activa en Redis ('vip_user:<id>') -> Devuelve True.
-    4. De lo contrario -> Devuelve False.
-    """
     if not user:
         return False
 
-    # El dueño NUNCA paga
+    # El Creador NUNCA paga
     if user.id == OWNER_ID:
         return True
 
-    # Validación de Administradores VIP existentes
-    from seguridad import es_admin_vip # O la función de admin que tengas en tu módulo
+    # Validación de Administradores VIP
     if es_admin_vip(bot, user):
         return True
 
-    # Verificación en Redis para usuarios normales o admins que compran plan
-    if r and r.exists(f"vip_user:{user.id}"):
-        return True
+    if not r:
+        return False
+
+    key = f"vip_user:{user.id}"
+
+    # Si se le pasa la conexión de Redis directamente
+    if hasattr(r, 'exists'):
+        return bool(r.exists(key))
+    
+    # Si se le pasa un diccionario de caché
+    if isinstance(r, dict):
+        return key in r or r.get(key) is not None
 
     return False
+    
 
 
 def responder_sin_acceso_vip(bot, chat_id):
     """Envía el panel de suscripción cuando el acceso es denegado."""
     markup = InlineKeyboardMarkup()
     markup.add(
-        InlineKeyboardButton("💳 Adquirir Membresía / Soporte", url="https://t.me/EndersonPersonal")
+        InlineKeyboardButton("💳 Adquirir Membresía / Soporte", url="https://t.me/5073264705")
     )
     
     texto = (

@@ -1193,7 +1193,6 @@ def handle_zinli_comando(message):
                 pass
 
 
-
 @bot.message_handler(commands=['activar_vip'])
 def comando_activar_vip(message):
     if str(message.from_user.id) != str(OWNER_ID):
@@ -1203,14 +1202,15 @@ def comando_activar_vip(message):
     user_id_target = None
     dias = None
 
-    # Si respondes a un mensaje dentro del bot
+    # Si respondes a un mensaje (directo o reenviado)
     if message.reply_to_message:
         target_msg = message.reply_to_message
         
-        # 1. Si es un mensaje reenviado directamente de la persona
-        if target_msg.forward_from:
+        # Soporte para la nueva API de Telegram (forward_from_user) y la anterior
+        if getattr(target_msg, 'forward_from_user', None):
+            user_id_target = target_msg.forward_from_user.id
+        elif getattr(target_msg, 'forward_from', None):
             user_id_target = target_msg.forward_from.id
-        # 2. Si es un mensaje directo del usuario al bot
         else:
             user_id_target = target_msg.from_user.id
 
@@ -1220,7 +1220,7 @@ def comando_activar_vip(message):
             except ValueError:
                 pass
 
-    # Modo manual (/activar_vip <id> <dias>)
+    # Modo manual: /activar_vip <user_id> <dias>
     elif len(partes) >= 3:
         user_id_target = partes[1].strip()
         try:
@@ -1228,20 +1228,20 @@ def comando_activar_vip(message):
         except ValueError:
             pass
 
-    # Si el reenvío vino con privacidad oculta
     if not user_id_target or not dias:
         bot.reply_to(
             message,
-            "<b>❌ No se pudo extraer el ID.</b>\n\n"
-            "• Si el usuario tiene privacidad en reenvíos, pídele que le escriba cualquier mensaje directo al bot y le respondes ahí.\n"
-            "• O usa el comando manual: <code>/activar_vip &lt;user_id&gt; &lt;dias&gt;</code>",
+            "<b>❌ No se pudo extraer el ID o los días.</b>\n\n"
+            "• Responde al mensaje/reenvío: <code>/activar_vip &lt;dias&gt;</code>\n"
+            "• O manual: <code>/activar_vip &lt;user_id&gt; &lt;dias&gt;</code>",
             parse_mode="HTML"
         )
         return
 
     segundos = dias * 86400
-    r = r  # Instancia Redis
 
+    # Usamos la variable global r directamente sin reasignar 'r = r'
+    global r
     if r:
         r.setex(f"vip_user:{user_id_target}", segundos, "activo")
         bot.reply_to(
@@ -1260,6 +1260,8 @@ def comando_activar_vip(message):
             )
         except Exception:
             pass
+    else:
+        bot.reply_to(message, "❌ Error de conexión con Redis.")
             
             
 

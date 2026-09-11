@@ -1,6 +1,8 @@
 import time
 from collections import deque
 from captcha import registrar_solicitud_pendiente
+import os
+from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 # =========================================================
 # LISTA NEGRA GLOBAL (BLOQUEO ABSOLUTO)
@@ -265,4 +267,50 @@ def registrar_limpiador_servicio(bot):
             bot.delete_message(message.chat.id, message.message_id)
         except Exception:
             pass
+
+
+# Puedes colocar tu ID numérico directo o leerlo desde las variables de entorno
+OWNER_ID = int(os.getenv("OWNER_ID", "5073264705")) 
+
+def es_usuario_vip_activo(bot, user, r):
+    """
+    1. Si es el Owner/Creador -> Acceso total siempre (True).
+    2. Si es Admin VIP -> Devuelve True.
+    3. Si tiene clave activa en Redis ('vip_user:<id>') -> Devuelve True.
+    4. De lo contrario -> Devuelve False.
+    """
+    if not user:
+        return False
+
+    # El dueño NUNCA paga
+    if user.id == OWNER_ID:
+        return True
+
+    # Validación de Administradores VIP existentes
+    from seguridad import es_admin_vip # O la función de admin que tengas en tu módulo
+    if es_admin_vip(bot, user):
+        return True
+
+    # Verificación en Redis para usuarios normales o admins que compran plan
+    if r and r.exists(f"vip_user:{user.id}"):
+        return True
+
+    return False
+
+
+def responder_sin_acceso_vip(bot, chat_id):
+    """Envía el panel de suscripción cuando el acceso es denegado."""
+    markup = InlineKeyboardMarkup()
+    markup.add(
+        InlineKeyboardButton("💳 Adquirir Membresía / Soporte", url="https://t.me/EndersonPersonal")
+    )
+    
+    texto = (
+        "<b>🔒 Contenido Exclusivo VIP</b>\n\n"
+        "Esta herramienta requiere una suscripción activa.\n"
+        "Contacta al equipo de soporte para activar tu acceso."
+    )
+    
+    bot.send_message(chat_id, texto, parse_mode="HTML", reply_markup=markup)
+    
             

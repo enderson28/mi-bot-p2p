@@ -1196,55 +1196,61 @@ def handle_zinli_comando(message):
 
 @bot.message_handler(commands=['activar_vip'])
 def comando_activar_vip(message):
-    # 1. Seguridad: Solo el Creador/Owner puede ejecutarlo
     if message.from_user.id != OWNER_ID:
         return
 
-    # 2. Partir el mensaje para extraer argumentos
     partes = message.text.split()
-    if len(partes) < 3:
+    user_id_target = None
+    dias = None
+
+    # Caso 1: Respondiste a un mensaje del usuario (ej: /activar_vip 15)
+    if message.reply_to_message:
+        user_id_target = message.reply_to_message.from_user.id
+        if len(partes) >= 2:
+            try:
+                dias = int(partes[1].strip())
+            except ValueError:
+                pass
+    # Caso 2: Lo escribiste manual (ej: /activar_vip 7816422089 15)
+    elif len(partes) >= 3:
+        user_id_target = partes[1].strip()
+        try:
+            dias = int(partes[2].strip())
+        except ValueError:
+            pass
+
+    if not user_id_target or not dias:
         bot.reply_to(
-            message, 
-            "<b>Uso incorrecto.</b>\nSintaxis: <code>/activar_vip &lt;user_id&gt; &lt;dias&gt;</code>", 
+            message,
+            "<b>❌ Uso incorrecto.</b>\n"
+            "• Responde al mensaje del usuario: <code>/activar_vip &lt;dias&gt;</code>\n"
+            "• O manual: <code>/activar_vip &lt;user_id&gt; &lt;dias&gt;</code>",
             parse_mode="HTML"
         )
         return
 
-    try:
-        user_id_target = partes[1].strip()
-        dias = int(partes[2].strip())
-        segundos = dias * 86400  # Convertir días a segundos para Redis
+    segundos = dias * 86400
+    r = r # Instancia de Redis
 
-        # 3. Guardar en Redis con expiración automática (TTL)
-        r = obtener_cache_func() # Tu instancia/función de Redis
-        if r:
-            r.setex(f"vip_user:{user_id_target}", segundos, "activo")
-            
-            # Confirmación para ti
-            bot.reply_to(
-                message, 
-                f"✅ <b>Acceso VIP Activado</b>\n\n"
-                f"👤 <b>Usuario ID:</b> <code>{user_id_target}</code>\n"
-                f"⏳ <b>Duración:</b> {dias} días\n"
-                f"🔑 Registrado exitosamente en Redis.",
+    if r:
+        r.setex(f"vip_user:{user_id_target}", segundos, "activo")
+        bot.reply_to(
+            message,
+            f"<b>✅ Acceso VIP Activado</b>\n\n"
+            f"• <b>Usuario ID:</b> <code>{user_id_target}</code>\n"
+            f"• <b>Duración:</b> {dias} días",
+            parse_mode="HTML"
+        )
+        try:
+            bot.send_message(
+                user_id_target,
+                f"<b>🎉 ¡Tu suscripción VIP ha sido activada!</b>\n\n"
+                f"Tienes acceso ilimitado a las herramientas del bot por {dias} días.",
                 parse_mode="HTML"
             )
+        except Exception:
+            pass
             
-            # (Opcional) Notificar directamente al usuario que ya tiene acceso
-            try:
-                bot.send_message(
-                    user_id_target, 
-                    f"🎉 <b>¡Tu suscripción VIP ha sido activada!</b>\n\n"
-                    f"Tienes acceso ilimitado a las herramientas del bot por {dias} días.",
-                    parse_mode="HTML"
-                )
-            except Exception:
-                pass # Si el usuario bloqueó al bot o no ha iniciado chat
-        else:
-            bot.reply_to(message, "❌ Error: No hay conexión con Redis.")
-
-    except ValueError:
-        bot.reply_to(message, "❌ Los días deben ser un número entero.")
 
 @bot.callback_query_handler(func=lambda call: call.data == "ver_soporte_vip")
 def callback_soporte_vip(call):

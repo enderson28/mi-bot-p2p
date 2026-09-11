@@ -280,10 +280,6 @@ def es_usuario_vip_activo(bot, user, r):
     if user.id == OWNER_ID:
         return True
 
-    # Validación de Administradores VIP
-    if es_admin_vip(bot, user):
-        return True
-
     if not r:
         return False
 

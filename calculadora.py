@@ -20,6 +20,7 @@ def registrar_calculadora(bot, obtener_cache_func, obtener_teclado_func):
     @bot.message_handler(func=lambda message: "Calculadora" in message.text if message.text else False)
     def solicitar_monto_mensaje(message, modo="USD_BS"):
         if message.chat.type != 'private':
+            return
             
         # --- CONTROL DE ACCESO VIP ---
         # r_client / r es tu conexión Redis pasada o importada

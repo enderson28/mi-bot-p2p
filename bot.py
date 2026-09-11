@@ -13,6 +13,7 @@ from telebot import types
 from captcha import setup_verification_handlers
 from seguridad import validar_copia_pega, es_admin_vip, es_admin_especial, es_administrador, es_chat_permitido
 from seguridad import limpiar_comandos_chat, registrar_filtro_anti_raid, registrar_limpiador_servicio
+from seguridad import OWNER_ID
 from calculadora import registrar_calculadora
 from ia_consulta import registrar_ia_consulta
 from arbitraje import registrar_handlers_arbitraje
@@ -1146,6 +1147,60 @@ def handle_zinli_comando(message):
                 borrar_mensaje_luego(chat_id, aviso.message_id, 10)
             except Exception:
                 pass
+
+
+
+@bot.message_handler(commands=['activar_vip'])
+def comando_activar_vip(message):
+    # 1. Seguridad: Solo el Creador/Owner puede ejecutarlo
+    if message.from_user.id != OWNER_ID:
+        return
+
+    # 2. Partir el mensaje para extraer argumentos
+    partes = message.text.split()
+    if len(partes) < 3:
+        bot.reply_to(
+            message, 
+            "<b>Uso incorrecto.</b>\nSintaxis: <code>/activar_vip &lt;user_id&gt; &lt;dias&gt;</code>", 
+            parse_mode="HTML"
+        )
+        return
+
+    try:
+        user_id_target = partes[1].strip()
+        dias = int(partes[2].strip())
+        segundos = dias * 86400  # Convertir días a segundos para Redis
+
+        # 3. Guardar en Redis con expiración automática (TTL)
+        r = obtener_cache_func() # Tu instancia/función de Redis
+        if r:
+            r.setex(f"vip_user:{user_id_target}", segundos, "activo")
+            
+            # Confirmación para ti
+            bot.reply_to(
+                message, 
+                f"✅ <b>Acceso VIP Activado</b>\n\n"
+                f"👤 <b>Usuario ID:</b> <code>{user_id_target}</code>\n"
+                f"⏳ <b>Duración:</b> {dias} días\n"
+                f"🔑 Registrado exitosamente en Redis.",
+                parse_mode="HTML"
+            )
+            
+            # (Opcional) Notificar directamente al usuario que ya tiene acceso
+            try:
+                bot.send_message(
+                    user_id_target, 
+                    f"🎉 <b>¡Tu suscripción VIP ha sido activada!</b>\n\n"
+                    f"Tienes acceso ilimitado a las herramientas del bot por {dias} días.",
+                    parse_mode="HTML"
+                )
+            except Exception:
+                pass # Si el usuario bloqueó al bot o no ha iniciado chat
+        else:
+            bot.reply_to(message, "❌ Error: No hay conexión con Redis.")
+
+    except ValueError:
+        bot.reply_to(message, "❌ Los días deben ser un número entero.")
                 
 
 

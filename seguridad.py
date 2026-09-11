@@ -305,7 +305,7 @@ def responder_sin_acceso_vip(bot, chat_id):
     """Envía el panel de suscripción cuando el acceso es denegado."""
     markup = InlineKeyboardMarkup()
     markup.add(
-        InlineKeyboardButton("💳 Adquirir Membresía / Soporte", url="https://t.me/5073264705")
+        InlineKeyboardButton("💳 Adquirir Membresía / Soporte", url="https://t.me/+584145057892")
     )
     
     texto = (

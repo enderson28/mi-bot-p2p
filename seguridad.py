@@ -300,29 +300,26 @@ def responder_sin_acceso_vip(bot, chat_id):
     """Envía el panel de suscripción cuando el acceso es denegado."""
     markup = InlineKeyboardMarkup(row_width=1)
     
-    # Botón 1: Directo a tu Telegram personal/soporte
-    btn_contacto = InlineKeyboardButton(
-        "💳 Adquirir Membresía", 
-        url="https://t.me/+584145057892" # Coloca tu alias de Telegram
+    # Botón 1: Solicitar activación y enviar el ID al Creador
+    btn_notificar = InlineKeyboardButton(
+        "📩 Confirmar Pago / Solicitar VIP", 
+        callback_data="solicitar_vip_pago"
     )
     
-    # Botón 2: Inline para mostrar exactamente tu TEXTO_SOPORTE
+    # Botón 2: Mostrar cuentas bancarias/datos de soporte
     btn_soporte_inline = InlineKeyboardButton(
         "⚙️ Soporte / Datos de Pago", 
         callback_data="ver_soporte_vip"
     )
     
-    markup.add(btn_contacto, btn_soporte_inline)
+    markup.add(btn_notificar, btn_soporte_inline)
     
     texto = (
         "<b>🔒 Contenido Exclusivo VIP</b>\n\n"
         "Esta herramienta requiere una suscripción activa.\n"
         "Tarifa mínima: 2 USDT/Quincenal.\n\n"
-        "Después de hacer el pago, envia la referencia a soporte; Boton 💳 Adquirir Membresia.\n"
-        "Contacta al soporte para activar tu acceso."
+        "Realiza tu pago en <b>⚙️ Soporte</b> y presiona <b>📩 Confirmar Pago</b> para activar tu acceso."
     )
     
     bot.send_message(chat_id, texto, parse_mode="HTML", reply_markup=markup)
     
-    
-            

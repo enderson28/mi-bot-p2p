@@ -307,6 +307,7 @@ def responder_sin_acceso_vip(bot, chat_id):
     texto = (
         "<b>🔒 Contenido Exclusivo VIP</b>\n\n"
         "Esta herramienta requiere una suscripción activa.\n"
+        "Tarifa minima 2 USDT/Quincenal.\n"
         "Contacta al equipo de soporte para activar tu acceso."
     )
     

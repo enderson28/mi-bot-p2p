@@ -14,6 +14,7 @@ from captcha import setup_verification_handlers
 from seguridad import validar_copia_pega, es_admin_vip, es_admin_especial, es_administrador, es_chat_permitido
 from seguridad import limpiar_comandos_chat, registrar_filtro_anti_raid, registrar_limpiador_servicio
 from seguridad import OWNER_ID
+from seguridad import es_usuario_vip_activo, responder_sin_acceso_vip
 from calculadora import registrar_calculadora
 from ia_consulta import registrar_ia_consulta
 from arbitraje import registrar_handlers_arbitraje
@@ -891,6 +892,12 @@ def comando_brecha_canal(message):
     chat_id = message.chat.id
     user_id = message.from_user.id
 
+    # --- CANDADO VIP GLOBAL ---
+    if not es_usuario_vip_activo(bot, message.from_user, obtener_cache_func()):
+        responder_sin_acceso_vip(bot, chat_id)
+        return
+    # -------------------------- 
+
     # Intentar eliminar de inmediato el mensaje que activó el comando (/brecha)
     try:
         bot.delete_message(chat_id, message.message_id)
@@ -969,6 +976,12 @@ def handle_tasas_comando(message):
     # --- FILTRO DE SEGURIDAD GENERAL ---
     if not es_chat_permitido(bot, message, CHATS_PERMITIDOS, USUARIOS_AUTORIZADOS, CREADOR_ID):
         return
+
+     # --- CANDADO VIP GLOBAL ---
+    if not es_usuario_vip_activo(bot, message.from_user, obtener_cache_func()):
+        responder_sin_acceso_vip(bot, chat_id)
+        return
+    # --------------------------
 
     # --- 1. CHAT PRIVADO ---
     if message.chat.type == "private":
@@ -1063,6 +1076,12 @@ def handle_zinli_comando(message):
     # --- FILTRO DE SEGURIDAD GENERAL ---
     if not es_chat_permitido(bot, message, CHATS_PERMITIDOS, USUARIOS_AUTORIZADOS, CREADOR_ID):
         return
+
+     # --- CANDADO VIP GLOBAL ---
+    if not es_usuario_vip_activo(bot, message.from_user, obtener_cache_func()):
+        responder_sin_acceso_vip(bot, chat_id)
+        return
+    # --------------------------
 
     # --- 1. CHAT PRIVADO ---
     if message.chat.type == 'private':
@@ -1323,6 +1342,12 @@ def procesar_precio(message):
     if not es_chat_permitido(bot, message, CHATS_PERMITIDOS, USUARIOS_AUTORIZADOS, CREADOR_ID):
         return
 
+    # --- CANDADO VIP GLOBAL ---
+    if not es_usuario_vip_activo(bot, message.from_user, obtener_cache_func()):
+        responder_sin_acceso_vip(bot, chat_id)
+        return
+    # -------------------------- 
+
     # --- 1. CHAT PRIVADO ---
     if message.chat.type == "private":
         if message.text and message.text.strip().startswith('/'):
@@ -1430,6 +1455,12 @@ def procesar_intervencion(message):
     # Permite el paso ÚNICAMENTE si el chat está permitido en las reglas de seguridad 
     if not es_chat_permitido(bot, message, CHATS_PERMITIDOS, USUARIOS_AUTORIZADOS, CREADOR_ID):
         return
+
+     # --- CANDADO VIP GLOBAL ---
+    if not es_usuario_vip_activo(bot, message.from_user, obtener_cache_func()):
+        responder_sin_acceso_vip(bot, chat_id)
+        return
+    # --------------------------
 
     # --- 1. CHAT PRIVADO ---
     if message.chat.type == "private":

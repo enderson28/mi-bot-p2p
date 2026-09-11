@@ -1263,6 +1263,62 @@ def comando_activar_vip(message):
     else:
         bot.reply_to(message, "❌ Error de conexión con Redis.")
 
+
+@bot.message_handler(commands=['revocar_vip'])
+def comando_revocar_vip(message):
+    if str(message.from_user.id) != str(OWNER_ID):
+        return
+
+    partes = message.text.split()
+    user_id_target = None
+
+    # Caso 1: Respondiendo a un mensaje
+    if message.reply_to_message:
+        target_msg = message.reply_to_message
+        if getattr(target_msg, 'forward_from_user', None):
+            user_id_target = target_msg.forward_from_user.id
+        elif getattr(target_msg, 'forward_from', None):
+            user_id_target = target_msg.forward_from.id
+        else:
+            user_id_target = target_msg.from_user.id
+
+    # Caso 2: Manual (/revocar_vip <user_id>)
+    elif len(partes) >= 2:
+        user_id_target = partes[1].strip()
+
+    if not user_id_target:
+        bot.reply_to(
+            message,
+            "<b>❌ Uso incorrecto.</b>\n"
+            "• Responde al mensaje del usuario: <code>/revocar_vip</code>\n"
+            "• O manual: <code>/revocar_vip &lt;user_id&gt;</code>",
+            parse_mode="HTML"
+        )
+        return
+
+    global r
+    if r:
+        # Eliminamos la clave de Redis inmediatamente
+        eliminado = r.delete(f"vip_user:{user_id_target}")
+        
+        if eliminado:
+            bot.reply_to(
+                message,
+                f"<b>🚫 Acceso VIP Revocado</b>\n\n"
+                f"• <b>Usuario ID:</b> <code>{user_id_target}</code>\n"
+                f"• El usuario ya no tiene acceso a los módulos VIP.",
+                parse_mode="HTML"
+            )
+        else:
+            bot.reply_to(
+                message,
+                f"<b>⚠️ Información:</b> El usuario <code>{user_id_target}</code> no tenía una suscripción VIP activa en Redis.",
+                parse_mode="HTML"
+            )
+    else:
+        bot.reply_to(message, "❌ Error de conexión con Redis.")
+        
+
 @bot.callback_query_handler(func=lambda call: call.data == "solicitar_vip_pago")
 def callback_notificar_pago(call):
     user = call.from_user

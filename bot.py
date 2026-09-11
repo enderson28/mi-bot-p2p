@@ -893,7 +893,7 @@ def comando_brecha_canal(message):
     user_id = message.from_user.id
 
     # --- CANDADO VIP GLOBAL ---
-    if not es_usuario_vip_activo(bot, message.from_user, obtener_cache_func()):
+    if not es_usuario_vip_activo(bot, message.from_user, r):
         responder_sin_acceso_vip(bot, chat_id)
         return
     # -------------------------- 
@@ -978,7 +978,7 @@ def handle_tasas_comando(message):
         return
 
      # --- CANDADO VIP GLOBAL ---
-    if not es_usuario_vip_activo(bot, message.from_user, obtener_cache_func()):
+    if not es_usuario_vip_activo(bot, message.from_user, r):
         responder_sin_acceso_vip(bot, chat_id)
         return
     # --------------------------
@@ -1078,7 +1078,7 @@ def handle_zinli_comando(message):
         return
 
      # --- CANDADO VIP GLOBAL ---
-    if not es_usuario_vip_activo(bot, message.from_user, obtener_cache_func()):
+    if not es_usuario_vip_activo(bot, message.from_user, r):
         responder_sin_acceso_vip(bot, chat_id)
         return
     # --------------------------
@@ -1343,7 +1343,7 @@ def procesar_precio(message):
         return
 
     # --- CANDADO VIP GLOBAL ---
-    if not es_usuario_vip_activo(bot, message.from_user, obtener_cache_func()):
+    if not es_usuario_vip_activo(bot, message.from_user, r):
         responder_sin_acceso_vip(bot, chat_id)
         return
     # -------------------------- 
@@ -1457,7 +1457,7 @@ def procesar_intervencion(message):
         return
 
      # --- CANDADO VIP GLOBAL ---
-    if not es_usuario_vip_activo(bot, message.from_user, obtener_cache_func()):
+    if not es_usuario_vip_activo(bot, message.from_user, r):
         responder_sin_acceso_vip(bot, chat_id)
         return
     # --------------------------

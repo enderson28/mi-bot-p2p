@@ -1220,7 +1220,12 @@ def comando_activar_vip(message):
 
     except ValueError:
         bot.reply_to(message, "❌ Los días deben ser un número entero.")
-                
+
+@bot.callback_query_handler(func=lambda call: call.data == "ver_soporte_vip")
+def callback_soporte_vip(call):
+    bot.answer_callback_query(call.id)
+    # Llama a tu función procesar_soporte que ya envía TEXTO_SOPORTE
+    procesar_soporte(call.message)
 
 
 # Manejador para /p y el botón P2P

@@ -1262,8 +1262,29 @@ def comando_activar_vip(message):
             pass
     else:
         bot.reply_to(message, "❌ Error de conexión con Redis.")
-            
-            
+
+@bot.callback_query_handler(func=lambda call: call.data == "solicitar_vip_pago")
+def callback_notificar_pago(call):
+    user = call.from_user
+    bot.answer_callback_query(call.id, "✅ Solicitud enviada al administrador.", show_alert=True)
+    
+    username_str = f"@{user.username}" if user.username else "Sin alias"
+    
+    # Mensaje con formato especial para tocar y copiar
+    notificacion = (
+        "📥 <b>NUEVA SOLICITUD DE ACTIVACIÓN VIP</b>\n\n"
+        f"• <b>Usuario:</b> {user.first_name} ({username_str})\n"
+        f"• <b>ID:</b> <code>{user.id}</code>\n\n"
+        f"👇 <b>Toca el comando para copiarlo e ingresar días:</b>\n"
+        f"<code>/activar_vip {user.id} 15</code>\n"
+        f"<code>/activar_vip {user.id} 30</code>"
+    )
+    
+    try:
+        bot.send_message(OWNER_ID, notificacion, parse_mode="HTML")
+    except Exception as e:
+        print(f"Error al enviar notificación VIP al OWNER_ID: {e}")
+                 
 
 @bot.callback_query_handler(func=lambda call: call.data == "ver_soporte_vip")
 def callback_soporte_vip(call):

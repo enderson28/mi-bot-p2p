@@ -1354,23 +1354,22 @@ def callback_soporte_vip(call):
 
 @bot.message_handler(commands=['anuncio_vip'])
 def handle_anuncio_vip(message):
-    user_id = message.from_user.id
+    user_id = str(message.from_user.id)
     chat_id = message.chat.id
-    
-    # Si es chat privado, se envía directo
-    if message.chat.type == "private":
-        bot.send_message(chat_id, TEXTO_ANUNCIO_VIP, parse_mode="HTML")
+
+    # Exclusivo para el Owner/Creador del Bot
+    if user_id != str(OWNER_ID):
         return
-        
-    # En grupos, verificamos que quien ejecuta sea Admin o Creador
-    if es_admin_o_vip(user_id) or str(user_id) == str(CREADOR_ID):
-        # Opcional: borrar el comando del usuario para mantener limpio el chat
+
+    # Opcional: Borrar tu comando en los grupos para que quede solo el anuncio limpio
+    if message.chat.type in ['group', 'supergroup']:
         try:
             bot.delete_message(chat_id, message.message_id)
         except Exception:
             pass
-            
-        bot.send_message(chat_id, TEXTO_ANUNCIO_VIP, parse_mode="HTML")
+
+    # Envía el anuncio guardado en tu variable TEXTO_ANUNCIO_VIP
+    bot.send_message(chat_id, TEXTO_ANUNCIO_VIP, parse_mode="HTML")
         
 
 # Manejador para /p y el botón P2P

@@ -3,6 +3,7 @@ import logging
 import requests
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 from datetime import datetime, time, timedelta, timezone
+from seguridad import es_usuario_vip_activo, responder_sin_acceso_vip
 
 logger = logging.getLogger(__name__)
 
@@ -237,6 +238,12 @@ def registrar_handlers_arbitraje(bot, redis_client):
             chat_id = event.message.chat.id
         else:
             chat_id = event.chat.id
+
+        # --- CONTROL DE ACCESO VIP ---
+        if not es_usuario_vip_activo(bot, event.from_user, redis_client):
+            responder_sin_acceso_vip(bot, chat_id)
+            return
+        # -----------------------------
 
         bot.clear_step_handler_by_chat_id(chat_id)
 

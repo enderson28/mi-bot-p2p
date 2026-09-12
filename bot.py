@@ -13,6 +13,8 @@ from telebot import types
 from captcha import setup_verification_handlers
 from seguridad import validar_copia_pega, es_admin_vip, es_admin_especial, es_administrador, es_chat_permitido
 from seguridad import limpiar_comandos_chat, registrar_filtro_anti_raid, registrar_limpiador_servicio
+from seguridad import OWNER_ID
+from seguridad import es_usuario_vip_activo, responder_sin_acceso_vip
 from calculadora import registrar_calculadora
 from ia_consulta import registrar_ia_consulta
 from arbitraje import registrar_handlers_arbitraje
@@ -203,6 +205,31 @@ TEXTO_SOPORTE = (
     f"{e('clic', '🎯')} <i>(Toca sobre los datos para copiarlos)</i>\n"
     f"-----------------------------------------\n"
 )
+
+TEXTO_ANUNCIO_VIP = (
+    "📢 <b>ANUNCIO OFICIAL: ACTUALIZACIÓN Y MODELO DE SOSTENIBILIDAD</b>\n\n"
+    "Estimada comunidad,\n\n"
+    "Para garantizar el funcionamiento 24/7 de nuestro bot, mantener la rapidez de respuesta "
+    "y asegurar la actualización constante de los monitores en servidores dedicados, hemos "
+    "implementado un modelo de suscripción <b>VIP a bajo costo</b> para las funciones avanzadas.\n\n"
+    "🔓<b>GUIAS PRACTICAS GRATUITAS (Para todos):</b>\n"
+    "• Usuarios comunes <b> 📜Regla de Oro📜</b>\n"
+    "• <code>/bp</code> 🟠 <b>BPay</b> 🟠\n"
+    "• <code>/gp</code> 🔵 <b>GPay</b> 🔵\n"
+    "• ⚙️ <b>Soporte</b>\n"
+    "• 🤖 <b>Ia Consulta</b>\n\n"
+    "🔒 <b>MÓDULOS EXCLUSIVOS VIP:</b>\n"
+    "• 🟢 <b>P2P-USDT</b> 🔴\n"
+    "• 📊 <b>Intervencion</b> 📊\n"
+    "• 📟 <b>Calculadora</b>\n"
+    "• 📊 <b>Arbitraje & Reposición</b> 📊\n\n"
+    "💡 <i>Uso optimizado en grupos para Administradores VIP o en chat privado para todos.</i>\n\n"
+    "💎 <b>TARIFA ACCESIBLE:</b>\n"
+    "• <b>Suscripción VIP:</b> <code>2 USDT / Quincenal</code> (o equivalente en Bs).\n"
+    "• <b>Activación:</b> Toca en ⚙️ <b>Soporte</b> para ver las cuentas de pago y envía tu comprobante.\n\n"
+    "¡Gracias por su constante apoyo para mantener este proyecto activo y en evolución! 🚀"
+)
+
 
 # ==========================================
 #  LÓGICA DE PROCESAMIENTO Y APIS
@@ -890,6 +917,12 @@ def comando_brecha_canal(message):
     chat_id = message.chat.id
     user_id = message.from_user.id
 
+    # --- CANDADO VIP GLOBAL ---
+    if not es_usuario_vip_activo(bot, message.from_user, r):
+        responder_sin_acceso_vip(bot, chat_id)
+        return
+    # -------------------------- 
+
     # Intentar eliminar de inmediato el mensaje que activó el comando (/brecha)
     try:
         bot.delete_message(chat_id, message.message_id)
@@ -968,6 +1001,12 @@ def handle_tasas_comando(message):
     # --- FILTRO DE SEGURIDAD GENERAL ---
     if not es_chat_permitido(bot, message, CHATS_PERMITIDOS, USUARIOS_AUTORIZADOS, CREADOR_ID):
         return
+
+     # --- CANDADO VIP GLOBAL ---
+    if not es_usuario_vip_activo(bot, message.from_user, r):
+        responder_sin_acceso_vip(bot, chat_id)
+        return
+    # --------------------------
 
     # --- 1. CHAT PRIVADO ---
     if message.chat.type == "private":
@@ -1063,6 +1102,12 @@ def handle_zinli_comando(message):
     if not es_chat_permitido(bot, message, CHATS_PERMITIDOS, USUARIOS_AUTORIZADOS, CREADOR_ID):
         return
 
+     # --- CANDADO VIP GLOBAL ---
+    if not es_usuario_vip_activo(bot, message.from_user, r):
+        responder_sin_acceso_vip(bot, chat_id)
+        return
+    # --------------------------
+
     # --- 1. CHAT PRIVADO ---
     if message.chat.type == 'private':
         if message.text and message.text.strip().startswith('/'):
@@ -1146,8 +1191,183 @@ def handle_zinli_comando(message):
                 borrar_mensaje_luego(chat_id, aviso.message_id, 10)
             except Exception:
                 pass
-                
 
+
+@bot.message_handler(commands=['activar_vip'])
+def comando_activar_vip(message):
+    if str(message.from_user.id) != str(OWNER_ID):
+        return
+
+    partes = message.text.split()
+    user_id_target = None
+    dias = None
+
+    # Si respondes a un mensaje (directo o reenviado)
+    if message.reply_to_message:
+        target_msg = message.reply_to_message
+        
+        # Soporte para la nueva API de Telegram (forward_from_user) y la anterior
+        if getattr(target_msg, 'forward_from_user', None):
+            user_id_target = target_msg.forward_from_user.id
+        elif getattr(target_msg, 'forward_from', None):
+            user_id_target = target_msg.forward_from.id
+        else:
+            user_id_target = target_msg.from_user.id
+
+        if len(partes) >= 2:
+            try:
+                dias = int(partes[1].strip())
+            except ValueError:
+                pass
+
+    # Modo manual: /activar_vip <user_id> <dias>
+    elif len(partes) >= 3:
+        user_id_target = partes[1].strip()
+        try:
+            dias = int(partes[2].strip())
+        except ValueError:
+            pass
+
+    if not user_id_target or not dias:
+        bot.reply_to(
+            message,
+            "<b>❌ No se pudo extraer el ID o los días.</b>\n\n"
+            "• Responde al mensaje/reenvío: <code>/activar_vip &lt;dias&gt;</code>\n"
+            "• O manual: <code>/activar_vip &lt;user_id&gt; &lt;dias&gt;</code>",
+            parse_mode="HTML"
+        )
+        return
+
+    segundos = dias * 86400
+
+    # Usamos la variable global r directamente sin reasignar 'r = r'
+    global r
+    if r:
+        r.setex(f"vip_user:{user_id_target}", segundos, "activo")
+        bot.reply_to(
+            message,
+            f"<b>✅ Acceso VIP Activado</b>\n\n"
+            f"• <b>Usuario ID:</b> <code>{user_id_target}</code>\n"
+            f"• <b>Duración:</b> {dias} días",
+            parse_mode="HTML"
+        )
+        try:
+            bot.send_message(
+                user_id_target,
+                f"<b>🎉 ¡Tu suscripción VIP ha sido activada!</b>\n\n"
+                f"Tienes acceso ilimitado a las herramientas del bot por {dias} días.",
+                parse_mode="HTML"
+            )
+        except Exception:
+            pass
+    else:
+        bot.reply_to(message, "❌ Error de conexión con Redis.")
+
+
+@bot.message_handler(commands=['revocar_vip'])
+def comando_revocar_vip(message):
+    if str(message.from_user.id) != str(OWNER_ID):
+        return
+
+    partes = message.text.split()
+    user_id_target = None
+
+    # Caso 1: Respondiendo a un mensaje
+    if message.reply_to_message:
+        target_msg = message.reply_to_message
+        if getattr(target_msg, 'forward_from_user', None):
+            user_id_target = target_msg.forward_from_user.id
+        elif getattr(target_msg, 'forward_from', None):
+            user_id_target = target_msg.forward_from.id
+        else:
+            user_id_target = target_msg.from_user.id
+
+    # Caso 2: Manual (/revocar_vip <user_id>)
+    elif len(partes) >= 2:
+        user_id_target = partes[1].strip()
+
+    if not user_id_target:
+        bot.reply_to(
+            message,
+            "<b>❌ Uso incorrecto.</b>\n"
+            "• Responde al mensaje del usuario: <code>/revocar_vip</code>\n"
+            "• O manual: <code>/revocar_vip &lt;user_id&gt;</code>",
+            parse_mode="HTML"
+        )
+        return
+
+    global r
+    if r:
+        # Eliminamos la clave de Redis inmediatamente
+        eliminado = r.delete(f"vip_user:{user_id_target}")
+        
+        if eliminado:
+            bot.reply_to(
+                message,
+                f"<b>🚫 Acceso VIP Revocado</b>\n\n"
+                f"• <b>Usuario ID:</b> <code>{user_id_target}</code>\n"
+                f"• El usuario ya no tiene acceso a los módulos VIP.",
+                parse_mode="HTML"
+            )
+        else:
+            bot.reply_to(
+                message,
+                f"<b>⚠️ Información:</b> El usuario <code>{user_id_target}</code> no tenía una suscripción VIP activa en Redis.",
+                parse_mode="HTML"
+            )
+    else:
+        bot.reply_to(message, "❌ Error de conexión con Redis.")
+        
+
+@bot.callback_query_handler(func=lambda call: call.data == "solicitar_vip_pago")
+def callback_notificar_pago(call):
+    user = call.from_user
+    bot.answer_callback_query(call.id, "✅ Solicitud enviada al administrador.", show_alert=True)
+    
+    username_str = f"@{user.username}" if user.username else "Sin alias"
+    
+    # Mensaje con formato especial para tocar y copiar
+    notificacion = (
+        "📥 <b>NUEVA SOLICITUD DE ACTIVACIÓN VIP</b>\n\n"
+        f"• <b>Usuario:</b> {user.first_name} ({username_str})\n"
+        f"• <b>ID:</b> <code>{user.id}</code>\n\n"
+        f"👇 <b>Toca el comando para copiarlo e ingresar días:</b>\n"
+        f"<code>/activar_vip {user.id} 15</code>\n"
+        f"<code>/activar_vip {user.id} 30</code>"
+    )
+    
+    try:
+        bot.send_message(OWNER_ID, notificacion, parse_mode="HTML")
+    except Exception as e:
+        print(f"Error al enviar notificación VIP al OWNER_ID: {e}")
+                 
+
+@bot.callback_query_handler(func=lambda call: call.data == "ver_soporte_vip")
+def callback_soporte_vip(call):
+    bot.answer_callback_query(call.id)
+    # Llama a tu función procesar_soporte que ya envía TEXTO_SOPORTE
+    procesar_soporte(call.message)
+
+@bot.message_handler(commands=['anuncio_vip'])
+def handle_anuncio_vip(message):
+    user_id = message.from_user.id
+    chat_id = message.chat.id
+    
+    # Si es chat privado, se envía directo
+    if message.chat.type == "private":
+        bot.send_message(chat_id, TEXTO_ANUNCIO_VIP, parse_mode="HTML")
+        return
+        
+    # En grupos, verificamos que quien ejecuta sea Admin o Creador
+    if es_admin_o_vip(user_id) or str(user_id) == str(CREADOR_ID):
+        # Opcional: borrar el comando del usuario para mantener limpio el chat
+        try:
+            bot.delete_message(chat_id, message.message_id)
+        except Exception:
+            pass
+            
+        bot.send_message(chat_id, TEXTO_ANUNCIO_VIP, parse_mode="HTML")
+        
 
 # Manejador para /p y el botón P2P
 @bot.message_handler(commands=['p', 'p2p'])
@@ -1268,6 +1488,12 @@ def procesar_precio(message):
     if not es_chat_permitido(bot, message, CHATS_PERMITIDOS, USUARIOS_AUTORIZADOS, CREADOR_ID):
         return
 
+    # --- CANDADO VIP GLOBAL ---
+    if not es_usuario_vip_activo(bot, message.from_user, r):
+        responder_sin_acceso_vip(bot, chat_id)
+        return
+    # -------------------------- 
+
     # --- 1. CHAT PRIVADO ---
     if message.chat.type == "private":
         if message.text and message.text.strip().startswith('/'):
@@ -1375,6 +1601,12 @@ def procesar_intervencion(message):
     # Permite el paso ÚNICAMENTE si el chat está permitido en las reglas de seguridad 
     if not es_chat_permitido(bot, message, CHATS_PERMITIDOS, USUARIOS_AUTORIZADOS, CREADOR_ID):
         return
+
+     # --- CANDADO VIP GLOBAL ---
+    if not es_usuario_vip_activo(bot, message.from_user, r):
+        responder_sin_acceso_vip(bot, chat_id)
+        return
+    # --------------------------
 
     # --- 1. CHAT PRIVADO ---
     if message.chat.type == "private":

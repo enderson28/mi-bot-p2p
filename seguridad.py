@@ -1,6 +1,8 @@
 import time
 from collections import deque
 from captcha import registrar_solicitud_pendiente
+import os
+from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 # =========================================================
 # LISTA NEGRA GLOBAL (BLOQUEO ABSOLUTO)
@@ -265,4 +267,70 @@ def registrar_limpiador_servicio(bot):
             bot.delete_message(message.chat.id, message.message_id)
         except Exception:
             pass
-            
+
+
+# Puedes colocar tu ID numérico directo o leerlo desde las variables de entorno
+OWNER_ID = int(os.getenv("OWNER_ID", "5073264705")) 
+
+def es_usuario_vip_activo(bot, user, r):
+    if not user:
+        return False
+
+    # El Creador NUNCA paga
+    if user.id == OWNER_ID:
+        return True
+
+    if not r:
+        return False
+
+    key = f"vip_user:{user.id}"
+
+    # Si se le pasa la conexión de Redis directamente
+    if hasattr(r, 'exists'):
+        return bool(r.exists(key))
+    
+    # Si se le pasa un diccionario de caché
+    if isinstance(r, dict):
+        return key in r or r.get(key) is not None
+
+    return False
+    
+
+def responder_sin_acceso_vip(bot, chat_id):
+    """Envía el panel de suscripción VIP con la botonera de 3 pasos."""
+    markup = InlineKeyboardMarkup(row_width=1)
+    
+    # 1. Solicita la activación (Te envía el comando pre-formateado a tu privado)
+    btn_solicitar = InlineKeyboardButton(
+        "1️⃣ Enviar Solicitud VIP", 
+        callback_data="solicitar_vip_pago"
+    )
+    
+    # 2. Muestra los datos de pago/cuentas en pantalla
+    btn_soporte = InlineKeyboardButton(
+        "2️⃣ ⚙️ Soporte / Datos de Pago", 
+        callback_data="ver_soporte_vip"
+    )
+    
+    # 3. Abre un chat directo contigo en Telegram para mandar el comprobante
+    # Reemplaza 'tu_username' por tu usuario real de Telegram (sin el @)
+    btn_comprobante = InlineKeyboardButton(
+        "3️⃣ 📩 Enviar Comprobante al Creador", 
+        url="https://t.me/+584145057892"
+    )
+    
+    markup.add(btn_solicitar, btn_soporte, btn_comprobante)
+    
+    texto = (
+        "<b>🔒 Contenido Exclusivo VIP</b>\n\n"
+        "Esta herramienta requiere una suscripción activa.\n"
+        "Tarifa mínima: <b>2 USDT / Quincenal</b> (o equivalente en Bs).\n\n"
+        "<b>Pasos para activarlo:</b>\n"
+        "1. Presiona <b>Enviar Solicitud VIP</b> para notificar al sistema.\n"
+        "2. Consulta las cuentas en <b>⚙️ Soporte / Datos de Pago</b>.\n"
+        "3. Envía el captura en <b>Enviar Comprobante</b>."
+    )
+    
+    bot.send_message(chat_id, texto, parse_mode="HTML", reply_markup=markup)
+    
+    

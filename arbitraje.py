@@ -535,14 +535,22 @@ def generar_y_enviar_resultado(chat_id, user_id, tasa_p2p_venta, bot, redis_clie
     )
 
     # --- DETECTAR PRÓXIMO DÍA HÁBIL REAL ---
-    hora_ve = datetime.now(timezone.utc) - timedelta(hours=4)
-    dia_semana_num = hora_ve.weekday()
-
-    if dia_semana_num in [4, 5, 6]:
-        proximo_dia = "Lunes"
+    # 1. Intentamos obtener el día real publicado por el BCV en fecha_manana (ej: "Martes, 15 Septiembre 2026" -> "Martes")
+    fecha_manana_str = datos_bcv.get("fecha_manana", "").strip()
+        
+    if fecha_manana_str and "," in fecha_manana_str:
+        proximo_dia = fecha_manana_str.split(",")[0].strip()
     else:
-        dias_semana = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"]
-        proximo_dia = dias_semana[dia_semana_num + 1]
+        # Fallback por si la fecha mañana aún no está publicada
+        hora_ve = datetime.now(timezone.utc) - timedelta(hours=4)
+        dia_semana_num = hora_ve.weekday()
+            
+        if dia_semana_num in [4, 5, 6]:  # Viernes, Sábado, Domingo
+            proximo_dia = "Lunes"
+        else:
+            dias_semana = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"]
+            proximo_dia = dias_semana[dia_semana_num + 1]
+                
 
     # --- BLOQUE 2: REPOSICIÓN O AVISO DE TASA NO PUBLICADA ---
     hay_tasa_manana_publicada = bool(tasa_bcv_manana and float(tasa_bcv_manana) > 0 and float(tasa_bcv_manana) != float(tasa_bcv_hoy))

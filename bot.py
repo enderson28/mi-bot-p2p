@@ -223,14 +223,14 @@ TEXTO_ANUNCIO_VIP = (
     "• 📊 <b>Intervencion</b> 📊\n"
     "• 📟 <b>Calculadora</b>\n"
     "• 📊 <b>Arbitraje & Reposición</b> 📊\n\n"
-    "• <b>MONITORES VIP SIN BOTONES</b>\n"
+    "• <b>MONITORES ADMINISTRADORES VIP SIN BOTONES EN GRUPO</b>\n"
     "• <code>/brecha</code>\n"
     "• <code>/zinli</code>\n"
     "• <code>/tasa</code>\n\n"
     "💡 <i>Uso optimizado en grupos para Administradores VIP o en chat privado para todos.</i>\n\n"
     "💎 <b>TARIFA ACCESIBLE:</b>\n"
     "• <b>Suscripción VIP:</b> <code>2 USDT / Quincenal</code> (o equivalente en Bs).\n"
-    "• <b>Activación:</b> Toca en ⚙️ <b>Soporte</b> para ver las cuentas de pago y envía tu comprobante.\n\n"
+    "• <b>Activación Chat privado bot:</b> Toca en: 1️⃣ <b>Enviar Solicitud VIP</b> , 2️⃣ ⚙️ <b>Soporte</b> para ver las cuentas de pago y 3️⃣ <b>Envíar comprobante.</b>\n\n"
     "¡Gracias por su constante apoyo para mantener este proyecto activo y en evolución! 🚀"
 )
 

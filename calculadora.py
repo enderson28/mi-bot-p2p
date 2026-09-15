@@ -24,7 +24,7 @@ def registrar_calculadora(bot, obtener_cache_func, obtener_teclado_func):
             
         # --- CONTROL DE ACCESO VIP ---
         # r_client / r es tu conexión Redis pasada o importada
-        if not es_usuario_vip_activo(bot, message.from_user, obtener_cache_func()):
+        if not es_usuario_vip_activo(bot, message.from_user, r):
             responder_sin_acceso_vip(bot, message.chat.id)
             return
         # -----------------------------

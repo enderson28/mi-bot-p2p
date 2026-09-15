@@ -44,7 +44,7 @@ def comando_comandos(bot, message):
         f"───────────────\n"
         f"▫️ <code>/tasa</code> {e('FLECHA_DERECHA', '❇️')} {e('BINANCE_P2P', '❇️')} Monitor P2P Global.\n\n"
         
-        f"<blockquote>{e('REVISION', '❇️')} <b>ADMINISTRADORES (Comandos para el Grupo):</b>\n</blockquote>"
+        f"<blockquote>{e('REVISION', '❇️')} <b>ADMINISTRADORES VIP (Comandos para el Grupo) y USUARIOS VIP EN CHAT PRIVADO BOT:</b>\n</blockquote>"
         f"▫️ <code>/aviso</code>\n"
         f"▫️ <code>/zinli</code>\n"
         f"▫️ <code>/i</code>\n"
@@ -52,11 +52,11 @@ def comando_comandos(bot, message):
         f"▫️ <code>/brecha</code>\n"
         f"▫️ <code>/tasa</code>\n\n"
         
-        f"<blockquote>{e('BOTS', '❇️')} <b>USUARIOS ACTIVOS DEL GRUPO:</b></blockquote>\n"
+        f"<blockquote>{e('BOTS', '❇️')} <b>USUARIOS VIP ACTIVOS DEL GRUPO:</b></blockquote>\n"
         f"───────────────\n"
-        f"Uso directo de sus 9 botones en el chat interno del bot.\n\n"
+        f"Uso directo de sus 9 botones ( 4 Vip y 5 libres )en el chat interno del bot.\n\n"
         
-        f"{e('ROBOTICO', '❇️')} <b>Comandos en Chat Privado del Bot (Alternativa):</b>\n"
+        f"{e('ROBOTICO', '❇️')} <b>Comandos VIP en Chat Privado del Bot (Alternativa):</b>\n"
         f"───────────────\n"
         f"▫️ <code>/i</code> {e('FLECHA_DERECHA', '❇️')} Monitor de Intervención.\n"
         f"───────────────\n"

@@ -526,7 +526,7 @@ def obtener_tasa_binance_spot_usdt():
     return (1.00018 * FACTOR_SPREAD_CONVERT, 5)
 
 # Registramos la calculadora usando la fuente única de verdad en Redis
-solicitar_calculadora = registrar_calculadora(bot, obtener_datos_bcv_validos, obtener_teclado_privado)
+solicitar_calculadora = registrar_calculadora(bot, obtener_datos_bcv_validos, obtener_teclado_privado, r)
                 
 def actualizar_cache_segundo_plano():
     while True:

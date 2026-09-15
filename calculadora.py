@@ -2,7 +2,7 @@ from telebot.types import ReplyKeyboardMarkup, KeyboardButton
 from emojis import TG_EMOJIS, e
 from seguridad import es_usuario_vip_activo, responder_sin_acceso_vip
 
-def registrar_calculadora(bot, obtener_cache_func, obtener_teclado_func):
+def registrar_calculadora(bot, obtener_cache_func, obtener_teclado_func, r=None):
     """
     Registra el módulo de calculadora interactiva de divisas (USD -> Bs y Bs -> USD).
     """
@@ -24,7 +24,7 @@ def registrar_calculadora(bot, obtener_cache_func, obtener_teclado_func):
             
         # --- CONTROL DE ACCESO VIP ---
         # r_client / r es tu conexión Redis pasada o importada
-        if not es_usuario_vip_activo(bot, message.from_user, redis_client):
+        if not es_usuario_vip_activo(bot, message.from_user, r):
             responder_sin_acceso_vip(bot, message.chat.id)
             return
         # -----------------------------

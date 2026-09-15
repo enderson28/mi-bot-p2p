@@ -919,36 +919,51 @@ def obtener_teclado_brecha():
 @bot.message_handler(commands=['brecha'])
 def comando_brecha_canal(message):
     chat_id = message.chat.id
-    user_id = message.from_user.id
+    user_id = message.from_user.id if message.from_user else None
 
-    # --- CANDADO VIP GLOBAL ---
+    # 1. CANDADO VIP GLOBAL (Debe ser VIP en Redis siempre)
     if not es_usuario_vip_activo(bot, message.from_user, r):
         responder_sin_acceso_vip(bot, chat_id)
         return
-    # -------------------------- 
 
-    # Intentar eliminar de inmediato el mensaje que activó el comando (/brecha)
+    # Intentar eliminar el mensaje del comando
     try:
         bot.delete_message(chat_id, message.message_id)
-    except Exception as err:
-        print(f"No se pudo eliminar el mensaje del comando /brecha: {err}")
+    except Exception:
+        pass
 
-    # Permitir en Chat Privado O en el CANAL_PRUEBA
     es_privado = message.chat.type == "private"
     es_canal_autorizado = (chat_id == CANAL_PRUEBA)
 
-    if not (es_privado or es_canal_autorizado):
+    # 2. VALIDACIÓN DE ENTORNO Y PERMISOS
+    # En chat privado pasa si es VIP. En el canal solo pasa si es Admin o Creador.
+    if not es_privado and es_canal_autorizado:
+        es_admin_g = False
+        try:
+            es_admin_g = es_administrador(bot, chat_id, user_id, message.from_user)
+        except Exception:
+            es_admin_g = False
+
+        if not (str(user_id) == str(CREADOR_ID) or es_admin_g):
+            # Si no es admin en el canal, enviar aviso temporal
+            aviso = bot.send_message(
+                chat_id,
+                f"❌ <b>Comando exclusivo para Administradores en el canal.</b>\n"
+                f"Consulta la brecha libremente en mi chat privado: @{BOT_USERNAME}",
+                parse_mode="HTML"
+            )
+            borrar_mensaje_luego(chat_id, aviso.message_id, 10)
+            return
+    elif not es_privado and not es_canal_autorizado:
+        # Si no es chat privado ni el canal autorizado, ignora
         return
 
-    # Validar permisos de administrador en canal
-    if es_canal_autorizado and not es_administrador(bot, chat_id, user_id):
-        return
-
+    # 3. ENVIAR MONITOR DE BRECHA
     msg_texto = construir_monitor_brecha_html()
     bot.send_message(
-        chat_id, 
-        msg_texto, 
-        parse_mode="HTML", 
+        chat_id,
+        msg_texto,
+        parse_mode="HTML",
         reply_markup=obtener_teclado_brecha()
     )
 
@@ -958,15 +973,25 @@ def callback_refrescar_brecha(call):
     chat_id = call.message.chat.id
     user_id = call.from_user.id
 
-    # Si es el canal de pruebas, valida admin; en privado lo deja pasar
-    if chat_id == CANAL_PRUEBA and not es_administrador(bot, chat_id, user_id):
-        bot.answer_callback_query(
-            call.id, 
-            "⚠️ Este botón es exclusivo para administradores.", 
-            show_alert=True
-        )
+    # 1. Verificar VIP de quien presiona el botón
+    if not es_usuario_vip_activo(bot, call.from_user, r):
+        bot.answer_callback_query(call.id, "🔒 Requiere suscripción VIP activa.", show_alert=True)
         return
 
+    # 2. Verificar Admin solo si el botón se presiona en el canal
+    es_privado = call.message.chat.type == "private"
+    if not es_privado and chat_id == CANAL_PRUEBA:
+        es_admin_g = False
+        try:
+            es_admin_g = es_administrador(bot, chat_id, user_id, call.from_user)
+        except Exception:
+            es_admin_g = False
+
+        if not (str(user_id) == str(CREADOR_ID) or es_admin_g):
+            bot.answer_callback_query(call.id, "⚠️ Este botón es exclusivo para administradores.", show_alert=True)
+            return
+
+    # 3. Refrescar tasas y actualizar mensaje
     try:
         refrescar_tasas_en_vivo()
     except Exception as e:
@@ -981,9 +1006,10 @@ def callback_refrescar_brecha(call):
             parse_mode="HTML",
             reply_markup=obtener_teclado_brecha()
         )
-        bot.answer_callback_query(call.id, "✅ Brechas actualizadas al instante")
-    except Exception as e:
+        bot.answer_callback_query(call.id, "🔄 Brechas actualizadas al instante")
+    except Exception:
         bot.answer_callback_query(call.id, "✅ Tasas verificadas sin cambios")
+            
     
     
 # ==========================================
@@ -1002,17 +1028,16 @@ def handle_tasas_comando(message):
     user_id = message.from_user.id if message.from_user else None
     chat_id = message.chat.id
 
-    # --- FILTRO DE SEGURIDAD GENERAL ---
+    # 1. FILTRO DE SEGURIDAD GENERAL
     if not es_chat_permitido(bot, message, CHATS_PERMITIDOS, USUARIOS_AUTORIZADOS, CREADOR_ID):
         return
 
-     # --- CANDADO VIP GLOBAL ---
+    # 2. CANDADO VIP GLOBAL (Debe ser VIP en Redis siempre, tanto en privado como en grupo)
     if not es_usuario_vip_activo(bot, message.from_user, r):
         responder_sin_acceso_vip(bot, chat_id)
         return
-    # --------------------------
 
-    # --- 1. CHAT PRIVADO ---
+    # --- CASO A: CHAT PRIVADO ---
     if message.chat.type == "private":
         if message.text and message.text.strip().startswith('/'):
             try:
@@ -1028,92 +1053,73 @@ def handle_tasas_comando(message):
             texto_resultado = construir_monitor_canal_html()
             markup_tasas = InlineKeyboardMarkup()
             markup_tasas.add(InlineKeyboardButton("🔄 Actualizar Tasas", callback_data="refrescar_canal_tasas"))
-
             enviar_o_reemplazar_privado(chat_id, user_id, texto_resultado, reply_markup=markup_tasas)
             return
         except Exception as e:
             print(f"Error en tasas privado: {e}")
-            bot.send_message(chat_id, "❌ Error temporal al obtener tasas. Inténtalo de nuevo en unos segundos.")
+            bot.send_message(chat_id, "❌ Error temporal al obtener tasas. Inténtalo de nuevo.")
             return
 
-    # --- 2. EN GRUPOS ---
-    if getattr(message, 'is_automatic_forward', False):
-        try:
-            bot.edit_message_reply_markup(chat_id=chat_id, message_id=message.message_id, reply_markup=None)
-        except Exception:
-            pass
-        return
-
-    try:
-        bot.delete_message(chat_id, message.message_id)
-    except Exception:
-        pass
-
+    # --- CASO B: EN GRUPOS ---
     es_admin_g = False
     try:
         es_admin_g = es_administrador(bot, chat_id, user_id, message.from_user)
     except Exception:
         es_admin_g = False
 
-    if str(user_id) == str(CREADOR_ID) or es_admin_vip(bot, message.from_user) or es_admin_g:
+    # Permiso en Grupo: Solo Creador o Administradores con VIP
+    es_autorizado_grupo = (str(user_id) == str(CREADOR_ID)) or es_admin_g
+
+    if es_autorizado_grupo:
         try:
-            markup_tasas = None
+            bot.delete_message(chat_id, message.message_id)
+        except Exception:
+            pass
 
-            if str(chat_id) == str(CANAL_PRUEBA):
-                markup_tasas = InlineKeyboardMarkup()
-                markup_tasas.row(
-                    InlineKeyboardButton("🔄 Actualizar Tasas", callback_data="refrescar_canal_tasas"),
-                    InlineKeyboardButton("🗑️ Borrar", callback_data="borrar_mensaje")
-                )
-
-            msg_enviado = bot.send_message(
-                chat_id,
-                construir_monitor_canal_html(),
-                parse_mode="HTML",
-                reply_markup=markup_tasas
+        try:
+            markup_tasas = InlineKeyboardMarkup()
+            markup_tasas.row(
+                InlineKeyboardButton("🔄 Actualizar Tasas", callback_data="refrescar_canal_tasas"),
+                InlineKeyboardButton("🗑️ Borrar", callback_data="borrar_mensaje")
             )
-
+            msg_enviado = bot.send_message(chat_id, construir_monitor_canal_html(), parse_mode="HTML", reply_markup=markup_tasas)
             borrar_mensaje_luego(chat_id, msg_enviado.message_id, TIEMPO_VIDA_TABLA)
-
         except Exception as e:
             print(f"Error enviando tasas en grupo: {e}")
-
     else:
-        ahora = time.time()
-        ultima_vez_aviso = grupos_tiempo_aviso.get(chat_id, 0)
-
-        if ahora - ultima_vez_aviso > RATE_LIMIT_AVISO:
-            try:
-                aviso = bot.send_message(
-                    chat_id,
-                    f"❌ <b>Comando exclusivo para Administradores.</b>\n\n"
-                    f"Hola @{message.from_user.username or message.from_user.first_name}. Para mantener el orden, "
-                    f"👉 Consulta todas las tasas libremente en mi chat privado: @{BOT_USERNAME}",
-                    parse_mode="HTML"
-                )
-                grupos_tiempo_aviso[chat_id] = ahora
-                borrar_mensaje_luego(chat_id, aviso.message_id, 10)
-            except Exception:
-                pass
+        # Si un usuario normal escribe el comando en el grupo:
+        try:
+            bot.delete_message(chat_id, message.message_id)
+        except Exception:
+            pass
+        
+        # Enviar aviso temporal
+        aviso = bot.send_message(
+            chat_id,
+            f"❌ <b>Comando exclusivo para Administradores en el grupo.</b>\n"
+            f"Hola @{message.from_user.username or message.from_user.first_name}, consulta las tasas libremente en mi chat privado: @{BOT_USERNAME}",
+            parse_mode="HTML"
+        )
+        borrar_mensaje_luego(chat_id, aviso.message_id, 10)
+        
 
 # Manejador para ejecutar /zinli en grupos permitidos y privados
 @bot.message_handler(commands=['zinli'])
-def handle_zinli_comando(message):
+def handle_tasas_comando(message):
     user_id = message.from_user.id if message.from_user else None
     chat_id = message.chat.id
 
-    # --- FILTRO DE SEGURIDAD GENERAL ---
+    # 1. FILTRO DE SEGURIDAD GENERAL
     if not es_chat_permitido(bot, message, CHATS_PERMITIDOS, USUARIOS_AUTORIZADOS, CREADOR_ID):
         return
 
-     # --- CANDADO VIP GLOBAL ---
+    # 2. CANDADO VIP GLOBAL (Debe ser VIP en Redis siempre, tanto en privado como en grupo)
     if not es_usuario_vip_activo(bot, message.from_user, r):
         responder_sin_acceso_vip(bot, chat_id)
         return
-    # --------------------------
 
-    # --- 1. CHAT PRIVADO ---
-    if message.chat.type == 'private':
+    # --- CASO A: CHAT PRIVADO ---
+    if message.chat.type == "private":
         if message.text and message.text.strip().startswith('/'):
             try:
                 bot.delete_message(chat_id, message.message_id)
@@ -1128,73 +1134,55 @@ def handle_zinli_comando(message):
             texto_resultado = construir_monitor_zinli_html()
             markup_tasas = InlineKeyboardMarkup()
             markup_tasas.add(InlineKeyboardButton("🔄 Actualizar Tasas", callback_data="refrescar_canal_zinli"))
-
             enviar_o_reemplazar_privado(chat_id, user_id, texto_resultado, reply_markup=markup_tasas)
             return
         except Exception as e:
-            print(f"Error en zinli privado: {e}")
-            bot.send_message(chat_id, "❌ Error temporal al obtener tasas. Inténtalo de nuevo en unos segundos.")
+            print(f"Error en tasas privado: {e}")
+            bot.send_message(chat_id, "❌ Error temporal al obtener tasas. Inténtalo de nuevo.")
             return
 
-    # --- 2. EN GRUPOS ---
-    if getattr(message, 'is_automatic_forward', False):
-        try:
-            bot.edit_message_reply_markup(chat_id=chat_id, message_id=message.message_id, reply_markup=None)
-        except Exception:
-            pass
-        return
-
-    try:
-        bot.delete_message(chat_id, message.message_id)
-    except Exception:
-        pass
-
+    # --- CASO B: EN GRUPOS ---
     es_admin_g = False
     try:
         es_admin_g = es_administrador(bot, chat_id, user_id, message.from_user)
     except Exception:
         es_admin_g = False
 
-    if str(user_id) == str(CREADOR_ID) or es_admin_vip(bot, message.from_user) or es_admin_g:
+    # Permiso en Grupo: Solo Creador o Administradores con VIP
+    es_autorizado_grupo = (str(user_id) == str(CREADOR_ID)) or es_admin_g
+
+    if es_autorizado_grupo:
         try:
-            markup_tasas = None
+            bot.delete_message(chat_id, message.message_id)
+        except Exception:
+            pass
 
-            if str(chat_id) == str(CANAL_PRUEBA):
-                markup_tasas = InlineKeyboardMarkup()
-                markup_tasas.row(
-                    InlineKeyboardButton("🔄 Actualizar Tasas", callback_data="refrescar_canal_zinli"),
-                    InlineKeyboardButton("🗑️ Borrar", callback_data="borrar_mensaje")
-                )
-
-            msg_enviado = bot.send_message(
-                chat_id,
-                construir_monitor_zinli_html(),
-                parse_mode="HTML",
-                reply_markup=markup_tasas
+        try:
+            markup_tasas = InlineKeyboardMarkup()
+            markup_tasas.row(
+                InlineKeyboardButton("🔄 Actualizar Tasas", callback_data="refrescar_canal_zinli"),
+                InlineKeyboardButton("🗑️ Borrar", callback_data="borrar_mensaje")
             )
-
+            msg_enviado = bot.send_message(chat_id, construir_monitor_zinli_html(), parse_mode="HTML", reply_markup=markup_tasas)
             borrar_mensaje_luego(chat_id, msg_enviado.message_id, TIEMPO_VIDA_TABLA)
-
         except Exception as e:
-            print(f"Error enviando tasas zinli en grupo: {e}")
-
+            print(f"Error enviando tasas en grupo: {e}")
     else:
-        ahora = time.time()
-        ultima_vez_aviso = grupos_tiempo_aviso.get(chat_id, 0)
+        # Si un usuario normal escribe el comando en el grupo:
+        try:
+            bot.delete_message(chat_id, message.message_id)
+        except Exception:
+            pass
+        
+        # Enviar aviso temporal
+        aviso = bot.send_message(
+            chat_id,
+            f"❌ <b>Comando exclusivo para Administradores en el grupo.</b>\n"
+            f"Hola @{message.from_user.username or message.from_user.first_name}, consulta las tasas libremente en mi chat privado: @{BOT_USERNAME}",
+            parse_mode="HTML"
+        )
+        borrar_mensaje_luego(chat_id, aviso.message_id, 10)
 
-        if ahora - ultima_vez_aviso > RATE_LIMIT_AVISO:
-            try:
-                aviso = bot.send_message(
-                    chat_id,
-                    f"❌ <b>Comando exclusivo para Administradores.</b>\n\n"
-                    f"Hola @{message.from_user.username or message.from_user.first_name}. Para mantener el orden, "
-                    f"📌 Consulta todas las tasas libremente en mi chat privado: @{BOT_USERNAME}",
-                    parse_mode="HTML"
-                )
-                grupos_tiempo_aviso[chat_id] = ahora
-                borrar_mensaje_luego(chat_id, aviso.message_id, 10)
-            except Exception:
-                pass
 
 
 @bot.message_handler(commands=['activar_vip'])

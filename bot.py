@@ -333,22 +333,22 @@ def obtener_datos_bcv_validos():
                 r.set("bcv_datos_v13", json.dumps(datos_defecto))
                 datos = datos_defecto.copy()
 
-            # ROTACIÓN AUTOMÁTICA DE MEDIANOCHE
+            # ROTACION AUTOMATICA DE MEDIANOCHE
             hora_ve = datetime.now(timezone.utc) - timedelta(hours=4)
-        
+
             dias = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
             meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
             dia_str = dias[hora_ve.weekday()]
             mes_str = meses[hora_ve.month - 1]
             fecha_hoy_sistema = f"{dia_str}, {hora_ve.day:02d} {mes_str} {hora_ve.year}"
-        
+
             tasa_manana_val = float(datos.get("tasa_manana", 0.0))
-            ultima_fecha_rotada = datos.get("fecha_ultima_rotacion", "")
-            
+            fecha_manana_guardada = str(datos.get("fecha_manana", "")).strip()
+
             es_fin_de_semana = hora_ve.weekday() in [5, 6]
 
-            # Si hay una tasa de mañana acumulada y hoy es un nuevo día en comparación a la última rotación
-            if tasa_manana_val > 0 and ultima_fecha_rotada != fecha_hoy_sistema and not es_fin_de_semana:
+            # Solo rota si hay tasa de mañana registrada Y su fecha asignada coincide exactamente con HOY
+            if tasa_manana_val > 0 and fecha_manana_guardada and fecha_manana_guardada == fecha_hoy_sistema and not es_fin_de_semana:
                 datos["tasa_anterior"] = float(datos.get("tasa_hoy", 0.0))
                 datos["fecha_anterior"] = datos.get("fecha_hoy", "")
                 datos["tasa_hoy"] = tasa_manana_val
@@ -360,10 +360,11 @@ def obtener_datos_bcv_validos():
                 datos["fecha_ultima_rotacion"] = fecha_hoy_sistema
 
                 r.set("bcv_datos_v13", json.dumps(datos))
-                print(f"🔄 [ROTACIÓN NOCTURNA] Tasa de mañana ({tasa_manana_val}) promovida a Tasa Hoy.")
+                print(f"🔄 [ROTACION NOCTURNA] Tasa de mañana ({tasa_manana_val}) promovida a Tasa Hoy para {fecha_hoy_sistema}")
 
             return datos
-        return datos_defecto
+        else:
+            return datos_defecto
     except Exception as e:
         print(f"⚠️ Error leyendo/rotando Redis: {e}")
         return datos_defecto

@@ -315,13 +315,13 @@ setup_verification_handlers(
 
 def obtener_datos_bcv_validos():
     datos_defecto = {
-        "tasa_hoy": 842.207,
-        "fecha_hoy": "Martes, 14 Septiembre 2026",
+        "tasa_hoy": 846.5131,
+        "fecha_hoy": "Miércoles, 16 Septiembre 2026",
         "tasa_manana": 0.0,
         "fecha_manana": "",
-        "tasa_anterior": 832.487,
-        "fecha_anterior": "Viernes, 11 Septiembre 2026",
-        "fecha_ultima_rotacion": "Martes, 14 Septiembre 2026"
+        "tasa_anterior": 842.207,
+        "fecha_anterior": "Martes, 15 Septiembre 2026",
+        "fecha_ultima_rotacion": "Miércoles, 16 Septiembre 2026"
     }
 
     try:
@@ -333,7 +333,7 @@ def obtener_datos_bcv_validos():
                 r.set("bcv_datos_v14", json.dumps(datos_defecto))
                 datos = datos_defecto.copy()
 
-            # ROTACION AUTOMATICA DE MEDIANOCHE
+            # ROTACIÓN AUTOMÁTICA DE MEDIANOCHE
             hora_ve = datetime.now(timezone.utc) - timedelta(hours=4)
 
             dias = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
@@ -344,23 +344,25 @@ def obtener_datos_bcv_validos():
 
             tasa_manana_val = float(datos.get("tasa_manana", 0.0))
             fecha_manana_guardada = str(datos.get("fecha_manana", "")).strip()
+            fecha_ultima_rotacion = str(datos.get("fecha_ultima_rotacion", "")).strip()
 
             es_fin_de_semana = hora_ve.weekday() in [5, 6]
 
-            # Solo rota si hay tasa de mañana registrada Y su fecha asignada coincide exactamente con HOY
-            if tasa_manana_val > 0 and fecha_manana_guardada and fecha_manana_guardada == fecha_hoy_sistema and not es_fin_de_semana:
+            # Evaluamos si hay tasa guardada y no hemos rotado hoy
+            if tasa_manana_val > 0 and fecha_ultima_rotacion != fecha_hoy_sistema and not es_fin_de_semana:
                 datos["tasa_anterior"] = float(datos.get("tasa_hoy", 0.0))
                 datos["fecha_anterior"] = datos.get("fecha_hoy", "")
-                datos["tasa_hoy"] = tasa_manana_val
-                datos["fecha_hoy"] = datos.get("fecha_manana", "")
 
-                # Se limpia la tasa de mañana para esperar el próximo raspado de la tarde
+                datos["tasa_hoy"] = tasa_manana_val
+                datos["fecha_hoy"] = fecha_manana_guardada if fecha_manana_guardada else fecha_hoy_sistema
+
+                # Limpiamos para el raspado de la tarde
                 datos["tasa_manana"] = 0.0
                 datos["fecha_manana"] = ""
                 datos["fecha_ultima_rotacion"] = fecha_hoy_sistema
 
                 r.set("bcv_datos_v14", json.dumps(datos))
-                print(f"🔄 [ROTACION NOCTURNA] Tasa de mañana ({tasa_manana_val}) promovida a Tasa Hoy para {fecha_hoy_sistema}")
+                print(f"🔥 [ROTACIÓN NOCTURNA] Tasa de mañana ({tasa_manana_val}) promovida a Tasa Hoy para {fecha_hoy_sistema}")
 
             return datos
         else:
@@ -368,6 +370,7 @@ def obtener_datos_bcv_validos():
     except Exception as e:
         print(f"⚠️ Error leyendo/rotando Redis: {e}")
         return datos_defecto
+        
         
                 
 def obtener_tasa_binance_p2p(tipo_operacion, monto_bs):

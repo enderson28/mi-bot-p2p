@@ -1364,6 +1364,85 @@ def handle_anuncio_vip(message):
 
     # Envía el anuncio guardado en tu variable TEXTO_ANUNCIO_VIP
     bot.send_message(chat_id, TEXTO_ANUNCIO_VIP, parse_mode="HTML")
+
+
+@bot.message_handler(commands=['vips_activos', 'vips'])
+def cmd_vips_activos(message):
+    # 1. Seguridad: Solo tú (OWNER_ID) puedes usar este comando
+    if str(message.from_user.id) != str(OWNER_ID):
+        return
+
+    try:
+        keys_vip = r.keys("vip_user:*") if r else []
+        
+        if not keys_vip:
+            bot.reply_to(message, "ℹ️ Actualmente no hay usuarios VIP registrados en Redis.")
+            return
+
+        msj = "🌟 <b><u>USUARIOS VIP ACTIVOS</u></b> 🌟\n\n"
+        total_vips = 0
+
+        for k in keys_vip:
+            key_str = k.decode('utf-8') if isinstance(k, bytes) else k
+            user_id = key_str.split(":")[1]
+            
+            ttl_segundos = r.ttl(key_str)
+            if ttl_segundos <= 0:
+                continue
+
+            dias_restantes = ttl_segundos // 86400
+            horas_restantes = (ttl_segundos % 86400) // 3600
+            
+            tiempo_txt = f"{dias_restantes}d {horas_restantes}h" if dias_restantes > 0 else f"{horas_restantes}h restantes"
+
+            try:
+                chat_info = bot.get_chat(int(user_id))
+                nombre = chat_info.first_name if chat_info.first_name else "Usuario VIP"
+                username = f" (@{chat_info.username})" if chat_info.username else ""
+                usuario_fmt = f"{nombre}{username}"
+            except Exception:
+                usuario_fmt = f"Usuario ID: {user_id}"
+
+            total_vips += 1
+            msj += f"👤 <b>{total_vips}. {usuario_fmt}</b>\n"
+            msj += f"⏳ <i>Tiempo restante: {tiempo_txt}</i>\n\n"
+
+        msj += f"📊 <b>Total de Miembros VIP: {total_vips}</b>\n"
+        msj += "───────────────\n"
+        msj += "🚀 <i>¿Quieres aparecer en la lista y desbloquear todas las funciones? Contacta a soporte para activar tu suscripción.</i>"
+
+        # Botón para que apruebes el envío al canal
+        markup = types.InlineKeyboardMarkup()
+        btn_publicar = types.InlineKeyboardButton("📢 Publicar esta lista en el Canal", callback_data="publicar_lista_vip")
+        markup.add(btn_publicar)
+
+        # Te envía primero la vista previa a ti
+        bot.send_message(OWNER_ID, f"👁️ <b>VISTA PREVIA DE LISTA VIP:</b>\n\n{msj}", parse_mode='HTML', reply_markup=markup)
+
+    except Exception as e:
+        print(f"⚠️ Error en comando /vips_activos: {e}")
+        bot.reply_to(message, "❌ Error al consultar la lista de Redis.")
+
+
+# Callback handler para enviar la lista al canal tras presionar el botón
+@bot.callback_query_handler(func=lambda call: call.data == "publicar_lista_vip")
+def callback_publicar_vip_canal(call):
+    if str(call.from_user.id) != str(OWNER_ID):
+        bot.answer_callback_query(call.id, "❌ No tienes permisos para esta acción.", show_alert=True)
+        return
+
+    try:
+        # Extrae el texto limpio de la vista previa eliminando el encabezado "VISTA PREVIA DE LISTA VIP:"
+        texto_canal = call.message.text.replace("👁️ VISTA PREVIA DE LISTA VIP:\n\n", "")
+        
+        # Publica en tu CANAL_PRINCIPAL_ID (definido en tus globales)
+        bot.send_message(CANAL_PRINCIPAL_ID, texto_canal, parse_mode='HTML')
+        
+        bot.answer_callback_query(call.id, "✅ Publicado con éxito en el canal.", show_alert=True)
+        bot.edit_message_reply_markup(chat_id=call.message.chat.id, message_id=call.message.message_id, reply_markup=None)
+    except Exception as e:
+        print(f"⚠️ Error al publicar lista VIP en canal: {e}")
+        bot.answer_callback_query(call.id, "❌ Error al publicar en el canal.", show_alert=True)
         
 
 # Manejador para /p y el botón P2P

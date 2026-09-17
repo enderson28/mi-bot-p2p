@@ -1435,8 +1435,8 @@ def callback_publicar_vip_canal(call):
         # Extrae el texto limpio de la vista previa eliminando el encabezado "VISTA PREVIA DE LISTA VIP:"
         texto_canal = call.message.text.replace("👁️ VISTA PREVIA DE LISTA VIP:\n\n", "")
         
-        # Publica en tu CANAL_PRINCIPAL_ID (definido en tus globales)
-        bot.send_message(CANAL_PRINCIPAL_ID, texto_canal, parse_mode='HTML')
+        # Publica en tu CANAL_PRUEBA (definido en tus globales)
+        bot.send_message(CANAL_PRUEBA, texto_canal, parse_mode='HTML')
         
         bot.answer_callback_query(call.id, "✅ Publicado con éxito en el canal.", show_alert=True)
         bot.edit_message_reply_markup(chat_id=call.message.chat.id, message_id=call.message.message_id, reply_markup=None)

@@ -1409,7 +1409,7 @@ def cmd_vips_activos(message):
 
         msj += f"{e('ESTADISTICA', '📊')} <b>Total de Miembros VIP: {total_vips}</b>\n"
         msj += "───────────────\n"
-        msj += f"{e('clic', '🚀')} <i>¿Quieres aparecer en la lista y desbloquear todas las funciones? Contacta a soporte para activar tu suscripción.</i>"
+        msj += f"{e('clic', '🚀')} <i>¿Quieres aparecer en la lista y desbloquear todas las funciones? Dale {e('clic', '🚀')} al bot @BancoIDV_bot para seguir los pasos y activar tu suscripción.</i>"
 
         markup = types.InlineKeyboardMarkup()
         btn_publicar = types.InlineKeyboardButton("📢 Publicar esta lista en el Canal", callback_data="publicar_lista_vip")
@@ -1431,7 +1431,7 @@ def callback_publicar_vip_canal(call):
     try:
         texto_canal = call.message.text.replace("👁️ VISTA PREVIA DE LISTA VIP:\n\n", "")
         
-        bot.send_message(CANAL_PRINCIPAL_ID, texto_canal, parse_mode='HTML')
+        bot.send_message(CANAL_PRUEBA, texto_canal, parse_mode='HTML')
         
         bot.answer_callback_query(call.id, "✅ Publicado con éxito en el canal.", show_alert=True)
         bot.edit_message_reply_markup(chat_id=call.message.chat.id, message_id=call.message.message_id, reply_markup=None)

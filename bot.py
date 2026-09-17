@@ -1379,7 +1379,7 @@ def cmd_vips_activos(message):
             bot.reply_to(message, "ℹ️ Actualmente no hay usuarios VIP registrados en Redis.")
             return
 
-        msj = "🌟 <b><u>USUARIOS VIP ACTIVOS</u></b> 🌟\n\n"
+        msj = f"{e('ESCUDO', '👏🏽')} <b><u>USUARIOS VIP ACTIVOS</u></b> {e('ESCUDO', '👏🏽')}\n\n"
         total_vips = 0
 
         for k in keys_vip:
@@ -1404,12 +1404,12 @@ def cmd_vips_activos(message):
                 usuario_fmt = f"Usuario ID: {user_id}"
 
             total_vips += 1
-            msj += f"👤 <b>{total_vips}. {usuario_fmt}</b>\n"
-            msj += f"⏳ <i>Tiempo restante: {tiempo_txt}</i>\n\n"
+            msj += f"{e('CUENTAS_FALSAS', '☠️')} <b>{total_vips}. {usuario_fmt}</b>\n"
+            msj += f"{e('RELOJERA', '💫')} <i>Tiempo restante: {tiempo_txt}</i>\n\n"
 
-        msj += f"📊 <b>Total de Miembros VIP: {total_vips}</b>\n"
-        msj += "───────────────\n"
-        msj += "🚀 <i>¿Quieres aparecer en la lista y desbloquear todas las funciones? Contacta a soporte para activar tu suscripción.</i>"
+        msj += f"{e('ESTADISTICA', '😆')} <b>Total de Miembros VIP: {total_vips}</b>\n"
+        msj += f"───────────────\n"
+        msj += f"{e('clic', '💫')} <i>¿Quieres aparecer en la lista y desbloquear todas las funciones? dale clic al bot @BANCOIDV_BOT para enviar tu solicitud, hacer el pago {e('pago_movil', '💫')} y activar tu suscripción.</i>"
 
         # Botón para que apruebes el envío al canal
         markup = types.InlineKeyboardMarkup()

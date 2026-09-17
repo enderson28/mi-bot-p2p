@@ -66,7 +66,7 @@ CHATS_PERMITIDOS = [
 
 # CONFIGURACIÓN DE TIEMPOS
 RATE_LIMIT_AVISO = 600       # 10 minutos para enfriamiento de avisos a usuarios
-TIEMPO_VIDA_TABLA = 300      # 5 minutos para autodestrucción del monitor/intervención
+TIEMPO_VIDA_TABLA = 3600      # 60 minutos para autodestrucción del monitor/intervención
 grupos_tiempo_aviso = {}     # Registra cooldown por chat_id
 
 # ==========================================

@@ -1368,7 +1368,6 @@ def handle_anuncio_vip(message):
 
 @bot.message_handler(commands=['vips_activos', 'vips'])
 def cmd_vips_activos(message):
-    # 1. Seguridad: Solo tú (OWNER_ID) puedes usar este comando
     if str(message.from_user.id) != str(OWNER_ID):
         return
 
@@ -1379,6 +1378,7 @@ def cmd_vips_activos(message):
             bot.reply_to(message, "ℹ️ Actualmente no hay usuarios VIP registrados en Redis.")
             return
 
+        # Renderizado de emojis nativos de Telegram usando e()
         msj = f"{e('ESCUDO', '🛡️')} <b><u>USUARIOS VIP ACTIVOS</u></b> {e('ESCUDO', '🛡️')}\n\n"
         total_vips = 0
 
@@ -1405,26 +1405,23 @@ def cmd_vips_activos(message):
 
             total_vips += 1
             msj += f"{e('CUENTAS_FALSAS', '👤')} <b>{total_vips}. {usuario_fmt}</b>\n"
-            msj += f"{e('RELOJERA', '⌛')} <i>Tiempo restante: {tiempo_txt}</i>\n\n"
+            msj += f"{e('RELOJERA', '⏳')} <i>Tiempo restante: {tiempo_txt}</i>\n\n"
 
         msj += f"{e('ESTADISTICA', '📊')} <b>Total de Miembros VIP: {total_vips}</b>\n"
-        msj += f"───────────────\n"
-        msj += f"{e('clic', '💫')} <i>¿Quieres aparecer en la lista y desbloquear todas las funciones? dale clic al bot @BANCOIDV_BOT para enviar tu solicitud, hacer el pago y activar tu suscripción.</i>"
+        msj += "───────────────\n"
+        msj += f"{e('clic', '🚀')} <i>¿Quieres aparecer en la lista y desbloquear todas las funciones? Contacta a soporte para activar tu suscripción.</i>"
 
-        # Botón para que apruebes el envío al canal
         markup = types.InlineKeyboardMarkup()
         btn_publicar = types.InlineKeyboardButton("📢 Publicar esta lista en el Canal", callback_data="publicar_lista_vip")
         markup.add(btn_publicar)
 
-        # Te envía primero la vista previa a ti
         bot.send_message(OWNER_ID, f"👁️ <b>VISTA PREVIA DE LISTA VIP:</b>\n\n{msj}", parse_mode='HTML', reply_markup=markup)
 
-    except Exception as e:
-        print(f"⚠️ Error en comando /vips_activos: {e}")
+    except Exception as err:
+        print(f"⚠️ Error en comando /vips_activos: {err}")
         bot.reply_to(message, "❌ Error al consultar la lista de Redis.")
 
 
-# Callback handler para enviar la lista al canal tras presionar el botón
 @bot.callback_query_handler(func=lambda call: call.data == "publicar_lista_vip")
 def callback_publicar_vip_canal(call):
     if str(call.from_user.id) != str(OWNER_ID):
@@ -1432,16 +1429,14 @@ def callback_publicar_vip_canal(call):
         return
 
     try:
-        # Extrae el texto limpio de la vista previa eliminando el encabezado "VISTA PREVIA DE LISTA VIP:"
         texto_canal = call.message.text.replace("👁️ VISTA PREVIA DE LISTA VIP:\n\n", "")
         
-        # Publica en tu CANAL_PRUEBA (definido en tus globales)
-        bot.send_message(CANAL_PRUEBA, texto_canal, parse_mode='HTML')
+        bot.send_message(CANAL_PRINCIPAL_ID, texto_canal, parse_mode='HTML')
         
         bot.answer_callback_query(call.id, "✅ Publicado con éxito en el canal.", show_alert=True)
         bot.edit_message_reply_markup(chat_id=call.message.chat.id, message_id=call.message.message_id, reply_markup=None)
-    except Exception as e:
-        print(f"⚠️ Error al publicar lista VIP en canal: {e}")
+    except Exception as err:
+        print(f"⚠️ Error al publicar lista VIP en canal: {err}")
         bot.answer_callback_query(call.id, "❌ Error al publicar en el canal.", show_alert=True)
         
 

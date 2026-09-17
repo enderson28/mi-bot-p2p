@@ -1368,6 +1368,13 @@ def handle_anuncio_vip(message):
 
 @bot.message_handler(commands=['vips_activos', 'vips'])
 def cmd_vips_activos(message):
+    # 1. Borrado inmediato del comando emitido por el usuario
+    try:
+        bot.delete_message(message.chat.id, message.message_id)
+    except Exception:
+        pass
+
+    # 2. Control de acceso: Solo el OWNER puede ejecutarlo
     if str(message.from_user.id) != str(OWNER_ID):
         return
 
@@ -1375,10 +1382,10 @@ def cmd_vips_activos(message):
         keys_vip = r.keys("vip_user:*") if r else []
         
         if not keys_vip:
-            bot.reply_to(message, "ℹ️ Actualmente no hay usuarios VIP registrados en Redis.")
+            bot.send_message(message.chat.id, "ℹ️ Actualmente no hay usuarios VIP registrados en Redis.")
             return
 
-        # Renderizado de emojis nativos de Telegram usando e()
+        # Construcción directa de la plantilla con emojis animados intactos
         msj = f"{e('ESCUDO', '🛡️')} <b><u>USUARIOS VIP ACTIVOS</u></b> {e('ESCUDO', '🛡️')}\n\n"
         total_vips = 0
 
@@ -1409,35 +1416,13 @@ def cmd_vips_activos(message):
 
         msj += f"{e('ESTADISTICA', '📊')} <b>Total de Miembros VIP: {total_vips}</b>\n"
         msj += "───────────────\n"
-        msj += f"{e('clic', '🚀')} <i>¿Quieres aparecer en la lista y desbloquear todas las funciones? Dale {e('clic', '🚀')} al bot @BancoIDV_bot para seguir los pasos y activar tu suscripción.</i>"
+        msj += f"{e('clic', '🚀')} <i>¿Quieres aparecer en la lista y desbloquear todas las funciones? Dale clic al bot @{BOT_USERNAME} para seguir los pasos y activar tu suscripción.</i>"
 
-        markup = types.InlineKeyboardMarkup()
-        btn_publicar = types.InlineKeyboardButton("📢 Publicar esta lista en el Canal", callback_data="publicar_lista_vip")
-        markup.add(btn_publicar)
-
-        bot.send_message(OWNER_ID, f"👁️ <b>VISTA PREVIA DE LISTA VIP:</b>\n\n{msj}", parse_mode='HTML', reply_markup=markup)
+        # Envío directo al chat/grupo donde se llamó el comando (sin vista previa ni botones sobrantes)
+        bot.send_message(message.chat.id, msj, parse_mode='HTML')
 
     except Exception as err:
         print(f"⚠️ Error en comando /vips_activos: {err}")
-        bot.reply_to(message, "❌ Error al consultar la lista de Redis.")
-
-
-@bot.callback_query_handler(func=lambda call: call.data == "publicar_lista_vip")
-def callback_publicar_vip_canal(call):
-    if str(call.from_user.id) != str(OWNER_ID):
-        bot.answer_callback_query(call.id, "❌ No tienes permisos para esta acción.", show_alert=True)
-        return
-
-    try:
-        texto_canal = call.message.text.replace("👁️ VISTA PREVIA DE LISTA VIP:\n\n", "")
-        
-        bot.send_message(CANAL_PRUEBA, texto_canal, parse_mode='HTML')
-        
-        bot.answer_callback_query(call.id, "✅ Publicado con éxito en el canal.", show_alert=True)
-        bot.edit_message_reply_markup(chat_id=call.message.chat.id, message_id=call.message.message_id, reply_markup=None)
-    except Exception as err:
-        print(f"⚠️ Error al publicar lista VIP en canal: {err}")
-        bot.answer_callback_query(call.id, "❌ Error al publicar en el canal.", show_alert=True)
         
 
 # Manejador para /p y el botón P2P

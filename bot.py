@@ -1368,13 +1368,11 @@ def handle_anuncio_vip(message):
 
 @bot.message_handler(commands=['vips_activos', 'vips'])
 def cmd_vips_activos(message):
-    # 1. Borrado inmediato del comando emitido por el usuario
     try:
         bot.delete_message(message.chat.id, message.message_id)
     except Exception:
         pass
 
-    # 2. Control de acceso: Solo el OWNER puede ejecutarlo
     if str(message.from_user.id) != str(OWNER_ID):
         return
 
@@ -1385,21 +1383,35 @@ def cmd_vips_activos(message):
             bot.send_message(message.chat.id, "ℹ️ Actualmente no hay usuarios VIP registrados en Redis.")
             return
 
-        # Construcción directa de la plantilla con emojis animados intactos
-        msj = f"{e('ESCUDO', '🛡️')} <b><u>USUARIOS VIP ACTIVOS</u></b> {e('ESCUDO', '🛡️')}\n\n"
-        total_vips = 0
-
+        # 1. Recolectar datos y calcular tiempo restante
+        lista_vips = []
         for k in keys_vip:
             key_str = k.decode('utf-8') if isinstance(k, bytes) else k
             user_id = key_str.split(":")[1]
-            
             ttl_segundos = r.ttl(key_str)
+            
             if ttl_segundos <= 0:
                 continue
 
+            lista_vips.append({
+                'key_str': key_str,
+                'user_id': user_id,
+                'ttl': ttl_segundos
+            })
+
+        # 2. ORDENAR: reverse=True pone los de mayor TTL (recién activados) al final o al inicio
+        # Cambia 'reverse=False' si quieres que el de mayor tiempo esté de 1ro
+        lista_vips.sort(key=lambda x: x['ttl'], reverse=True)
+
+        msj = f"{e('ESCUDO', '🛡️')} <b><u>USUARIOS VIP ACTIVOS</u></b> {e('ESCUDO', '🛡️')}\n\n"
+        total_vips = 0
+
+        for item in lista_vips:
+            user_id = item['user_id']
+            ttl_segundos = item['ttl']
+
             dias_restantes = ttl_segundos // 86400
             horas_restantes = (ttl_segundos % 86400) // 3600
-            
             tiempo_txt = f"{dias_restantes}d {horas_restantes}h" if dias_restantes > 0 else f"{horas_restantes}h restantes"
 
             try:
@@ -1418,11 +1430,11 @@ def cmd_vips_activos(message):
         msj += "───────────────\n"
         msj += f"{e('clic', '🚀')} <i>¿Quieres aparecer en la lista y desbloquear todas las funciones? Dale clic al bot @{BOT_USERNAME} para seguir los pasos y activar tu suscripción.</i>"
 
-        # Envío directo al chat/grupo donde se llamó el comando (sin vista previa ni botones sobrantes)
         bot.send_message(message.chat.id, msj, parse_mode='HTML')
 
     except Exception as err:
         print(f"⚠️ Error en comando /vips_activos: {err}")
+        
         
 
 # Manejador para /p y el botón P2P

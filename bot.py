@@ -641,9 +641,9 @@ def actualizar_cache_segundo_plano():
                     compra_bdv, venta_bdv = 0.0, 0.0
 
                 nuevos_rangos_bdv[str(usd_ref)] = {
-                    "nombre": nombre,
-                    "compra": compra_bdv,
-                    "venta": venta_bdv
+                    "nombre_bdv": nombre_bdv,
+                    "compra_bdv": compra_bdv,
+                    "venta_bdv": venta_bdv
                 }
 
             # --- C. GUARDADO UNIFICADO EN REDIS ---
@@ -700,9 +700,9 @@ def refrescar_tasas_en_vivo():
                 compra_bdv, venta_bdv = 0.0, 0.0
 
             nuevos_rangos_bdv[str(usd_ref)] = {
-                "nombre": nombre,
-                "compra": compra_bdv,
-                "venta": venta_bdv
+                "nombre_bdv": nombre_bdv,
+                "compra_bdv": compra_bdv,
+                "venta_bdv": venta_bdv
             }
 
         r.set("p2p_rangos_bdv", json.dumps(nuevos_rangos_bdv))
@@ -864,17 +864,17 @@ def construir_monitor_bdv_texto_html():
     }
 
     for usd_ref in [50.0, 150.0, 500.0]:
-        emoji_rango, nombre_def = emojis_rangos.get(usd_ref, (e("RANGO_3", "🥇"), "Rango"))
+        emoji_rango, nombre_def = emojis_rangos.get(usd_ref, (e("RANGO_3", "🥉"), "Rango"))
         datos = rangos_cache_bdv.get(str(usd_ref)) or rangos_cache_bdv.get(usd_ref)
 
         if datos and datos.get("compra", 0) > 0 and datos.get("venta", 0) > 0:
-            nombre_rango = datos.get("nombre", nombre_def)
-            tasa_compra = datos["compra"]
-            tasa_venta = datos["venta"]
+            nombre_rango = datos.get("nombre_bdv", nombre_def)
+            tasa_compra = datos["compra_bdv"]
+            tasa_venta = datos["venta_bdv"]
             spread = tasa_venta - tasa_compra
             porcentaje_spread = (spread / tasa_compra) * 100 if tasa_compra else 0.0
 
-            emoji_spread = e("SUBIDA", "🟢") if spread >= 0 else e("BAJADA", "🔴")
+            emoji_spread = e("SUBIDA", "📈") if spread >= 0 else e("BAJADA", "📉")
 
             texto += f"{emoji_rango} <b>{nombre_rango}</b>\n"
             texto += f"  {e('VERDE', '🟢')} <b>Compra USDT:</b> <code>{tasa_compra:.2f}</code> Bs\n"

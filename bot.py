@@ -631,19 +631,19 @@ def actualizar_cache_segundo_plano():
 
             # --- B. RANGOS BANCO DE VENEZUELA (BDV) ---
             nuevos_rangos_bdv = {}
-            for nombre_bdv, usd_ref in ranges_def:
+            for nombre, usd_ref in ranges_def:
                 monto_bs = usd_ref * tasa_bcv_ajustada
                 try:
                     compra_bdv = obtener_tasa_binance_p2p_bdv("BUY", monto_bs) or 0.0
                     venta_bdv = obtener_tasa_binance_p2p_bdv("SELL", monto_bs) or 0.0
                 except Exception as e:
-                    print(f"⚠️ Error P2P BDV para {nombre_bdv}: {e}")
+                    print(f"⚠️ Error P2P BDV para {nombre}: {e}")
                     compra_bdv, venta_bdv = 0.0, 0.0
 
                 nuevos_rangos_bdv[str(usd_ref)] = {
-                    "nombre_bdv": nombre_bdv,
-                    "compra_bdv": compra_bdv,
-                    "venta_bdv": venta_bdv
+                    "nombre": nombre,
+                    "compra": compra_bdv,
+                    "venta": venta_bdv
                 }
 
             # --- C. GUARDADO UNIFICADO EN REDIS ---
@@ -691,7 +691,7 @@ def refrescar_tasas_en_vivo():
         
         # --- AQUI AGREGAS EL BLOQUE BDV EN EN VIVO ---
         nuevos_rangos_bdv = {}
-        for nombre_bdv, usd_ref in ranges_def:
+        for nombre, usd_ref in ranges_def:
             monto_bs = usd_ref * tasa_bcv_ajustada
             try:
                 compra_bdv = obtener_tasa_binance_p2p_bdv("BUY", monto_bs) or 0.0
@@ -700,9 +700,9 @@ def refrescar_tasas_en_vivo():
                 compra_bdv, venta_bdv = 0.0, 0.0
 
             nuevos_rangos_bdv[str(usd_ref)] = {
-                "nombre_bdv": nombre_bdv,
-                "compra_bdv": compra_bdv,
-                "venta_bdv": venta_bdv
+                "nombre": nombre_bdv,
+                "compra": compra_bdv,
+                "venta": venta_bdv
             }
 
         r.set("p2p_rangos_bdv", json.dumps(nuevos_rangos_bdv))
@@ -826,8 +826,8 @@ def construir_monitor_texto_html():
 def construir_monitor_bdv_texto_html():
     datos_bcv = obtener_datos_bcv_validos()
     
-    tasa_hoy = (datos_bcv.get("tasa_hoy", 0.0))
-    tasa_manana = (datos_bcv.get("tasa_manana", 0.0))
+    tasa_hoy = float(datos_bcv.get("tasa_hoy", 0.0))
+    tasa_manana = float(datos_bcv.get("tasa_manana", 0.0))
 
     # Lógica de decisión igual a Intervención:
     if tasa_manana > 0 and tasa_manana != tasa_hoy:
@@ -858,19 +858,24 @@ def construir_monitor_bdv_texto_html():
             print(f"Error leyendo p2p_rangos_bdv de Redis: {arr}")
 
     emojis_rangos = {
-        50.0: (e("RANGO_3", "🥇"), "Rango Menor ($50 - $100)"),
+        50.0: (e("RANGO_3", "🥉"), "Rango Menor ($50 - $100)"),
         150.0: (e("RANGO_2", "🥈"), "Rango Medio ($100 - $300)"),
         500.0: (e("RANGO_1", "🥇"), "Rango Mayor ($500+)")
     }
 
     for usd_ref in [50.0, 150.0, 500.0]:
         emoji_rango, nombre_def = emojis_rangos.get(usd_ref, (e("RANGO_3", "🥉"), "Rango"))
-        datos = rangos_cache_bdv.get(str(usd_ref)) or rangos_cache_bdv.get(usd_ref)
+        datos = (
+            rangos_cache_bdv.get(str(usd_ref)) or 
+            rangos_cache_bdv.get(usd_ref) or 
+            rangos_cache_bdv.get(str(int(usd_ref))) or 
+            rangos_cache_bdv.get(f"{usd_ref:.1f}")
+        )
 
-        if datos and datos.get("compra", 0) > 0 and datos.get("venta", 0) > 0:
-            nombre_rango = datos.get("nombre_bdv", nombre_def)
-            tasa_compra = datos["compra_bdv"]
-            tasa_venta = datos["venta_bdv"]
+        if datos and float(datos.get("compra", 0) > 0 and float(datos.get("venta", 0) > 0:
+            nombre_rango = datos.get("nombre", nombre_def)
+            tasa_compra = datos["compra"]
+            tasa_venta = datos["venta"]
             spread = tasa_venta - tasa_compra
             porcentaje_spread = (spread / tasa_compra) * 100 if tasa_compra else 0.0
 

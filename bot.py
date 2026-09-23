@@ -700,7 +700,7 @@ def refrescar_tasas_en_vivo():
                 compra_bdv, venta_bdv = 0.0, 0.0
 
             nuevos_rangos_bdv[str(usd_ref)] = {
-                "nombre": nombre_bdv,
+                "nombre": nombre,
                 "compra": compra_bdv,
                 "venta": venta_bdv
             }

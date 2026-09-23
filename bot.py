@@ -499,7 +499,8 @@ def obtener_tasa_binance_p2p_bdv(tipo_operacion, monto_bs):
                     return precios_validos[0]
     except Exception as e:
         print(f"⚠️ Error conectando con Binance P2P BDV: {e}")
-    return 0.0
+        
+    return None
     
 
 def obtener_tasa_binance_zinli(tipo_operacion, monto_usd=0):
@@ -833,8 +834,8 @@ def construir_monitor_texto_html():
 def construir_monitor_bdv_texto_html():
     datos_bcv = obtener_datos_bcv_validos()
     
-    tasa_hoy = float(datos_bcv.get("tasa_hoy", 0.0))
-    tasa_manana = float(datos_bcv.get("tasa_manana", 0.0))
+    tasa_hoy = datos_bcv.get("tasa_hoy", 0.0)
+    tasa_manana = datos_bcv.get("tasa_manana", 0.0)
 
     # Lógica de decisión igual a Intervención:
     if tasa_manana > 0 and tasa_manana != tasa_hoy:
@@ -878,13 +879,12 @@ def construir_monitor_bdv_texto_html():
             rangos_cache_bdv.get(str(int(usd_ref))) or
             rangos_cache_bdv.get(f"{usd_ref:.1f}")
         )
-        compra_val = float(datos.get("compra") or 0.0) if datos else 0.0
-        venta_val = float(datos.get("venta") or 0.0) if datos else 0.0
 
-        if datos and compra_val > 0 and venta_val > 0:
+        if datos and datos.get("compra", 0) > 0 and datos.get("venta", 0) > 0:
             nombre_rango = datos.get("nombre", nombre_def)
-            tasa_compra = compra_val
-            tasa_venta = venta_val
+            tasa_compra = datos["compra"]
+            tasa_venta = datos["venta"]
+            
             spread = tasa_venta - tasa_compra
             porcentaje_spread = (spread / tasa_compra) * 100 if tasa_compra else 0.0
 

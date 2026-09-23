@@ -873,8 +873,8 @@ def construir_monitor_bdv_texto_html():
 
         if datos and datos.get("compra", 0) > 0 and datos.get("venta", 0) > 0:
             nombre_rango = datos.get("nombre", nombre_def)
-            tasa_compra = float(datos["compra"]
-            tasa_venta = float(datos["venta"]
+            tasa_compra = float(datos["compra"])
+            tasa_venta = float(datos["venta"])
             spread = tasa_venta - tasa_compra
             porcentaje_spread = (spread / tasa_compra) * 100 if tasa_compra else 0.0
 

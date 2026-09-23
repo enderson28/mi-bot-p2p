@@ -462,7 +462,7 @@ def obtener_tasa_binance_p2p_bdv(tipo_operacion, monto_bs):
         "rows": 10,
         "tradeType": tipo_operacion.upper(),
         "transAmount": str(int(monto_bs)),
-        "payTypes": ["BANCO_DE_VENEZUELA"],  # <--- Filtro exclusivo para Banco de Venezuela
+        "payTypes": ["BANK_SPECIFIC_VENEZUELA"],  # <--- Filtro exclusivo para Banco de Venezuela
         "filterType": "tradable",
         "additionalKycVerifyFilter": 0,
         "periods": []
@@ -705,7 +705,7 @@ def refrescar_tasas_en_vivo():
                 "venta": venta_bdv
             }
 
-        r.set("p2p_rangos_bdv", json.dumps(nuevos_rangos_bdv))
+         r.set("p2p_rangos_bdv", json.dumps(nuevos_rangos_bdv))
         
 
 def construir_monitor_canal_html():

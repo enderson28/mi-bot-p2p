@@ -2335,22 +2335,48 @@ def callback_refrescar_tasas(call):
     except Exception as e:
         print(f"Aviso al refrescar tasas: {e}")
 
-# 2. Callback Inline para refrescar tasas de BDV en tiempo real
+# Callback Inline para refrescar tasas de BDV en tiempo real
 @bot.callback_query_handler(func=lambda call: call.data == "refrescar_tasas_bdv")
 def handle_refrescar_tasas_bdv(call):
+    user_id = call.from_user.id if call.from_user else None
+
+    # 1. Blindaje en grupos y canales
+    if call.message.chat.type != "private":
+        es_admin_o_vip = (
+            str(user_id) == str(CREADOR_ID)
+            or es_admin_vip(bot, call.from_user)
+            or es_administrador(bot, call.message.chat.id, user_id, call.from_user)
+        )
+        if not es_admin_o_vip:
+            bot.answer_callback_query(
+                call.id,
+                text="❌ Solo Administradores pueden actualizar la tasa en el grupo. 💡 Consulta libremente en privado.",
+                show_alert=True
+            )
+            return
+
+    # 2. Verificación de ingreso válido
+    if not usuario_esta_unido(user_id):
+        bot.answer_callback_query(call.id, text="❌ Acceso denegado. No perteneces al canal.")
+        return
+
+    # 3. Responder de inmediato al botón
+    bot.answer_callback_query(call.id, text="🔄 Actualizando tasas BDV en vivo...")
+
     try:
-        bot.answer_callback_query(call.id, "🔄 Actualizando tasas BDV...")
         texto_nuevo = construir_monitor_bdv_texto_html()
 
+        # 4. Construimos el teclado inline idéntico al monitor principal
         markup = InlineKeyboardMarkup()
-        if call.message.chat.type == "private":
-            markup.add(InlineKeyboardButton("🔄 Actualizar Tasas BDV", callback_data="refrescar_tasas_bdv"))
-        else:
+        if str(call.message.chat.id) == str(CANAL_PRUEBA) or es_admin_vip(bot, call.from_user) or call.message.chat.type != "private":
             markup.row(
-                InlineKeyboardButton("🔄 Actualizar Tasas", callback_data="refrescar_tasas_bdv"),
+                InlineKeyboardButton("🔄 Actualizar Tasas BDV", callback_data="refrescar_tasas_bdv"),
                 InlineKeyboardButton("🗑️ Borrar", callback_data="borrar_mensaje")
             )
+        else:
+            markup.add(InlineKeyboardButton("🔄 Actualizar Tasas BDV", callback_data="refrescar_tasas_bdv"))
 
+        # 5. Editamos el mensaje
         bot.edit_message_text(
             chat_id=call.message.chat.id,
             message_id=call.message.message_id,
@@ -2358,8 +2384,10 @@ def handle_refrescar_tasas_bdv(call):
             parse_mode="HTML",
             reply_markup=markup
         )
+
     except Exception as e:
         print(f"Error refrescando monitor BDV: {e}")
+        
         
 # ==========================================
 # BOTÓN FLOTANTE PARA REFRESCAR INTERVENCIÓN

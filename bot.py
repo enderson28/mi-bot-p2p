@@ -869,7 +869,7 @@ def construir_monitor_bdv_texto_html():
             rangos_cache_bdv.get(str(usd_ref)) or 
             rangos_cache_bdv.get(usd_ref) or 
             rangos_cache_bdv.get(str(int(usd_ref))) or 
-            rangos_cache_bdv.get(f"{usd_ref:.1f}")
+            rangos_cache_bdv.get(int(usd_ref))
         )
 
         if datos and datos.get("compra", 0) > 0 and datos.get("venta", 0) > 0:

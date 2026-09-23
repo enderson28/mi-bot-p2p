@@ -613,47 +613,51 @@ def actualizar_cache_segundo_plano():
             ranges_def = [
                 ("Rango Menor ($50 - $100)", 50.0),
                 ("Rango Medio ($100 - $300)", 150.0),
-                ("Rango Mayor ($500+)", 500.0)
+                ("Rango Mayor ($500+)", 300.0)
             ]
 
+            # --- A. RANGOS GLOBALES ---
             nuevos_rangos = {}
             for nombre, usd_ref in ranges_def:
                 monto_bs = usd_ref * tasa_bcv_ajustada
                 compra = obtener_tasa_binance_p2p("BUY", monto_bs) or 0.0
                 venta = obtener_tasa_binance_p2p("SELL", monto_bs) or 0.0
+                
                 nuevos_rangos[str(usd_ref)] = {
                     "nombre": nombre,
                     "compra": compra,
                     "venta": venta
                 }
 
+            # --- B. RANGOS BANCO DE VENEZUELA (BDV) ---
+            nuevos_rangos_bdv = {}
+            for nombre, usd_ref in ranges_def:
+                monto_bs = usd_ref * tasa_bcv_ajustada
+                try:
+                    compra_bdv = obtener_tasa_binance_p2p_bdv("BUY", monto_bs) or 0.0
+                    venta_bdv = obtener_tasa_binance_p2p_bdv("SELL", monto_bs) or 0.0
+                except Exception as e:
+                    print(f"⚠️ Error P2P BDV para {nombre}: {e}")
+                    compra_bdv, venta_bdv = 0.0, 0.0
+
+                nuevos_rangos_bdv[str(usd_ref)] = {
+                    "nombre": nombre,
+                    "compra": compra_bdv,
+                    "venta": venta_bdv
+                }
+
+            # --- C. GUARDADO UNIFICADO EN REDIS ---
             if r:
                 r.set("p2p_rangos", json.dumps(nuevos_rangos))
-
-                # --- AQUI AGREGAS EL BLOQUE BDV EN SEGUNDO PLANO ---
-                nuevos_rangos_bdv = {}
-                for nombre, usd_ref in ranges_def:
-                    monto_bs = usd_ref * tasa_bcv_ajustada
-                    try:
-                        compra_bdv = obtener_tasa_binance_p2p_bdv("BUY", monto_bs) or 0.0
-                        venta_bdv = obtener_tasa_binance_p2p_bdv("SELL", monto_bs) or 0.0
-                    except Exception as e:
-                        compra_bdv, venta_bdv = 0.0, 0.0
-
-                    nuevos_rangos_bdv[str(usd_ref)] = {
-                        "nombre": nombre,
-                        "compra": compra_bdv,
-                        "venta": venta_bdv
-                    }
-
                 r.set("p2p_rangos_bdv", json.dumps(nuevos_rangos_bdv))
-    
+
         except Exception as e:
             print(f"Error actualizando P2P en segundo plano: {e}")
-        
+
         time.sleep(60)
 
 threading.Thread(target=actualizar_cache_segundo_plano, daemon=True).start()
+
             
 
 def refrescar_tasas_en_vivo():
@@ -822,15 +826,16 @@ def construir_monitor_texto_html():
 def construir_monitor_bdv_texto_html():
     datos_bcv = obtener_datos_bcv_validos()
     
-    tasa_hoy = float(datos_bcv.get("tasa_hoy", 0.0))
-    tasa_manana = float(datos_bcv.get("tasa_manana", 0.0))
+    tasa_hoy = (datos_bcv.get("tasa_hoy", 0.0))
+    tasa_manana = (datos_bcv.get("tasa_manana", 0.0))
 
-    if tasa_manana == 0 or tasa_manana == tasa_hoy:
-        tasa_bcv = tasa_hoy
-        fecha_valor_bcv = datos_bcv.get("fecha_hoy", "Hoy")
-    else:
+    # Lógica de decisión igual a Intervención:
+    if tasa_manana > 0 and tasa_manana != tasa_hoy:
         tasa_bcv = tasa_manana
         fecha_valor_bcv = datos_bcv.get("fecha_manana", "Mañana")
+    else:
+        tasa_bcv = tasa_hoy
+        fecha_valor_bcv = datos_bcv.get("fecha_hoy", "Hoy")
 
     tasa_intervencion = tasa_bcv * 1.005
 
@@ -855,10 +860,10 @@ def construir_monitor_bdv_texto_html():
     emojis_rangos = {
         50.0: (e("RANGO_3", "🥇"), "Rango Menor ($50 - $100)"),
         150.0: (e("RANGO_2", "🥈"), "Rango Medio ($100 - $300)"),
-        300.0: (e("RANGO_1", "🥇"), "Rango Mayor ($500+)")
+        500.0: (e("RANGO_1", "🥇"), "Rango Mayor ($500+)")
     }
 
-    for usd_ref in [50.0, 150.0, 300.0]:
+    for usd_ref in [50.0, 150.0, 500.0]:
         emoji_rango, nombre_def = emojis_rangos.get(usd_ref, (e("RANGO_3", "🥇"), "Rango"))
         datos = rangos_cache_bdv.get(str(usd_ref)) or rangos_cache_bdv.get(usd_ref)
 

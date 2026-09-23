@@ -391,9 +391,9 @@ def registrar_handlers_arbitraje(bot, redis_client):
         markup.add(InlineKeyboardButton("⬅️ Salir al menú", callback_data="arb_salir_menu"))
 
         msg_text = (
-            f"{TG_EMOJIS['red_circle']} <b>Tasa de Venta P2P</b> {TG_EMOJIS['p2p']}\n"
-            f"{TG_EMOJIS['pencil']} Escribe manualmente la tasa a la que vas a vender <i>(Ej: 890 o 892.5)</i>:\n"
-            f"O presiona {TG_EMOJIS['click']} el botón si deseas usar la tasa detectada por el monitor:"
+            f"{TG_EMOJIS['red_circle']} <b>Tasa de Venta P2P</b> {TG_EMOJIS['usdt']}\n"
+            f"{TG_EMOJIS['pencil']} Escribe manualmente la tasa a la que vas a vender <i>(Ej: 950 o 960.5)</i>:\n"
+            f"O presiona {TG_EMOJIS['clic']} el botón si deseas usar la tasa detectada por el monitor:"
         )
 
         msg = bot.send_message(chat_id, msg_text, parse_mode="HTML", reply_markup=markup)

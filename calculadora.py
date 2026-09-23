@@ -18,14 +18,14 @@ def registrar_calculadora(bot, obtener_cache_func, obtener_teclado_func, r=None)
         """Devuelve el teclado fijo inferior para la calculadora (4 botones)."""
         markup = ReplyKeyboardMarkup(resize_keyboard=True)
         markup.row(
-            KeyboardButton(f"{TG_EMOJIS['dollar']} USD a 🇻🇪 Bs"),
-            KeyboardButton(f"🇻🇪 Bs a {TG_EMOJIS['dollar']} USD")
+            KeyboardButton(f"💵 USD a 🇻🇪 Bs"),
+            KeyboardButton(f"🇻🇪 Bs a 💵 USD")
         )
         markup.row(
-            KeyboardButton(f"{TG_EMOJIS['dollar']} USDT a Bs = USD")
+            KeyboardButton(f"💵 USDT a Bs = USD")
         )
         markup.row(
-            KeyboardButton(f"{TG_EMOJIS['back']} Volver al menú")
+            KeyboardButton(f"🔙 Volver al menú")
         )
         return markup
 
@@ -236,7 +236,7 @@ def registrar_calculadora(bot, obtener_cache_func, obtener_teclado_func, r=None)
                 )
 
             txt_pregunta = (
-                f"{TG_EMOJIS['dollar']} <b>Monto ingresado:</b> <code>{monto_entrada:,.2f}</code> USDT\n\n"
+                f"{e('USDT', '💬')} <b>Monto ingresado:</b> <code>{monto_entrada:,.2f}</code> USDT\n\n"
                 f"Selecciona la tasa de venta del monitor P2P que deseas aplicar:"
             )
 

@@ -875,13 +875,16 @@ def construir_monitor_bdv_texto_html():
         datos = (
             rangos_cache_bdv.get(str(usd_ref)) or 
             rangos_cache_bdv.get(usd_ref) or 
-            rangos_cache_bdv.get(str(int(usd_ref)))
+            rangos_cache_bdv.get(str(int(usd_ref))) or
+            rangos_cache_bdv.get(f"{usd_ref:.1f}")
         )
+        compra_val = float(datos.get("compra") or 0.0) if datos else 0.0
+        venta_val = float(datos.get("venta") or 0.0) if datos else 0.0
 
-        if datos and datos.get("compra", 0) > 0 and datos.get("venta", 0) > 0:
+        if datos and compra_val > 0 and venta_val > 0:
             nombre_rango = datos.get("nombre", nombre_def)
-            tasa_compra = float(datos["compra"])
-            tasa_venta = float(datos["venta"])
+            tasa_compra = compra_val
+            tasa_venta = venta_val
             spread = tasa_venta - tasa_compra
             porcentaje_spread = (spread / tasa_compra) * 100 if tasa_compra else 0.0
 

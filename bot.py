@@ -462,7 +462,7 @@ def obtener_tasa_binance_p2p_bdv(tipo_operacion, monto_bs):
         "rows": 10,
         "tradeType": tipo_operacion.upper(),
         "transAmount": str(int(monto_bs)) if monto_bs > 0 else "",
-        "payTypes": ["BANK_SPECIFIC_VENEZUELA"],  # Filtro oficial BDV
+        "payTypes": ["BancoDeVenezuela"],  # Filtro oficial BDV
         "filterType": "tradable",
         "additionalKycVerifyFilter": 0,
         "periods": []

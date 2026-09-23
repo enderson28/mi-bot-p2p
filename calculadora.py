@@ -114,10 +114,10 @@ def registrar_calculadora(bot, obtener_cache_func, obtener_teclado_func, r=None)
             return
 
         # 2. Cambio de modo detectando la intención exacta
-        if "USD a" in texto or texto.startswith(TG_EMOJIS['dollar'] + " USD"):
+        if "USD a" in texto or texto.startswith("💵 USD"):
             solicitar_monto_mensaje(message, modo="USD_BS")
             return
-        elif "Bs a" in texto or texto.startswith(🇻🇪 + " Bs"):
+        elif "Bs a" in texto or texto.startswith("🇻🇪 Bs"):
             solicitar_monto_mensaje(message, modo="BS_USD")
             return
         elif "USDT a Bs" in texto:

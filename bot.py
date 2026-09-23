@@ -854,8 +854,8 @@ def construir_monitor_bdv_texto_html():
             raw_p2p_bdv = r.get("p2p_rangos_bdv")
             if raw_p2p_bdv:
                 rangos_cache_bdv = json.loads(raw_p2p_bdv.decode('utf-8') if isinstance(raw_p2p_bdv, bytes) else raw_p2p_bdv)
-        except Exception as err:
-            print(f"Error leyendo p2p_rangos_bdv de Redis: {err}")
+        except Exception as arr:
+            print(f"Error leyendo p2p_rangos_bdv de Redis: {arr}")
 
     emojis_rangos = {
         50.0: (e("RANGO_3", "🥇"), "Rango Menor ($50 - $100)"),
@@ -880,7 +880,7 @@ def construir_monitor_bdv_texto_html():
             texto += f"  {e('VERDE', '🟢')} <b>Compra USDT:</b> <code>{tasa_compra:.2f}</code> Bs\n"
             texto += f"  {e('ROJO', '🔴')} <b>Venta:</b> <code>{tasa_venta:.2f}</code> Bs\n\n"
 
-            if usd_ref == 300.0:
+            if usd_ref == 500.0:
                 filtro_bcv_bs = usd_ref * tasa_intervencion
                 texto += f"  {e('BOMBILLA', '💡')} <i>Filtro base: ({filtro_bcv_bs:,.0f} Bs)</i>\n"
 

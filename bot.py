@@ -631,13 +631,13 @@ def actualizar_cache_segundo_plano():
 
             # --- B. RANGOS BANCO DE VENEZUELA (BDV) ---
             nuevos_rangos_bdv = {}
-            for nombre, usd_ref in ranges_def:
+            for nombre_bdv, usd_ref in ranges_def:
                 monto_bs = usd_ref * tasa_bcv_ajustada
                 try:
                     compra_bdv = obtener_tasa_binance_p2p_bdv("BUY", monto_bs) or 0.0
                     venta_bdv = obtener_tasa_binance_p2p_bdv("SELL", monto_bs) or 0.0
                 except Exception as e:
-                    print(f"⚠️ Error P2P BDV para {nombre}: {e}")
+                    print(f"⚠️ Error P2P BDV para {nombre_bdv}: {e}")
                     compra_bdv, venta_bdv = 0.0, 0.0
 
                 nuevos_rangos_bdv[str(usd_ref)] = {
@@ -691,7 +691,7 @@ def refrescar_tasas_en_vivo():
         
         # --- AQUI AGREGAS EL BLOQUE BDV EN EN VIVO ---
         nuevos_rangos_bdv = {}
-        for nombre, usd_ref in ranges_def:
+        for nombre_bdv, usd_ref in ranges_def:
             monto_bs = usd_ref * tasa_bcv_ajustada
             try:
                 compra_bdv = obtener_tasa_binance_p2p_bdv("BUY", monto_bs) or 0.0

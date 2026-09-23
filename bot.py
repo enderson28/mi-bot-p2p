@@ -90,13 +90,15 @@ def obtener_teclado_privado(user=None):
     if user and es_admin_vip(bot, user):
         markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
         markup.add(KeyboardButton("🟢 P2P-USDT 🔴"), KeyboardButton("📊 Intervencion 📊"))
+        markup.add(KeyboardButton("🟢 P2P-BDV 🔴 🇻🇪"))
         markup.add(KeyboardButton("📟 Calculadora"), KeyboardButton("⚙️ Soporte"))
         markup.add(KeyboardButton("🤖 IA Consulta"), KeyboardButton("📊 Arbitraje & Reposición"))
         return markup
 
     markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-    btn_precio = KeyboardButton("🟢 P2P-USDT 🔴")
+    btn_precio = KeyboardButton("🟢 P2P-USDT 🔴") 
     btn_intervencion = KeyboardButton("📊 Intervencion 📊")
+    btn_precio_bdv = KeyboardButton("🟢 P2P-BDV 🔴 🇻🇪")
     btn_regla = KeyboardButton("📜 Regla de Oro 📜")
     btn_bpay = KeyboardButton("🔶 BPay 🔶")
     btn_gpay = KeyboardButton("🔷 GPay 🔷")
@@ -106,6 +108,7 @@ def obtener_teclado_privado(user=None):
     btn_arbitraje = KeyboardButton("📊 Arbitraje & Reposición")
 
     markup.add(btn_precio, btn_intervencion)
+    markup.add(btn_precio_bdv)
     markup.add(btn_regla, btn_calculadora)
     markup.add(btn_bpay, btn_gpay)
     markup.add(btn_soporte)
@@ -287,6 +290,7 @@ def enviar_menu_principal(bot, user, chat_id):
     if es_admin_vip(bot, user):
         markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
         markup.add(KeyboardButton("🟢 P2P-USDT 🔴"), KeyboardButton("📊 Intervencion 📊"))
+        markup.add(KeyboardButton("🟢 P2P-BDV 🔴 🇻🇪"))
         markup.add(KeyboardButton("📟 Calculadora"), KeyboardButton("⚙️ Soporte"))
         markup.add(KeyboardButton("🤖 IA Consulta"), KeyboardButton("📊 Arbitraje & Reposición"))
         
@@ -315,13 +319,13 @@ setup_verification_handlers(
 
 def obtener_datos_bcv_validos():
     datos_defecto = {
-        "tasa_hoy": 846.5131,
-        "fecha_hoy": "Miércoles, 16 Septiembre 2026",
+        "tasa_hoy": 853.4993,
+        "fecha_hoy": "Miércoles, 23 Septiembre 2026",
         "tasa_manana": 0.0,
         "fecha_manana": "",
-        "tasa_anterior": 842.207,
-        "fecha_anterior": "Martes, 15 Septiembre 2026",
-        "fecha_ultima_rotacion": "Miércoles, 16 Septiembre 2026"
+        "tasa_anterior": 852.417,
+        "fecha_anterior": "Martes, 22 Septiembre 2026",
+        "fecha_ultima_rotacion": "Miércoles, 23 Septiembre 2026"
     }
 
     try:
@@ -441,6 +445,64 @@ def obtener_tasa_binance_p2p(tipo_operacion, monto_bs):
 
     return None
 
+def obtener_tasa_binance_p2p_bdv(tipo_operacion, monto_bs):
+    url = "https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search"
+    headers = {
+        "Accept": "*/*",
+        "Content-Type": "application/json",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    }
+    
+    payload = {
+        "asset": "USDT",
+        "fiat": "VES",
+        "merchantCheck": True,
+        "publisherType": "merchant",
+        "page": 1,
+        "rows": 10,
+        "tradeType": tipo_operacion.upper(),
+        "transAmount": str(int(monto_bs)) if monto_bs > 0 else "",
+        "payTypes": ["BancoDeVenezuela"],  # Filtro oficial BDV
+        "filterType": "tradable",
+        "additionalKycVerifyFilter": 0,
+        "periods": []
+    }
+
+    try:
+        r_req = requests.post(url, json=payload, headers=headers, timeout=(5.0, 5.0))
+        if r_req.status_code == 200:
+            datos = r_req.json().get('data', [])
+            if datos:
+                precios_validos = []
+                for elemento in datos:
+                    adv = elemento.get('adv', {})
+                    advertiser = elemento.get('advertiser', {})
+                    precio = adv.get('price')
+                    user_status = advertiser.get('userStatus', '')
+
+                    if user_status in ["BLOCKED", "INACTIVE"]:
+                        continue
+
+                    # Filtros flexibilizados para BDV
+                    is_restricted = adv.get('isRestricted') or adv.get('restricted') or False
+                    if is_restricted:
+                        continue
+
+                    if precio:
+                        precios_validos.append(float(precio))
+
+                if precios_validos:
+                    if len(precios_validos) >= 2:
+                        diferencia_porcentual = abs(precios_validos[0] - precios_validos[1]) / precios_validos[1]
+                        if diferencia_porcentual > 0.02:
+                            return precios_validos[1]
+                    return precios_validos[0]
+    except Exception as e:
+        print(f"⚠️ Error conectando con Binance P2P BDV: {e}")
+        
+    return None
+    
+
 def obtener_tasa_binance_zinli(tipo_operacion, monto_usd=0):
     """
     Obtiene la tasa P2P de Binance para Zinli (USD).
@@ -552,27 +614,53 @@ def actualizar_cache_segundo_plano():
                 ("Rango Mayor ($500+)", 500.0)
             ]
 
+            # --- A. RANGOS GLOBALES ---
             nuevos_rangos = {}
             for nombre, usd_ref in ranges_def:
                 monto_bs = usd_ref * tasa_bcv_ajustada
                 compra = obtener_tasa_binance_p2p("BUY", monto_bs) or 0.0
                 venta = obtener_tasa_binance_p2p("SELL", monto_bs) or 0.0
+
                 nuevos_rangos[str(usd_ref)] = {
                     "nombre": nombre,
                     "compra": compra,
                     "venta": venta
                 }
 
+            # --- B. RANGOS BANCO DE VENEZUELA (BDV) ---
+            nuevos_rangos_bdv = {}
+            for nombre, usd_ref in ranges_def:
+                monto_bs = usd_ref * tasa_bcv_ajustada
+                try:
+                    compra_bdv = obtener_tasa_binance_p2p_bdv("BUY", monto_bs) or 0.0
+                    if compra_bdv == 0.0:
+                        compra_bdv = obtener_tasa_binance_p2p_bdv("BUY", 0) or 0.0
+
+                    venta_bdv = obtener_tasa_binance_p2p_bdv("SELL", monto_bs) or 0.0
+                    if venta_bdv == 0.0:
+                        venta_bdv = obtener_tasa_binance_p2p_bdv("SELL", 0) or 0.0
+                except Exception as e:
+                    print(f"⚠️ Error P2P BDV para {nombre}: {e}")
+                    compra_bdv, venta_bdv = 0.0, 0.0
+
+                nuevos_rangos_bdv[str(usd_ref)] = {
+                    "nombre": nombre,
+                    "compra": compra_bdv,
+                    "venta": venta_bdv
+                }
+
+            # --- C. GUARDADO UNIFICADO EN REDIS ---
             if r:
                 r.set("p2p_rangos", json.dumps(nuevos_rangos))
+                r.set("p2p_rangos_bdv", json.dumps(nuevos_rangos_bdv))
 
         except Exception as e:
             print(f"Error actualizando P2P en segundo plano: {e}")
-        
+
         time.sleep(60)
 
 threading.Thread(target=actualizar_cache_segundo_plano, daemon=True).start()
-            
+
 
 def refrescar_tasas_en_vivo():
     datos_bcv = obtener_datos_bcv_validos()
@@ -602,7 +690,31 @@ def refrescar_tasas_en_vivo():
 
     if r:
         r.set("p2p_rangos", json.dumps(nuevos_rangos))
-        
+
+        # --- ACTUALIZACIÓN DE BDV EN VIVO ---
+        nuevos_rangos_bdv = {}
+        for nombre, usd_ref in ranges_def:
+            monto_bs = usd_ref * tasa_bcv_ajustada
+            try:
+                compra_bdv = obtener_tasa_binance_p2p_bdv("BUY", monto_bs) or 0.0
+                if compra_bdv == 0.0:
+                    compra_bdv = obtener_tasa_binance_p2p_bdv("BUY", 0) or 0.0
+
+                venta_bdv = obtener_tasa_binance_p2p_bdv("SELL", monto_bs) or 0.0
+                if venta_bdv == 0.0:
+                    venta_bdv = obtener_tasa_binance_p2p_bdv("SELL", 0) or 0.0
+            except Exception as e:
+                print(f"Error al obtener tasas P2P BDV para {nombre}: {e}")
+                compra_bdv, venta_bdv = 0.0, 0.0
+
+            nuevos_rangos_bdv[str(usd_ref)] = {
+                "nombre": nombre,
+                "compra": compra_bdv,
+                "venta": venta_bdv
+            }
+
+        r.set("p2p_rangos_bdv", json.dumps(nuevos_rangos_bdv))
+      
 
 def construir_monitor_canal_html():
     """Genera la ficha resumen simplificada para el Canal Principal con Custom Emojis dinámicos"""
@@ -716,6 +828,85 @@ def construir_monitor_texto_html():
 
     hora_actual = (datetime.now() - timedelta(hours=4)).strftime("%I:%M:%S %p")
     texto += f"{e('MUNDO', '🌎')} <i>Última actualización: {hora_actual}</i>"
+
+    return texto
+
+def construir_monitor_bdv_texto_html():
+    datos_bcv = obtener_datos_bcv_validos()
+    
+    tasa_hoy = datos_bcv.get("tasa_hoy", 0.0)
+    tasa_manana = datos_bcv.get("tasa_manana", 0.0)
+
+    # Lógica de decisión igual a Intervención:
+    if tasa_manana > 0 and tasa_manana != tasa_hoy:
+        tasa_bcv = tasa_manana
+        fecha_valor_bcv = datos_bcv.get("fecha_manana", "Mañana")
+    else:
+        tasa_bcv = tasa_hoy
+        fecha_valor_bcv = datos_bcv.get("fecha_hoy", "Hoy")
+
+    tasa_intervencion = tasa_bcv * 1.005
+
+    texto = (
+        f"{e('BINANCE_ESPEJO', '🟡')} <b>Monitor de Tasas P2P - Banco de Venezuela {e('bdv1', '🫣')}</b>\n\n"
+        f"<blockquote>{e('CALENDARIO', '📅')} <b>Vigencia BCV :</b> {fecha_valor_bcv}</blockquote>\n"
+        f"<blockquote>{e('BCV', '🏛️')} <b>BCV Oficial :</b> <code>{tasa_bcv:.3f}</code> Bs</blockquote>\n"
+        f"<blockquote>{e('BALANZA', '⚖️')} <b>BCV + 0.5% :</b> <code>{tasa_intervencion:.3f}</code> Bs</blockquote>\n"
+        f"<blockquote>{e('ETIQUETA', '📌')} <b>Filtros Activos:</b> Verificados | Comerciables {e('BOMBILLA', '💡')} | <b>Pago</b> : {e('bdv1', '🫣')}</blockquote>\n"
+        f"-----------------------------------------\n"
+    )
+
+    rangos_cache_bdv = {}
+    if r:
+        try:
+            raw_p2p_bdv = r.get("p2p_rangos_bdv")
+            if raw_p2p_bdv:
+                rangos_cache_bdv = json.loads(raw_p2p_bdv.decode('utf-8') if isinstance(raw_p2p_bdv, bytes) else raw_p2p_bdv)
+        except Exception as arr:
+            print(f"Error leyendo p2p_rangos_bdv de Redis: {arr}")
+
+    emojis_rangos = {
+        50.0: (e("RANGO_3", "🥉"), "Rango Menor ($50 - $100)"),
+        150.0: (e("RANGO_2", "🥈"), "Rango Medio ($100 - $300)"),
+        500.0: (e("RANGO_1", "🥇"), "Rango Mayor ($500+)")
+    }
+
+    for usd_ref in [50.0, 150.0, 500.0]:
+        emoji_rango, nombre_def = emojis_rangos.get(usd_ref, (e("RANGO_3", "🥉"), "Rango"))
+        datos = (
+            rangos_cache_bdv.get(str(usd_ref)) or 
+            rangos_cache_bdv.get(usd_ref) or 
+            rangos_cache_bdv.get(str(int(usd_ref))) or
+            rangos_cache_bdv.get(f"{usd_ref:.1f}")
+        )
+
+        if datos and datos.get("compra", 0) > 0 and datos.get("venta", 0) > 0:
+            nombre_rango = datos.get("nombre", nombre_def)
+            tasa_compra = datos["compra"]
+            tasa_venta = datos["venta"]
+            
+            spread = tasa_venta - tasa_compra
+            porcentaje_spread = (spread / tasa_compra) * 100 if tasa_compra else 0.0
+
+            emoji_spread = e("SUBIDA", "📈") if spread >= 0 else e("BAJADA", "📉")
+
+            texto += f"{emoji_rango} <b>{nombre_rango}</b>\n"
+            texto += f"  {e('VERDE', '🟢')} <b>Compra USDT:</b> <code>{tasa_compra:.2f}</code> Bs\n"
+            texto += f"  {e('ROJO', '🔴')} <b>Venta:</b> <code>{tasa_venta:.2f}</code> Bs\n\n"
+
+            if usd_ref == 500.0:
+                filtro_bcv_bs = usd_ref * tasa_intervencion
+                texto += f"  {e('BOMBILLA', '💡')} <i>Filtro base: ({filtro_bcv_bs:,.0f} Bs)</i>\n"
+
+            texto += f"  {emoji_spread} <b>Spread:</b> <code>{spread:.2f}</code> Bs (<code>{porcentaje_spread:.2f}%</code>)\n"
+            texto += f"-----------------------------------------\n"
+        else:
+            texto += f"{emoji_rango} <b>{nombre_def}</b>\n"
+            texto += f"  {e('BOMBILLA', '💡')} <i>Cargando tasas BDV en segundo plano...</i>\n"
+            texto += f"-----------------------------------------\n"
+
+    hora_actual = (datetime.now(timezone.utc) - timedelta(hours=4)).strftime("%I:%M:%S %p")
+    texto += f"{e('MUNDO', '🌍')} <i>Última actualización: {hora_actual}</i>"
 
     return texto
 
@@ -1441,6 +1632,14 @@ def cmd_vips_activos(message):
 def handle_precio_comando(message):
     procesar_precio(message)
 
+
+# 1. Manejador para el comando /p_bdv y el botón Reply
+@bot.message_handler(commands=['p_bdv', 'p2p_bdv'])
+@bot.message_handler(func=lambda m: m.text and m.text.strip() == "🟢 P2P-BDV 🔴 🇻🇪")
+def handle_precio_bdv_comando(message):
+    procesar_precio_bdv(message)
+
+        
 # Manejador para el botón de Intervención y el comando /i
 @bot.message_handler(commands=['i'])
 @bot.message_handler(func=lambda m: m.text and m.text.strip() == "📊📊 Intervencion 📊📊")
@@ -1495,6 +1694,7 @@ def handle_invitacion_comando(message):
 @bot.message_handler(func=lambda message: message.chat.type == "private" and message.text in [
     "🟢 P2P-USDT 🔴",
     "📊 Intervencion 📊",
+    "🟢 P2P-BDV 🔴 🇻🇪",
     "📟 Calculadora",
     "📜 Regla de Oro 📜",
     "🔶 BPay 🔶",
@@ -1507,6 +1707,8 @@ def handle_botones_menu(message):
         procesar_precio(message)
     elif message.text == "📊 Intervencion 📊":
         procesar_intervencion(message)
+    elif message.text == "🟢 P2P-BDV 🔴 🇻🇪":
+        procesar_precio_bdv(message)
     elif message.text == "📟 Calculadora":
         solicitar_calculadora(message)
     elif message.text == "📜 Regla de Oro 📜":
@@ -1658,6 +1860,103 @@ def procesar_precio(message):
                 borrar_mensaje_luego(chat_id, aviso.message_id, 10)
             except Exception:
                 pass
+
+def procesar_precio_bdv(message):
+    user_id = message.from_user.id if message.from_user else None
+    chat_id = message.chat.id
+
+    # 1. Permite el paso ÚNICAMENTE si el chat está permitido por las reglas de seguridad
+    if not es_chat_permitido(bot, message, CHATS_PERMITIDOS, USUARIOS_AUTORIZADOS, CREADOR_ID):
+        return
+
+    # 2. CANDADO VIP GLOBAL
+    if not es_usuario_vip_activo(bot, message.from_user, r):
+        responder_sin_acceso_vip(bot, chat_id)
+        return
+
+    # 3. EN CHAT PRIVADO
+    if message.chat.type == "private":
+        if message.text and message.text.strip().startswith('/'):
+            try:
+                bot.delete_message(chat_id, message.message_id)
+            except Exception:
+                pass
+
+        if not usuario_esta_unido(user_id):
+            bot.reply_to(message, "❌ No tienes acceso. Debes solicitar unirte al grupo de charla 👉🏼 @COMUNIDV , ↪️ volver al bot, ✏️ escribir /start , resolver el captcha ✅🔍 e ingresar al grupo.")
+            return
+
+        try:
+            monitor_base = construir_monitor_bdv_texto_html()
+
+            if es_admin_vip(bot, message.from_user):
+                texto_completo = monitor_base
+            else:
+                aviso_regla = f"\n\n💡 <b>¿Quieres saber cómo calcular tus ganancias paso a paso?</b> Presiona el botón <b>📜 Regla de Oro 📜</b> en el menú de abajo. 👇👇"
+                texto_completo = monitor_base + aviso_regla
+
+            markup_tasas = InlineKeyboardMarkup()
+            markup_tasas.add(InlineKeyboardButton("🔄 Actualizar Tasas BDV", callback_data="refrescar_tasas_bdv"))
+
+            enviar_o_reemplazar_privado(chat_id, user_id, texto_completo, reply_markup=markup_tasas)
+            return
+        except Exception as e:
+            print(f"Error en precio BDV privado: {e}")
+            bot.send_message(chat_id, "❌ Error temporal al obtener tasas BDV. Inténtalo de nuevo en unos segundos.")
+            return
+
+    # 4. EN GRUPOS - Si proviene de un reenvío automático
+    if getattr(message, "is_automatic_forward", False):
+        try:
+            bot.edit_message_reply_markup(chat_id=chat_id, message_id=message.message_id, reply_markup=None)
+        except Exception:
+            pass
+        return
+
+    # 5. EN GRUPOS - Borramos el comando ejecutado inmediatamente
+    try:
+        bot.delete_message(chat_id, message.message_id)
+    except Exception:
+        pass
+
+    # SOLO SI ES CREADOR, ADMIN VIP O ADMIN DEL CANAL
+    if str(user_id) == str(CREADOR_ID) or es_admin_vip(bot, message.from_user) or es_administrador(bot, chat_id, user_id, message):
+        markup_precio = None
+        if str(chat_id) == str(CANAL_PRUEBA):
+            markup_precio = InlineKeyboardMarkup()
+            markup_precio.row(
+                InlineKeyboardButton("🔄 Actualizar Tasas", callback_data="refrescar_tasas_bdv"),
+                InlineKeyboardButton("🗑️ Borrar", callback_data="borrar_mensaje")
+            )
+
+        msg_enviado = bot.send_message(
+            chat_id,
+            construir_monitor_bdv_texto_html(),
+            parse_mode="HTML",
+            reply_markup=markup_precio
+        )
+
+        borrar_mensaje_luego(chat_id, msg_enviado.message_id, TIEMPO_VIDA_TABLA)
+        return
+
+    # SI ES USUARIO COMÚN EN GRUPO (Aviso con Rate Limit)
+    else:
+        ahora = time.time()
+        ultima_vez_aviso = grupos_tiempo_aviso.get(chat_id, 0)
+
+        if ahora - ultima_vez_aviso > RATE_LIMIT_AVISO:
+            try:
+                aviso = bot.send_message(
+                    chat_id,
+                    f"📌 <b>Comando exclusivo para Administradores.</b>\n\n"
+                    f"Hola @{message.from_user.username or message.from_user.first_name}. Para mantener el orden, consulta todas las tasas BDV libremente en el chat privado: @{BOT_USERNAME}.",
+                    parse_mode="HTML"
+                )
+                grupos_tiempo_aviso[chat_id] = ahora
+                borrar_mensaje_luego(chat_id, aviso.message_id, 10)
+            except Exception:
+                pass
+                
 
 def procesar_intervencion(message):
     user_id = message.from_user.id if message.from_user else None
@@ -2036,6 +2335,60 @@ def callback_refrescar_tasas(call):
     except Exception as e:
         print(f"Aviso al refrescar tasas: {e}")
 
+# Callback Inline para refrescar tasas de BDV en tiempo real
+@bot.callback_query_handler(func=lambda call: call.data == "refrescar_tasas_bdv")
+def handle_refrescar_tasas_bdv(call):
+    user_id = call.from_user.id if call.from_user else None
+
+    # 1. Blindaje en grupos y canales
+    if call.message.chat.type != "private":
+        es_admin_o_vip = (
+            str(user_id) == str(CREADOR_ID)
+            or es_admin_vip(bot, call.from_user)
+            or es_administrador(bot, call.message.chat.id, user_id, call.from_user)
+        )
+        if not es_admin_o_vip:
+            bot.answer_callback_query(
+                call.id,
+                text="❌ Solo Administradores pueden actualizar la tasa en el grupo. 💡 Consulta libremente en privado.",
+                show_alert=True
+            )
+            return
+
+    # 2. Verificación de ingreso válido
+    if not usuario_esta_unido(user_id):
+        bot.answer_callback_query(call.id, text="❌ Acceso denegado. No perteneces al canal.")
+        return
+
+    # 3. Responder de inmediato al botón
+    bot.answer_callback_query(call.id, text="🔄 Actualizando tasas BDV en vivo...")
+
+    try:
+        texto_nuevo = construir_monitor_bdv_texto_html()
+
+        # 4. Construimos el teclado inline idéntico al monitor principal
+        markup = InlineKeyboardMarkup()
+        if str(call.message.chat.id) == str(CANAL_PRUEBA) or es_admin_vip(bot, call.from_user) or call.message.chat.type != "private":
+            markup.row(
+                InlineKeyboardButton("🔄 Actualizar Tasas BDV", callback_data="refrescar_tasas_bdv"),
+                InlineKeyboardButton("🗑️ Borrar", callback_data="borrar_mensaje")
+            )
+        else:
+            markup.add(InlineKeyboardButton("🔄 Actualizar Tasas BDV", callback_data="refrescar_tasas_bdv"))
+
+        # 5. Editamos el mensaje
+        bot.edit_message_text(
+            chat_id=call.message.chat.id,
+            message_id=call.message.message_id,
+            text=texto_nuevo,
+            parse_mode="HTML",
+            reply_markup=markup
+        )
+
+    except Exception as e:
+        print(f"Error refrescando monitor BDV: {e}")
+        
+        
 # ==========================================
 # BOTÓN FLOTANTE PARA REFRESCAR INTERVENCIÓN
 # ==========================================

@@ -461,8 +461,8 @@ def obtener_tasa_binance_p2p_bdv(tipo_operacion, monto_bs):
         "page": 1,
         "rows": 10,
         "tradeType": tipo_operacion.upper(),
-        "transAmount": str(int(monto_bs)),
-        "payTypes": ["BANK_SPECIFIC_VENEZUELA"],  # <--- Filtro exclusivo para Banco de Venezuela
+        "transAmount": str(int(monto_bs)) if monto_bs > 0 else "",
+        "payTypes": ["BANK_SPECIFIC_VENEZUELA"],  # Filtro oficial BDV
         "filterType": "tradable",
         "additionalKycVerifyFilter": 0,
         "periods": []
@@ -483,12 +483,9 @@ def obtener_tasa_binance_p2p_bdv(tipo_operacion, monto_bs):
                     if user_status in ["BLOCKED", "INACTIVE"]:
                         continue
 
+                    # Filtros flexibilizados para BDV
                     is_restricted = adv.get('isRestricted') or adv.get('restricted') or False
-                    trade_conditions = bool(adv.get('tradeConditions'))
-                    class_conditions = bool(adv.get('classificationConditions'))
-                    adv_conditions = bool(adv.get('advConditions'))
-
-                    if is_restricted or trade_conditions or class_conditions or adv_conditions:
+                    if is_restricted:
                         continue
 
                     if precio:
@@ -502,7 +499,7 @@ def obtener_tasa_binance_p2p_bdv(tipo_operacion, monto_bs):
                     return precios_validos[0]
     except Exception as e:
         print(f"⚠️ Error conectando con Binance P2P BDV: {e}")
-    return None
+    return 0.0
     
 
 def obtener_tasa_binance_zinli(tipo_operacion, monto_usd=0):
@@ -622,7 +619,7 @@ def actualizar_cache_segundo_plano():
                 monto_bs = usd_ref * tasa_bcv_ajustada
                 compra = obtener_tasa_binance_p2p("BUY", monto_bs) or 0.0
                 venta = obtener_tasa_binance_p2p("SELL", monto_bs) or 0.0
-                
+
                 nuevos_rangos[str(usd_ref)] = {
                     "nombre": nombre,
                     "compra": compra,
@@ -635,7 +632,12 @@ def actualizar_cache_segundo_plano():
                 monto_bs = usd_ref * tasa_bcv_ajustada
                 try:
                     compra_bdv = obtener_tasa_binance_p2p_bdv("BUY", monto_bs) or 0.0
+                    if compra_bdv == 0.0:
+                        compra_bdv = obtener_tasa_binance_p2p_bdv("BUY", 0) or 0.0
+
                     venta_bdv = obtener_tasa_binance_p2p_bdv("SELL", monto_bs) or 0.0
+                    if venta_bdv == 0.0:
+                        venta_bdv = obtener_tasa_binance_p2p_bdv("SELL", 0) or 0.0
                 except Exception as e:
                     print(f"⚠️ Error P2P BDV para {nombre}: {e}")
                     compra_bdv, venta_bdv = 0.0, 0.0
@@ -658,7 +660,6 @@ def actualizar_cache_segundo_plano():
 
 threading.Thread(target=actualizar_cache_segundo_plano, daemon=True).start()
 
-            
 
 def refrescar_tasas_en_vivo():
     datos_bcv = obtener_datos_bcv_validos()
@@ -688,15 +689,21 @@ def refrescar_tasas_en_vivo():
 
     if r:
         r.set("p2p_rangos", json.dumps(nuevos_rangos))
-        
-        # --- AQUI AGREGAS EL BLOQUE BDV EN EN VIVO ---
+
+        # --- ACTUALIZACIÓN DE BDV EN VIVO ---
         nuevos_rangos_bdv = {}
         for nombre, usd_ref in ranges_def:
             monto_bs = usd_ref * tasa_bcv_ajustada
             try:
                 compra_bdv = obtener_tasa_binance_p2p_bdv("BUY", monto_bs) or 0.0
+                if compra_bdv == 0.0:
+                    compra_bdv = obtener_tasa_binance_p2p_bdv("BUY", 0) or 0.0
+
                 venta_bdv = obtener_tasa_binance_p2p_bdv("SELL", monto_bs) or 0.0
+                if venta_bdv == 0.0:
+                    venta_bdv = obtener_tasa_binance_p2p_bdv("SELL", 0) or 0.0
             except Exception as e:
+                print(f"Error al obtener tasas P2P BDV para {nombre}: {e}")
                 compra_bdv, venta_bdv = 0.0, 0.0
 
             nuevos_rangos_bdv[str(usd_ref)] = {
@@ -706,7 +713,7 @@ def refrescar_tasas_en_vivo():
             }
 
         r.set("p2p_rangos_bdv", json.dumps(nuevos_rangos_bdv))
-        
+      
 
 def construir_monitor_canal_html():
     """Genera la ficha resumen simplificada para el Canal Principal con Custom Emojis dinámicos"""

@@ -705,7 +705,7 @@ def refrescar_tasas_en_vivo():
                 "venta": venta_bdv
             }
 
-         r.set("p2p_rangos_bdv", json.dumps(nuevos_rangos_bdv))
+        r.set("p2p_rangos_bdv", json.dumps(nuevos_rangos_bdv))
         
 
 def construir_monitor_canal_html():

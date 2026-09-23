@@ -872,7 +872,7 @@ def construir_monitor_bdv_texto_html():
             rangos_cache_bdv.get(f"{usd_ref:.1f}")
         )
 
-        if datos and float(datos.get("compra", 0) > 0 and float(datos.get("venta", 0) > 0:
+        if datos and datos.get("compra", 0) > 0 and datos.get("venta", 0) > 0:
             nombre_rango = datos.get("nombre", nombre_def)
             tasa_compra = datos["compra"]
             tasa_venta = datos["venta"]

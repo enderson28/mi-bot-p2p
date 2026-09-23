@@ -130,6 +130,30 @@ def obtener_tasa_p2p_por_rango(redis_client, monto_usd):
         logger.error(f"⚠️ Error leyendo p2p_rangos en arbitraje.py: {e}")
     return 890.0  # Resguardo por defecto
 
+def obtener_tasa_p2p_bdv_por_rango(redis_client, monto_usd):
+    """
+    Obtiene la tasa P2P BDV según el rango guardado en Redis por bot.py
+    """
+    try:
+        if redis_client:
+            raw = redis_client.get("p2p_rangos_bdv")
+            if raw:
+                rangos = json.loads(raw if isinstance(raw, str) else raw.decode('utf-8'))
+                if monto_usd <= 100:
+                    key_rango = "50.0"
+                elif monto_usd <= 500:
+                    key_rango = "150.0"
+                else:
+                    key_rango = "500.0"
+
+                datos_rango = rangos.get(key_rango, {})
+                tasa_venta = datos_rango.get("venta", 0.0)
+                if float(tasa_venta) > 0:
+                    return float(tasa_venta)
+    except Exception as e:
+        logger.error(f"⚠️ Error leyendo p2p_rangos_bdv en arbitraje.py: {e}")
+    return 0.0
+
 FACTOR_SPREAD_CONVERT = 1.00025
 
 def obtener_precio_spot_usdt_usd(redis_client):
@@ -354,22 +378,27 @@ def registrar_handlers_arbitraje(bot, redis_client):
 
         # --- FLUJO NORMAL PARA OTROS BANCOS (VES) ---
         tasa_p2p_auto = obtener_tasa_p2p_por_rango(redis_client, monto_usd)
+        tasa_p2p_bdv_auto = obtener_tasa_p2p_bdv_por_rango(redis_client, monto_usd)
+
         USER_ARBITRAJE_DATA[user_id]["tasa_p2p_auto"] = tasa_p2p_auto
+        USER_ARBITRAJE_DATA[user_id]["tasa_p2p_bdv_auto"] = tasa_p2p_bdv_auto
 
         markup = InlineKeyboardMarkup(row_width=1)
-        markup.add(
-            InlineKeyboardButton(f"🔴 Usar la tasa del monitor ({tasa_p2p_auto:.2f} Bs)", callback_data="arb_p2p_auto"),
-            InlineKeyboardButton("🔙 Salir al menú", callback_data="arb_salir_menu")
-        )
+        if tasa_p2p_auto > 0:
+            markup.add(InlineKeyboardButton(f"🔴 Usar la tasa del monitor ({tasa_p2p_auto:.2f} Bs)", callback_data="arb_p2p_auto"))
+        if tasa_p2p_bdv_auto > 0:
+            markup.add(InlineKeyboardButton(f"🔴 Usar la tasa monitor BDV ({tasa_p2p_bdv_auto:.2f} Bs)", callback_data="arb_p2p_bdv_auto"))
+        markup.add(InlineKeyboardButton("⬅️ Salir al menú", callback_data="arb_salir_menu"))
 
         msg_text = (
-            f"{TG_EMOJIS['red_circle']} <b>Tasa de Venta P2P {TG_EMOJIS['usdt']}</b>\n"
+            f"{TG_EMOJIS['red_circle']} <b>Tasa de Venta P2P</b> {TG_EMOJIS['p2p']}\n"
             f"{TG_EMOJIS['pencil']} Escribe manualmente la tasa a la que vas a vender <i>(Ej: 890 o 892.5)</i>:\n"
-            f"O presiona {TG_EMOJIS['clic']} el botón si deseas usar la {TG_EMOJIS['red_circle']} tasa detectada por el monitor:"
+            f"O presiona {TG_EMOJIS['click']} el botón si deseas usar la tasa detectada por el monitor:"
         )
 
         msg = bot.send_message(chat_id, msg_text, parse_mode="HTML", reply_markup=markup)
         bot.register_next_step_handler(msg, procesar_tasa_p2p_manual, bot, redis_client, user_id)
+
 
     @bot.callback_query_handler(func=lambda call: call.data == "arb_zinli_auto")
     def usar_zinli_auto(call):
@@ -382,6 +411,7 @@ def registrar_handlers_arbitraje(bot, redis_client):
             tasa_zinli = USER_ARBITRAJE_DATA[user_id].get("tasa_zinli_auto", 1.025)
             USER_ARBITRAJE_DATA[user_id]["tasa_zinli_usada"] = tasa_zinli
             pedir_tasa_ves_tras_zinli(chat_id, user_id, bot, redis_client)
+
 
     def procesar_tasa_zinli_manual(message, bot, redis_client, user_id):
         chat_id = message.chat.id
@@ -397,10 +427,10 @@ def registrar_handlers_arbitraje(bot, redis_client):
                 raise ValueError()
         except ValueError:
             markup = InlineKeyboardMarkup()
-            markup.add(InlineKeyboardButton("🔙 Salir al menú", callback_data="arb_salir_menu"))
+            markup.add(InlineKeyboardButton("⬅️ Salir al menú", callback_data="arb_salir_menu"))
             msg = bot.send_message(
                 chat_id,
-                "❌ <b>Tasa Zinli inválida.</b> Ingresa un número válido (ej: 1.028):",
+                "❌ <b>Tasa Zinli inválida.</b> Ingresa un número válido (ej: 1.025):",
                 parse_mode="HTML",
                 reply_markup=markup
             )
@@ -410,25 +440,31 @@ def registrar_handlers_arbitraje(bot, redis_client):
         USER_ARBITRAJE_DATA[user_id]["tasa_zinli_usada"] = tasa_zinli
         pedir_tasa_ves_tras_zinli(chat_id, user_id, bot, redis_client)
 
+
     def pedir_tasa_ves_tras_zinli(chat_id, user_id, bot, redis_client):
-        monto_usd = USER_ARBITRAJE_DATA[user_id]["monto_usd"]
+        monto_usd = USER_ARBITRAJE_DATA[user_id].get("monto_usd")
         tasa_p2p_auto = obtener_tasa_p2p_por_rango(redis_client, monto_usd)
+        tasa_p2p_bdv_auto = obtener_tasa_p2p_bdv_por_rango(redis_client, monto_usd)
+
         USER_ARBITRAJE_DATA[user_id]["tasa_p2p_auto"] = tasa_p2p_auto
+        USER_ARBITRAJE_DATA[user_id]["tasa_p2p_bdv_auto"] = tasa_p2p_bdv_auto
 
         markup = InlineKeyboardMarkup(row_width=1)
-        markup.add(
-            InlineKeyboardButton(f"🔴 Usar la tasa del monitor ({tasa_p2p_auto:.2f} Bs)", callback_data="arb_p2p_auto"),
-            InlineKeyboardButton("🔙 Salir al menú", callback_data="arb_salir_menu")
-        )
+        if tasa_p2p_auto > 0:
+            markup.add(InlineKeyboardButton(f"🔴 Usar la tasa del monitor ({tasa_p2p_auto:.2f} Bs)", callback_data="arb_p2p_auto"))
+        if tasa_p2p_bdv_auto > 0:
+            markup.add(InlineKeyboardButton(f"🔴 Usar la tasa monitor BDV ({tasa_p2p_bdv_auto:.2f} Bs)", callback_data="arb_p2p_bdv_auto"))
+            markup.add(InlineKeyboardButton("⬅️ Salir al menú", callback_data="arb_salir_menu"))
 
         msg_text = (
-            f"{TG_EMOJIS['red_circle']} <b>Tasa de Venta P2P {TG_EMOJIS['usdt']}</b>\n"
+            f"{TG_EMOJIS['red_circle']} <b>Tasa de Venta P2P</b> {TG_EMOJIS['p2p']}\n"
             f"{TG_EMOJIS['pencil']} Escribe manualmente la tasa a la que vas a vender <i>(Ej: 890 o 892.5)</i>:\n"
-            f"O presiona {TG_EMOJIS['clic']} el botón si deseas usar la {TG_EMOJIS['red_circle']} tasa detectada por el monitor:"
+            f"O presiona {TG_EMOJIS['click']} el botón si deseas usar la tasa detectada por el monitor:"
         )
 
         msg = bot.send_message(chat_id, msg_text, parse_mode="HTML", reply_markup=markup)
         bot.register_next_step_handler(msg, procesar_tasa_p2p_manual, bot, redis_client, user_id)
+
 
     @bot.callback_query_handler(func=lambda call: call.data == "arb_p2p_auto")
     def usar_p2p_auto(call):
@@ -438,8 +474,21 @@ def registrar_handlers_arbitraje(bot, redis_client):
         bot.clear_step_handler_by_chat_id(chat_id)
 
         if user_id in USER_ARBITRAJE_DATA:
-            tasa_auto = USER_ARBITRAJE_DATA[user_id].get("tasa_p2p_auto", 890.0)
+            tasa_auto = USER_ARBITRAJE_DATA[user_id].get("tasa_p2p_auto", 0.0)
             generar_y_enviar_resultado(chat_id, user_id, tasa_auto, bot, redis_client)
+
+
+    @bot.callback_query_handler(func=lambda call: call.data == "arb_p2p_bdv_auto")
+    def usar_p2p_bdv_auto(call):
+        bot.answer_callback_query(call.id)
+        chat_id = call.message.chat.id
+        user_id = call.from_user.id
+        bot.clear_step_handler_by_chat_id(chat_id)
+
+        if user_id in USER_ARBITRAJE_DATA:
+            tasa_bdv_auto = USER_ARBITRAJE_DATA[user_id].get("tasa_p2p_bdv_auto", 0.0)
+            generar_y_enviar_resultado(chat_id, user_id, tasa_bdv_auto, bot, redis_client)
+        
 
     def procesar_tasa_p2p_manual(message, bot, redis_client, user_id):
         chat_id = message.chat.id

@@ -18,8 +18,8 @@ def registrar_calculadora(bot, obtener_cache_func, obtener_teclado_func, r=None)
         """Devuelve el teclado fijo inferior para la calculadora (4 botones)."""
         markup = ReplyKeyboardMarkup(resize_keyboard=True)
         markup.row(
-            KeyboardButton(f"{TG_EMOJIS['dollar']} USD a {TG_EMOJIS['flag_ve']} Bs"),
-            KeyboardButton(f"{TG_EMOJIS['flag_ve']} Bs a {TG_EMOJIS['dollar']} USD")
+            KeyboardButton(f"{TG_EMOJIS['dollar']} USD a 🇻🇪 Bs"),
+            KeyboardButton(f"🇻🇪 Bs a {TG_EMOJIS['dollar']} USD")
         )
         markup.row(
             KeyboardButton(f"{TG_EMOJIS['dollar']} USDT a Bs = USD")
@@ -66,14 +66,14 @@ def registrar_calculadora(bot, obtener_cache_func, obtener_teclado_func, r=None)
         if modo == "USD_BS":
             texto_indicacion = (
                 f"{e('CALCULADORA', '💬')} <b>CALCULADORA AUTOMÁTICA ({e('BCV', '🏛️')}) (+0.5%)</b>\n\n"
-                f"{e('check', '✅')} <b>Modo actual:</b> {e('DINERO', '☺️')} {e('FLECHA_DERECHA', '💬')} {TG_EMOJIS['flag_ve']} Bolívares\n"
+                f"{e('check', '✅')} <b>Modo actual:</b> {e('DINERO', '☺️')} {e('FLECHA_DERECHA', '💬')} 🇻🇪 Bolívares\n"
                 f"{e('pencil', '☺️')} Escriba la cifra en (USD) directamente (Ejemplo: 5, 12.5, 100):\n\n"
                 f"{e('ARENITA', '⏳')} _Esperando tu monto..._"
             )
         elif modo == "BS_USD":
             texto_indicacion = (
                 f"{e('CALCULADORA', '💬')} <b>CALCULADORA DIVISAS AL ({e('BCV', '🏛️')})</b>\n\n"
-                f"{e('check', '✅')} <b>Modo actual:</b> {TG_EMOJIS['flag_ve']} Bolívares {e('FLECHA_DERECHA', '💬')} {e('DINERO', '💬')}\n"
+                f"{e('check', '✅')} <b>Modo actual:</b> 🇻🇪 Bolívares {e('FLECHA_DERECHA', '💬')} {e('DINERO', '💬')}\n"
                 f"{e('pencil', '☺️')} Escriba la cifra en (Bs) directamente (Ejemplo: 500, 1500.50):\n\n"
                 f"{e('ARENITA', '⏳')} _Esperando tu monto..._"
             )
@@ -117,7 +117,7 @@ def registrar_calculadora(bot, obtener_cache_func, obtener_teclado_func, r=None)
         if "USD a" in texto or texto.startswith(TG_EMOJIS['dollar'] + " USD"):
             solicitar_monto_mensaje(message, modo="USD_BS")
             return
-        elif "Bs a" in texto or texto.startswith(TG_EMOJIS['flag_ve'] + " Bs"):
+        elif "Bs a" in texto or texto.startswith(🇻🇪 + " Bs"):
             solicitar_monto_mensaje(message, modo="BS_USD")
             return
         elif "USDT a Bs" in texto:
@@ -188,7 +188,7 @@ def registrar_calculadora(bot, obtener_cache_func, obtener_teclado_func, r=None)
 
             respuesta = (
                 f"{e('CONSULTA1', '💬')} RESULTADO DE CÁLCULO DIVISAS AL ({e('BCV', '🏛️')})\n"
-                f"{TG_EMOJIS['flag_ve']} Monto disponible en Bs: <code>{monto_bolivares:,.2f}</code> Bs\n"
+                f"{e('BOLIVAR', '🚫')} Monto disponible en Bs: <code>{monto_bolivares:,.2f}</code> Bs\n"
                 f"{e('BCV', '🏛️')} Tasa BCV Oficial: {tasa_bcv:,.2f} Bs/$\n"
                 f"{e('BALANZA', '⚖️')} Tasa + 0.5%: <code>{tasa_con_intervencion:,.3f}</code> Bs\n\n"
                 f"Puedes comprar un total de:\n"

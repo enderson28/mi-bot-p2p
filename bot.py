@@ -826,8 +826,8 @@ def construir_monitor_texto_html():
 def construir_monitor_bdv_texto_html():
     datos_bcv = obtener_datos_bcv_validos()
     
-    tasa_hoy = (datos_bcv.get("tasa_hoy", 0.0))
-    tasa_manana = (datos_bcv.get("tasa_manana", 0.0))
+    tasa_hoy = float(datos_bcv.get("tasa_hoy", 0.0))
+    tasa_manana = float(datos_bcv.get("tasa_manana", 0.0))
 
     # Lógica de decisión igual a Intervención:
     if tasa_manana > 0 and tasa_manana != tasa_hoy:

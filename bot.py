@@ -1694,6 +1694,7 @@ def handle_invitacion_comando(message):
 @bot.message_handler(func=lambda message: message.chat.type == "private" and message.text in [
     "🟢 P2P-USDT 🔴",
     "📊 Intervencion 📊",
+    "🟢 P2P-BDV 🔴 🇻🇪",
     "📟 Calculadora",
     "📜 Regla de Oro 📜",
     "🔶 BPay 🔶",

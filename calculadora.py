@@ -170,7 +170,7 @@ def registrar_calculadora(bot, obtener_cache_func, obtener_teclado_func, r=None)
                 f"{e('BCV', '🏛️')} Tasa BCV Oficial: {tasa_bcv:,.2f} Bs/$\n"
                 f"{e('BALANZA', '⚖️')} Tasa + 0.5%: <code>{tasa_con_intervencion:,.3f}</code> Bs\n"
                 f"<blockquote>{e('pago_movil', '💬')} Total a pagar en Bolívares:</blockquote>\n"
-                f"<blockquote>{e('FLECHA_DERECHA', '💬')} <b><code>{monto_bolivares:,.2f}</code> Bs</b> ({e('CALENDARIO', '📅')} {fecha_valor_bcv})</blockquote>\n\n"
+                f"<blockquote>{e('FLECHA_DERECHA', '💬')} <b><code>{monto_bolivares:,.2f}</code> Bs</b> {e('CALENDARIO', '📅')} {fecha_valor_bcv}</blockquote>\n\n"
                 f"{e('CHINCHE', '📌')} Puedes seguir escribiendo montos o cambiar de modo abajo."
             )
 
@@ -192,7 +192,7 @@ def registrar_calculadora(bot, obtener_cache_func, obtener_teclado_func, r=None)
                 f"{e('BCV', '🏛️')} Tasa BCV Oficial: {tasa_bcv:,.2f} Bs/$\n"
                 f"{e('BALANZA', '⚖️')} Tasa + 0.5%: <code>{tasa_con_intervencion:,.3f}</code> Bs\n\n"
                 f"<blockquote>Puedes comprar un total de:</blockquote>\n"
-                f"<blockquote>{e('FLECHA_DERECHA', '💬')} <b><code>{monto_usd:,.2f}</code> {e('DINERO', '💬')}</b> ({e('CALENDARIO', '📅')} {fecha_valor_bcv})</blockquote>\n\n"
+                f"<blockquote>{e('FLECHA_DERECHA', '💬')} <b><code>{monto_usd:,.2f}</code> {e('DINERO', '💬')}</b> {e('CALENDARIO', '📅')} {fecha_valor_bcv}</blockquote>\n\n"
                 f"{e('CHINCHE', '⚖️')} Puedes seguir escribiendo montos o cambiar de modo abajo."
             )
 
@@ -273,14 +273,14 @@ def registrar_calculadora(bot, obtener_cache_func, obtener_teclado_func, r=None)
 
         respuesta = (
             f"<blockquote>{e('CONSULTA1', '💬')} <b>RESULTADO</b> USDT {e('FLECHA_DERECHA', '💬')} <b>BS = USD</b></blockquote>\n\n"
-            f"<b>{monto_usdt:,.2f}</b> {e('USDT', '💬')}\n"
+            f"<blockquote>  <b>{monto_usdt:,.2f}</b> {e('USDT', '💬')}</blockquote>\n"
             f"<blockquote>🇻🇪<b>Bs al {e('USDT', '💬')} {e('ROJO', '💬')} Venta {nombre_origen}:</b></blockquote>\n"
-            f"<b><code>{total_bs:,.2f}</code> Bs</b>\n"
-            f"   <i>(Tasa aplicada: {tasa_p2p:,.2f} Bs/USDT)</i>\n\n"
-            f"<blockquote><b>USD al {e('BCV', '🏛️')} BCV Oficial:</b> <b><code>{usd_bcv_oficial:,.2f}</code> $</b></blockquote>\n"
-            f"   <i>(Tasa Oficial: {tasa_bcv:,.2f} Bs/$ ({e('CALENDARIO', '📅')} {fecha_valor_bcv}))</i>\n\n"
-            f"<blockquote><b>USD al {e('BALANZA', '⚖️')} BCV + 0.5%:</b> <b><code>{usd_bcv_intervencion:,.2f}</code> $</b></blockquote>\n"
-            f"   <i>(Tasa + 0.5%: {tasa_con_intervencion:,.3f} Bs/$)</i>\n\n"
+            f"<blockquot><b><code>{total_bs:,.2f}</code> Bs</b></blockquote>\n"
+            f"   <i>Tasa aplicada: {tasa_p2p:,.2f} Bs/USDT</i>\n\n"
+            f"<blockquote><b>USD al {e('BCV', '🏛️')} BCV Oficial:</b> <b><code>{usd_bcv_oficial:,.2f}</code> {e('DINERO', '📅')}</b></blockquote>\n"
+            f"   <i>Tasa Oficial: {tasa_bcv:,.2f} Bs/$ {e('CALENDARIO', '📅')} {fecha_valor_bcv}</i>\n\n"
+            f"<blockquote><b>USD al {e('BALANZA', '⚖️')} BCV + 0.5%:</b> <b><code>{usd_bcv_intervencion:,.2f}</code> {e('DINERO', '📅')}</b></blockquote>\n"
+            f"   <i>Tasa + 0.5%: {tasa_con_intervencion:,.3f} Bs/$</i>\n\n"
             f"{e('CHINCHE', '📌')} Puedes seguir escribiendo montos en USDT directamente o cambiar de modo abajo."
         )
 

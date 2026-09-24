@@ -789,7 +789,7 @@ def construir_monitor_texto_html():
     }
 
 
-    for usd_ref in [50.0, 150.0, 300.0]:
+    for usd_ref in [50.0, 150.0, 500.0]:
         emoji_rango, nombre_def = emojis_rangos.get(usd_ref, (e("RANGO_3", "🥉"), "Rango"))
     
         # 🔍 Probamos todas las variaciones posibles de llaves (str, int, float, str con int)

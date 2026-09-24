@@ -65,23 +65,23 @@ def registrar_calculadora(bot, obtener_cache_func, obtener_teclado_func, r=None)
 
         if modo == "USD_BS":
             texto_indicacion = (
-                f"{e('CALCULADORA', '💬')} <b>CALCULADORA AUTOMÁTICA ({e('BCV', '🏛️')}) (+0.5%)</b>\n\n"
+                f"<blockquote>{e('CALCULADORA', '💬')} <b>CALCULADORA AUTOMÁTICA ({e('BCV', '🏛️')}) (+0.5%)</b></blockquote>\n\n"
                 f"{e('check', '✅')} <b>Modo actual:</b> {e('DINERO', '☺️')} {e('FLECHA_DERECHA', '💬')} 🇻🇪 Bolívares\n"
-                f"Escriba la cifra en (USD) directamente (Ejemplo: 5, 12.5, 100):\n\n"
+                f"<blockquote>Escriba la cifra en (USD) directamente (Ejemplo: 5, 12.5, 100):</blockquote>\n\n"
                 f"{e('ARENITA', '⏳')} _Esperando tu monto..._"
             )
         elif modo == "BS_USD":
             texto_indicacion = (
-                f"{e('CALCULADORA', '💬')} <b>CALCULADORA DIVISAS AL ({e('BCV', '🏛️')})</b>\n\n"
+                f"<blockquote>{e('CALCULADORA', '💬')} <b>CALCULADORA DIVISAS AL ({e('BCV', '🏛️')})</b></blockquote>\n\n"
                 f"{e('check', '✅')} <b>Modo actual:</b> 🇻🇪 Bolívares {e('FLECHA_DERECHA', '💬')} {e('DINERO', '💬')}\n"
-                f"Escriba la cifra en (Bs) directamente (Ejemplo: 500, 1500.50):\n\n"
+                f"<blockquote>Escriba la cifra en (Bs) directamente (Ejemplo: 500, 1500.50):</blockquote>\n\n"
                 f"{e('ARENITA', '⏳')} _Esperando tu monto..._"
             )
         elif modo == "USDT_BS_USD":
             texto_indicacion = (
-                f"{e('CALCULADORA', '💬')} <b>CALCULADORA {e('USDT', '💬')}USDT a BS = USD</b>\n\n"
+                f"<blockquote>{e('CALCULADORA', '💬')} <b>CALCULADORA {e('USDT', '💬')}USDT a BS = USD</b></blockquote>\n\n"
                 f"{e('check', '✅')} <b>Modo actual:</b> {e('USDT', '💬')} {e('FLECHA_DERECHA', '💬')} Bolívares = USD ({e('BCV', '🏛️')})\n"
-                f"Escribe el monto en (USDT) directamente (Ejemplo: 5, 12.5, 100, 500):\n\n"
+                f"<blockquote>Escribe el monto en (USDT) directamente (Ejemplo: 5, 12.5, 100, 500):</blockquote>\n\n"
                 f"{e('ARENITA', '⏳')} _Esperando tu monto..._"
             )
 
@@ -165,12 +165,12 @@ def registrar_calculadora(bot, obtener_cache_func, obtener_teclado_func, r=None)
             monto_bolivares = monto_usd * tasa_con_intervencion
 
             respuesta = (
-                f"{e('CONSULTA1', '💬')} RESULTADO DE CÁLCULO AL ({e('BCV', '🏛️')})\n"
-                f"Monto en {e('DINERO', '😁')}: <code>{monto_usd:,.2f}</code> USD\n"
+                f"<blockquote>{e('CONSULTA1', '💬')} RESULTADO DE CÁLCULO AL ({e('BCV', '🏛️')})</blockquote>\n"
+                f"<blockquote>Monto en {e('DINERO', '😁')}: <code>{monto_usd:,.2f}</code> USD</blockquote>\n"
                 f"{e('BCV', '🏛️')} Tasa BCV Oficial: {tasa_bcv:,.2f} Bs/$\n"
                 f"{e('BALANZA', '⚖️')} Tasa + 0.5%: <code>{tasa_con_intervencion:,.3f}</code> Bs\n"
-                f"{e('pago_movil', '💬')} Total a pagar en Bolívares:\n"
-                f"{e('FLECHA_DERECHA', '💬')} <b><code>{monto_bolivares:,.2f}</code> Bs</b> ({e('CALENDARIO', '📅')} {fecha_valor_bcv})\n\n"
+                f"<blockquote>{e('pago_movil', '💬')} Total a pagar en Bolívares:</blockquote>\n"
+                f"<blockquote>{e('FLECHA_DERECHA', '💬')} <b><code>{monto_bolivares:,.2f}</code> Bs</b> ({e('CALENDARIO', '📅')} {fecha_valor_bcv})</blockquote>\n\n"
                 f"{e('CHINCHE', '📌')} Puedes seguir escribiendo montos o cambiar de modo abajo."
             )
 
@@ -187,13 +187,13 @@ def registrar_calculadora(bot, obtener_cache_func, obtener_teclado_func, r=None)
             monto_usd = monto_bolivares / tasa_con_intervencion if tasa_con_intervencion > 0 else 0.0
 
             respuesta = (
-                f"{e('CONSULTA1', '💬')} RESULTADO DE CÁLCULO DIVISAS AL ({e('BCV', '🏛️')})\n"
-                f"{e('BOLIVAR', '🚫')} Monto disponible en Bs: <code>{monto_bolivares:,.2f}</code> Bs\n"
+                f"<blockquote>{e('CONSULTA1', '💬')} RESULTADO DE CÁLCULO DIVISAS AL ({e('BCV', '🏛️')})</blockquote>\n"
+                f"<blockquote>{e('BOLIVAR', '🚫')} Monto disponible en Bs: <code>{monto_bolivares:,.2f}</code> Bs</blockquote>\n"
                 f"{e('BCV', '🏛️')} Tasa BCV Oficial: {tasa_bcv:,.2f} Bs/$\n"
                 f"{e('BALANZA', '⚖️')} Tasa + 0.5%: <code>{tasa_con_intervencion:,.3f}</code> Bs\n\n"
-                f"Puedes comprar un total de:\n"
-                f"{e('FLECHA_DERECHA', '💬')} <b><code>{monto_usd:,.2f}</code> {e('DINERO', '💬')}</b> ({e('CALENDARIO', '📅')} {fecha_valor_bcv})\n\n"
-                f"📌 Puedes seguir escribiendo montos o cambiar de modo abajo."
+                f"<blockquote>Puedes comprar un total de:</blockquote>\n"
+                f"<blockquote>{e('FLECHA_DERECHA', '💬')} <b><code>{monto_usd:,.2f}</code> {e('DINERO', '💬')}</b> ({e('CALENDARIO', '📅')} {fecha_valor_bcv})</blockquote>\n\n"
+                f"{e('CHINCHE', '⚖️')} Puedes seguir escribiendo montos o cambiar de modo abajo."
             )
 
             msg_res = bot.send_message(
@@ -236,8 +236,8 @@ def registrar_calculadora(bot, obtener_cache_func, obtener_teclado_func, r=None)
                 )
 
             txt_pregunta = (
-                f"{e('USDT', '💬')} <b>Monto ingresado:</b> <code>{monto_entrada:,.2f}</code> USDT\n\n"
-                f"Selecciona la tasa de venta del monitor P2P que deseas aplicar:"
+                f"{e('clic', '💬')} <b>Monto ingresado:</b> <code>{monto_entrada:,.2f}</code> {e('USDT', '⚖️')}\n\n"
+                f"Selecciona la tasa de {e('ROJO', '⚖️')} venta del monitor P2P que deseas aplicar:"
             )
 
             msg_res = bot.send_message(
@@ -272,15 +272,16 @@ def registrar_calculadora(bot, obtener_cache_func, obtener_teclado_func, r=None)
         usd_bcv_intervencion = total_bs / tasa_con_intervencion
 
         respuesta = (
-            f"{e('CONSULTA1', '💬')} <b>RESULTADO {e('USDT', '💬')} {e('FLECHA_DERECHA', '💬')} BS = USD</b>\n\n"
-            f"<b>{monto_usdt:,.2f} {e('USDT', '💬')}</b>\n"
-            f"🇻🇪 <b>Bs al {e('USDT', '💬')} USDT {e('ROJO', '🫠')} Venta {nombre_origen}:</b> <code>{total_bs:,.2f}</code> Bs\n"
+            f"<blockquote>{e('CONSULTA1', '💬')} <b>RESULTADO</b> USDT {e('FLECHA_DERECHA', '💬')} <b>BS = USD</b></blockquote>\n\n"
+            f"<b>{monto_usdt:,.2f}</b> {e('USDT', '💬')}\n"
+            f"<blockquote>🇻🇪<b>Bs al {e('USDT', '💬')} {e('ROJO', '💬')} Venta {nombre_origen}:</b></blockquote>\n"
+            f"<b><code>{total_bs:,.2f}</code> Bs</b>\n"
             f"   <i>(Tasa aplicada: {tasa_p2p:,.2f} Bs/USDT)</i>\n\n"
-            f"{e('BCV', '🏛️')} <b>USD al BCV Oficial:</b> <code>{usd_bcv_oficial:,.2f}</code> $\n"
-            f"   <i>(Tasa Oficial: {tasa_bcv:,.2f} Bs/$)</i>\n\n"
-            f"{e('BALANZA', '⚖️')} <b>USD al BCV + 0.5%:</b> <code>{usd_bcv_intervencion:,.2f}</code> $\n"
+            f"<blockquote><b>USD al {e('BCV', '🏛️')} BCV Oficial:</b> <b><code>{usd_bcv_oficial:,.2f}</code> $</b></blockquote>\n"
+            f"   <i>(Tasa Oficial: {tasa_bcv:,.2f} Bs/$ ({e('CALENDARIO', '📅')} {fecha_valor_bcv}))</i>\n\n"
+            f"<blockquote><b>USD al {e('BALANZA', '⚖️')} BCV + 0.5%:</b> <b><code>{usd_bcv_intervencion:,.2f}</code> $</b></blockquote>\n"
             f"   <i>(Tasa + 0.5%: {tasa_con_intervencion:,.3f} Bs/$)</i>\n\n"
-            f"{e('CHINCHE', '💬')} Puedes escribir un nuevo monto en USDT directamente."
+            f"{e('CHINCHE', '📌')} Puedes seguir escribiendo montos en USDT directamente o cambiar de modo abajo."
         )
 
         bot.answer_callback_query(call.id)
@@ -304,5 +305,8 @@ def registrar_calculadora(bot, obtener_cache_func, obtener_teclado_func, r=None)
         user_id = call.from_user.id
         data = USER_CALC_DATA.get(user_id, {})
         tasa_gen = data.get("tasa_p2p_gen", 0.0)
-        ejecutar_resultado_usdt_bs_usd(call, tasa_gen, "Monitor General")
+        ejecutar_resultado_usdt_bs_usd(call, tasa_gen, "Monitor Pago: Todos")
+        
+
+
         

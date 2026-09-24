@@ -611,7 +611,7 @@ def actualizar_cache_segundo_plano():
             ranges_def = [
                 ("Rango Menor ($50 - $100)", 50.0),
                 ("Rango Medio ($100 - $300)", 150.0),
-                ("Rango Mayor ($500+)", 500.0)
+                ("Rango Mayor ($500+)", 300.0)
             ]
 
             # --- A. RANGOS GLOBALES ---
@@ -669,7 +669,7 @@ def refrescar_tasas_en_vivo():
     ranges_def = [
         ("Rango Menor ($50 - $100)", 50.0),
         ("Rango Medio ($100 - $300)", 150.0),
-        ("Rango Mayor ($500+)", 500.0)
+        ("Rango Mayor ($500+)", 300.0)
     ]
 
     nuevos_rangos = {}
@@ -785,11 +785,11 @@ def construir_monitor_texto_html():
     emojis_rangos = {
         50.0: (e("RANGO_3", "🥉"), "Rango Menor (50 - 100)"),
         150.0: (e("RANGO_2", "🥈"), "Rango Medio (100 - 300)"),
-        500.0: (e("RANGO_1", "🥇"), "Rango Mayor (500+)")
+        300.0: (e("RANGO_1", "🥇"), "Rango Mayor (500+)")
     }
 
 
-    for usd_ref in [50.0, 150.0, 500.0]:
+    for usd_ref in [50.0, 150.0, 300.0]:
         emoji_rango, nombre_def = emojis_rangos.get(usd_ref, (e("RANGO_3", "🥉"), "Rango"))
     
         # 🔍 Probamos todas las variaciones posibles de llaves (str, int, float, str con int)
@@ -816,7 +816,7 @@ def construir_monitor_texto_html():
             texto += f"{e('USDT', '🪙')}{e('VERDE', '🟢')}<b>Compra USDT:</b> <code>{tasa_compra:.2f}</code>Bs\n"
             texto += f"{e('USDT', '🪙')}{e('ROJO', '🔴')}<b>Venta:</b> <code>{tasa_venta:.2f}</code> Bs\n\n"
 
-            if usd_ref == 500.0:
+            if usd_ref == 300.0:
                 texto += f"  {e('BOMBILLA', '💡')} <i>Filtro base: ({filtro_bcv_bs:,.0f} Bs)</i>\n"
 
             texto += f" {emoji_spread} <b>Spread:</b> <code>{spread:.2f}</code> Bs (<code>{porcentaje_spread:.2f}%</code>)\n"
@@ -868,10 +868,10 @@ def construir_monitor_bdv_texto_html():
     emojis_rangos = {
         50.0: (e("RANGO_3", "🥉"), "Rango Menor ($50 - $100)"),
         150.0: (e("RANGO_2", "🥈"), "Rango Medio ($100 - $300)"),
-        500.0: (e("RANGO_1", "🥇"), "Rango Mayor ($500+)")
+        300.0: (e("RANGO_1", "🥇"), "Rango Mayor ($500+)")
     }
 
-    for usd_ref in [50.0, 150.0, 500.0]:
+    for usd_ref in [50.0, 150.0, 300.0]:
         emoji_rango, nombre_def = emojis_rangos.get(usd_ref, (e("RANGO_3", "🥉"), "Rango"))
         datos = (
             rangos_cache_bdv.get(str(usd_ref)) or 
@@ -894,7 +894,7 @@ def construir_monitor_bdv_texto_html():
             texto += f"  {e('VERDE', '🟢')} <b>Compra USDT:</b> <code>{tasa_compra:.2f}</code> Bs\n"
             texto += f"  {e('ROJO', '🔴')} <b>Venta:</b> <code>{tasa_venta:.2f}</code> Bs\n\n"
 
-            if usd_ref == 500.0:
+            if usd_ref == 300.0:
                 filtro_bcv_bs = usd_ref * tasa_intervencion
                 texto += f"  {e('BOMBILLA', '💡')} <i>Filtro base: ({filtro_bcv_bs:,.0f} Bs)</i>\n"
 

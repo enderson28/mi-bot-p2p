@@ -22,7 +22,7 @@ def registrar_calculadora(bot, obtener_cache_func, obtener_teclado_func, r=None)
             KeyboardButton(f"🇻🇪 Bs a 💵 USD")
         )
         markup.row(
-            KeyboardButton(f"💵 USDT a Bs = USD")
+            KeyboardButton(f"💸 USDT a Bs = USD")
         )
         markup.row(
             KeyboardButton(f"🔙 Volver al menú")
@@ -120,7 +120,7 @@ def registrar_calculadora(bot, obtener_cache_func, obtener_teclado_func, r=None)
         elif "Bs a" in texto or texto.startswith("🇻🇪 Bs"):
             solicitar_monto_mensaje(message, modo="BS_USD")
             return
-        elif "USDT a Bs" in texto:
+        elif "USDT a" in texto or texto.startswith("💸 USDT"):
             solicitar_monto_mensaje(message, modo="USDT_BS_USD")
             return
 

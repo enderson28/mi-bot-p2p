@@ -38,10 +38,10 @@ def registrar_calculadora(bot, obtener_cache_func, obtener_teclado_func, r=None)
                     rangos = json.loads(raw if isinstance(raw, str) else raw.decode('utf-8'))
                     if monto_usdt <= 100:
                         key_rango = "50.0"
-                    elif monto_usdt <= 300:
+                    elif monto_usdt <= 500:
                         key_rango = "150.0"
                     else:
-                        key_rango = "300.0"
+                        key_rango = "500.0"
 
                     datos_rango = rangos.get(key_rango, {})
                     tasa_venta = datos_rango.get("venta", 0.0)
@@ -77,7 +77,7 @@ def registrar_calculadora(bot, obtener_cache_func, obtener_teclado_func, r=None)
                 f"Escriba la cifra en (Bs) directamente (Ejemplo: 500, 1500.50):\n\n"
                 f"{e('ARENITA', '⏳')} _Esperando tu monto..._"
             )
-        else:  # Modo USDT_BS_USD
+        elif modo == "USDT_BS_USD":
             texto_indicacion = (
                 f"{e('CALCULADORA', '💬')} <b>CALCULADORA {e('USDT', '💬')}USDT a BS = USD</b>\n\n"
                 f"{e('check', '✅')} <b>Modo actual:</b> {e('USDT', '💬')} {e('FLECHA_DERECHA', '💬')} Bolívares = USD ({e('BCV', '🏛️')})\n"

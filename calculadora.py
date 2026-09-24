@@ -67,21 +67,21 @@ def registrar_calculadora(bot, obtener_cache_func, obtener_teclado_func, r=None)
             texto_indicacion = (
                 f"{e('CALCULADORA', '💬')} <b>CALCULADORA AUTOMÁTICA ({e('BCV', '🏛️')}) (+0.5%)</b>\n\n"
                 f"{e('check', '✅')} <b>Modo actual:</b> {e('DINERO', '☺️')} {e('FLECHA_DERECHA', '💬')} 🇻🇪 Bolívares\n"
-                f"{e('pencil', '☺️')} Escriba la cifra en (USD) directamente (Ejemplo: 5, 12.5, 100):\n\n"
+                f"Escriba la cifra en (USD) directamente (Ejemplo: 5, 12.5, 100):\n\n"
                 f"{e('ARENITA', '⏳')} _Esperando tu monto..._"
             )
         elif modo == "BS_USD":
             texto_indicacion = (
                 f"{e('CALCULADORA', '💬')} <b>CALCULADORA DIVISAS AL ({e('BCV', '🏛️')})</b>\n\n"
                 f"{e('check', '✅')} <b>Modo actual:</b> 🇻🇪 Bolívares {e('FLECHA_DERECHA', '💬')} {e('DINERO', '💬')}\n"
-                f"{e('pencil', '☺️')} Escriba la cifra en (Bs) directamente (Ejemplo: 500, 1500.50):\n\n"
+                f"Escriba la cifra en (Bs) directamente (Ejemplo: 500, 1500.50):\n\n"
                 f"{e('ARENITA', '⏳')} _Esperando tu monto..._"
             )
         else:  # Modo USDT_BS_USD
             texto_indicacion = (
                 f"{e('CALCULADORA', '💬')} <b>CALCULADORA {e('USDT', '💬')}USDT a BS = USD</b>\n\n"
                 f"{e('check', '✅')} <b>Modo actual:</b> {e('USDT', '💬')} {e('FLECHA_DERECHA', '💬')} Bolívares = USD ({e('BCV', '🏛️')})\n"
-                f"{e('pencil', '☺️')} Escribe el monto en (USDT) directamente (Ejemplo: 5, 12.5, 100, 500):\n\n"
+                f"Escribe el monto en (USDT) directamente (Ejemplo: 5, 12.5, 100, 500):\n\n"
                 f"{e('ARENITA', '⏳')} _Esperando tu monto..._"
             )
 
@@ -102,7 +102,7 @@ def registrar_calculadora(bot, obtener_cache_func, obtener_teclado_func, r=None)
         user_id = message.from_user.id
 
         # 1. Opción de salida al menú principal
-        if texto == f"{TG_EMOJIS['back']} Volver al menú" or texto.startswith("/"):
+        if texto == f"🔙 Volver al menú" or texto.startswith("/"):
             bot.clear_step_handler_by_chat_id(message.chat.id)
             teclado_restablecido = obtener_teclado_func(message.from_user)
             bot.send_message(

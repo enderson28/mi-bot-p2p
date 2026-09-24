@@ -207,7 +207,6 @@ def registrar_calculadora(bot, obtener_cache_func, obtener_teclado_func, r=None)
             bot.register_next_step_handler(msg_res, lambda m: procesar_calculo(m, modo))
 
         elif modo == "USDT_BS_USD":
-            # Guardamos el monto en USDT y los datos BCV para usarlos en la selección de tasa P2P
             USER_CALC_DATA[user_id] = {
                 "monto_usdt": monto_entrada,
                 "tasa_bcv": tasa_bcv,
@@ -225,7 +224,7 @@ def registrar_calculadora(bot, obtener_cache_func, obtener_teclado_func, r=None)
             if tasa_p2p_bdv > 0:
                 markup_inline.add(
                     InlineKeyboardButton(
-                        f"🔴 Usar Venta BDV ({tasa_p2p_bdv:,.2f} Bs)",
+                        f"🔴 Usar Tasa Venta BDV ({tasa_p2p_bdv:,.2f} Bs)",
                         callback_data="calc_usdt_p2p_bdv"
                     )
                 )
@@ -238,8 +237,9 @@ def registrar_calculadora(bot, obtener_cache_func, obtener_teclado_func, r=None)
                 )
 
             txt_pregunta = (
-                f"{e('clic', '💬')} <b>Monto ingresado:</b> <code>{monto_entrada:,.2f}</code> {e('USDT', '⚖️')}\n\n"
-                f"Selecciona la tasa de {e('ROJO', '⚖️')} venta del monitor P2P que deseas aplicar:"
+                f"{e('clic', '😁')} <b>Monto ingresado:</b> <code>{monto_entrada:,.2f}</code> USDT\n\n"
+                f"Escribe manualmente la tasa {e('BINANCE_ESPEJO','🫣')} P2P a la que vas a {e('ROJO','🫣')} vender <i>(Ej: 960 o 965.50)</i>:\n"
+                f"<blockquote>O presiona el botón si deseas usar la tasa detectada por el monitor:</blockquote>\n"
             )
 
             msg_res = bot.send_message(
@@ -248,9 +248,54 @@ def registrar_calculadora(bot, obtener_cache_func, obtener_teclado_func, r=None)
                 parse_mode="HTML",
                 reply_markup=markup_inline
             )
-            bot.register_next_step_handler(msg_res, lambda m: procesar_calculo(m, modo))
+            
+            # Registramos el handler para escuchar si escribe una tasa manual en el siguiente mensaje
+            bot.register_next_step_handler(msg_res, lambda m: procesar_tasa_manual_usdt(m, user_id))
+        
 
     # --- HANDLERS PARA BOTONES INLINE DE SELECCIÓN DE TASA P2P ---
+    def procesar_tasa_manual_usdt(message, user_id):
+        if message.chat.type != "private":
+            return
+
+        texto = message.text.strip() if message.text else ""
+
+        # Si presiona un botón del menú inferior o cambia de modo
+        if texto in [f"🔙 Volver al menú", f"💵 USD a 🇻🇪 Bs", f"🇻🇪 Bs a 💵 USD", f"💸 USDT a Bs = USD"] or texto.startswith("/"):
+            procesar_calculo(message, modo="USDT_BS_USD")
+            return
+
+        texto_limpio = texto.replace(",", ".")
+        try:
+            tasa_manual = float(texto_limpio)
+            if tasa_manual <= 0:
+                raise ValueError()
+        except ValueError:
+            msg_err = bot.send_message(
+                message.chat.id,
+                "⚠️ <b>Tasa P2P inválida.</b> Escribe un número válido (ej: 965 o 960.50):",
+                parse_mode="HTML",
+                reply_markup=obtener_teclado_calc()
+            )
+            bot.register_next_step_handler(msg_err, lambda m: procesar_tasa_manual_usdt(m, user_id))
+            return
+
+        # Simulación de evento para reutilizar la función de resultado
+        class FakeCall:
+            def __init__(self, msg, u_id):
+                self.message = msg
+                self.from_user = type('User', (), {'id': u_id})()
+                self.id = "fake_call"
+
+        fake_call = FakeCall(message, user_id)
+        
+        old_answer = bot.answer_callback_query
+        bot.answer_callback_query = lambda call_id, text=None: None
+        
+        ejecutar_resultado_usdt_bs_usd(fake_call, tasa_manual, "Manual")
+        
+        bot.answer_callback_query = old_answer
+            
 
     def ejecutar_resultado_usdt_bs_usd(call, tasa_p2p, nombre_origen):
         user_id = call.from_user.id

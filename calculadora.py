@@ -38,10 +38,10 @@ def registrar_calculadora(bot, obtener_cache_func, obtener_teclado_func, r=None)
                     rangos = json.loads(raw if isinstance(raw, str) else raw.decode('utf-8'))
                     if monto_usdt <= 100:
                         key_rango = "50.0"
-                    elif monto_usdt <= 2000:
+                    elif monto_usdt <= 300:
                         key_rango = "150.0"
                     else:
-                        key_rango = "2000.0"
+                        key_rango = "300.0"
 
                     datos_rango = rangos.get(key_rango, {})
                     tasa_venta = datos_rango.get("venta", 0.0)

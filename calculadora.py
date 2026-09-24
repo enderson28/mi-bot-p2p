@@ -299,6 +299,7 @@ def registrar_calculadora(bot, obtener_cache_func, obtener_teclado_func, r=None)
 
     def ejecutar_resultado_usdt_bs_usd(call, tasa_p2p, nombre_origen):
         user_id = call.from_user.id
+        chat_id = call.message.chat.id
         data = USER_CALC_DATA.get(user_id, {})
 
         if not data:

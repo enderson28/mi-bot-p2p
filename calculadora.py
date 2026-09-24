@@ -293,6 +293,7 @@ def registrar_calculadora(bot, obtener_cache_func, obtener_teclado_func, r=None)
             parse_mode="HTML",
             reply_markup=obtener_teclado_calc()
         )
+        bot.clear_step_handler_by_chat_id(chat_id)
         bot.register_next_step_handler(msg_final, lambda m: procesar_calculo(m, modo="USDT_BS_USD"))
 
     @bot.callback_query_handler(func=lambda call: call.data == "calc_usdt_p2p_bdv")

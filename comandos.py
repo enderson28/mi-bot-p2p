@@ -46,8 +46,7 @@ def comando_comandos(bot, message):
         f"───────────────\n"
         f"▫️ <code>/tasa</code> {e('FLECHA_DERECHA', '❇️')} {e('BINANCE_P2P', '❇️')} Monitor P2P Global.\n\n"
         
-        f"<blockquote>{e('REVISION', '❇️')} <b>ADMINISTRADORES VIP (Comandos para el Grupo) y USUARIOS VIP EN CHAT PRIVADO BOT:</b>\n</blockquote>"
-        f"▫️ <code>/aviso</code>\n"
+        f"<blockquote>{e('REVISION', '❇️')} <b>ADMINISTRADORES VIP (Comandos para el Grupo) y USUARIOS VIP EN CHAT PRIVADO BOT:</b></blockquote>\n"
         f"▫️ <code>/zinli</code>\n"
         f"▫️ <code>/i</code>\n"
         f"▫️ <code>/p</code>\n"

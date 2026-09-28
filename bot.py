@@ -2483,7 +2483,7 @@ def callback_borrar_tabla_admin(call):
 def handle_comando_comandos(message):
     comando_comandos(bot, message)
 
-@bot.message_handler(commands=['admins'])
+@bot.message_handler(commands=['vips_admin'])
 def handle_comando_admin(message):
     comando_admin(bot, message)
     

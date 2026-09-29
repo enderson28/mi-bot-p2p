@@ -1570,102 +1570,101 @@ def cmd_vips_activos(message):
         if str(message.from_user.id) != str(OWNER_ID):
             return
 
-        try:
-            keys_vip = r.keys("vip_user:*") if r else []
+        keys_vip = r.keys("vip_user:*") if r else []
 
-            if not keys_vip:
-                bot.send_message(message.chat.id, "⚠️ Actualmente no hay usuarios VIP registrados en Redis.")
-                return
+        if not keys_vip:
+            bot.send_message(message.chat.id, "⚠️ Actualmente no hay usuarios VIP registrados en Redis.")
+            return
 
-            lista_vips_raw = []
-            for k in keys_vip:
-                key_str = k.decode('utf-8') if isinstance(k, bytes) else k
-                user_id = key_str.split(":")[1]
-                ttl_segundos = r.ttl(key_str)
+        lista_vips_raw = []
+        for k in keys_vip:
+            key_str = k.decode('utf-8') if isinstance(k, bytes) else k
+            user_id = key_str.split(":")[1]
+            ttl_segundos = r.ttl(key_str)
 
-                if ttl_segundos <= 0:
-                    continue
+            if ttl_segundos <= 0:
+                continue
 
-                lista_vips_raw.append({
-                    'key_str': key_str,
-                    'user_id': str(user_id),
-                    'ttl': ttl_segundos
-                })
+            lista_vips_raw.append({
+                'key_str': key_str,
+                'user_id': str(user_id),
+                'ttl': ttl_segundos
+            })
 
-            # Ordenamos primero por menor TTL (o el criterio habitual que tengas)
-            lista_vips_raw.sort(key=lambda x: (x['ttl'], int(x['user_id'])), reverse=False)
+        # Ordenamos primero por menor TTL (o el criterio habitual que tengas)
+        lista_vips_raw.sort(key=lambda x: (x['ttl'], int(x['user_id'])), reverse=False)
 
-            # --- DICCIONARIO DE PUESTOS RESERVADOS ---
-            # ID: Puesto deseado (Base 1)
-            PUESTOS_FIJOS = {
-                "1920750484": 7,   # Cristiano Ronaldo
-                "8573557834": 10   # Lionel
-            }
+        # --- DICCIONARIO DE PUESTOS RESERVADOS ---
+        # ID: Puesto deseado (Base 1)
+        PUESTOS_FIJOS = {
+            "1920750484": 7,   # Cristiano Ronaldo
+            "8573557834": 10   # Lionel
+        }
 
-            # Separar usuarios en fijos y normales (dinámicos)
-            reservados_activos = {} # puesto -> item
-            dinamicos = []
+        # Separar usuarios en fijos y normales (dinámicos)
+        reservados_activos = {} # puesto -> item
+        dinamicos = []
 
-            for item in lista_vips_raw:
-                uid = item['user_id']
-                if uid in PUESTOS_FIJOS:
-                    puesto = PUESTOS_FIJOS[uid]
-                    reservados_activos[puesto] = item
-                else:
-                    dinamicos.append(item)
+        for item in lista_vips_raw:
+            uid = item['user_id']
+            if uid in PUESTOS_FIJOS:
+                puesto = PUESTOS_FIJOS[uid]
+                reservados_activos[puesto] = item
+            else:
+                dinamicos.append(item)
 
-            # Construir la lista final preservando los puestos
-            lista_ordenada_final = []
-            total_elementos = len(lista_vips_raw)
+        # Construir la lista final preservando los puestos
+        lista_ordenada_final = []
+        total_elementos = len(lista_vips_raw)
 
-            # Determinamos cuántas posiciones mostrar en total
-            # (Asegura cubrir los puestos fijos si el total de usuarios VIP lo permite)
-            max_posicion = max([total_elementos] + [p for p in reservados_activos.keys() if p <= total_elementos])
+        # Determinamos cuántas posiciones mostrar en total
+        # (Asegura cubrir los puestos fijos si el total de usuarios VIP lo permite)
+        max_posicion = max([total_elementos] + [p for p in reservados_activos.keys() if p <= total_elementos])
 
-            idx_dinamico = 0
-            for pos in range(1, max_posicion + 1):
-                if pos in reservados_activos:
-                    lista_ordenada_final.append((pos, reservados_activos[pos]))
-                else:
-                    if idx_dinamico < len(dinamicos):
-                        lista_ordenada_final.append((pos, dinamicos[idx_dinamico]))
-                        idx_dinamico += 1
+        idx_dinamico = 0
+        for pos in range(1, max_posicion + 1):
+            if pos in reservados_activos:
+                lista_ordenada_final.append((pos, reservados_activos[pos]))
+            else:
+                if idx_dinamico < len(dinamicos):
+                    lista_ordenada_final.append((pos, dinamicos[idx_dinamico]))
+                    idx_dinamico += 1
 
-            # --- CONSTRUCCIÓN DEL MENSAJE HTML ---
-            msj = f"{e('ESCUDO', '🛡️')} <b>USUARIOS VIP ACTIVOS</b> {e('ESCUDO', '🛡️')}\n\n"
-            total_vips = 0
+        # --- CONSTRUCCIÓN DEL MENSAJE HTML ---
+        msj = f"{e('ESCUDO', '🛡️')} <b>USUARIOS VIP ACTIVOS</b> {e('ESCUDO', '🛡️')}\n\n"
+        total_vips = 0
 
-            for pos, item in lista_ordenada_final:
-                user_id = item['user_id']
-                ttl_segundos = item['ttl']
+        for pos, item in lista_ordenada_final:
+            user_id = item['user_id']
+            ttl_segundos = item['ttl']
 
-                dias_restantes = ttl_segundos // 86400
-                horas_restantes = (ttl_segundos % 86400) // 3600
+            dias_restantes = ttl_segundos // 86400
+            horas_restantes = (ttl_segundos % 86400) // 3600
                 
-                if dias_restantes > 0:
-                    tiempo_txt = f"{dias_restantes}d {horas_restantes}h restantes"
-                else:
-                    tiempo_txt = f"{horas_restantes}h restantes"
+            if dias_restantes > 0:
+                tiempo_txt = f"{dias_restantes}d {horas_restantes}h restantes"
+            else:
+                tiempo_txt = f"{horas_restantes}h restantes"
 
-                try:
-                    chat_info = bot.get_chat(int(user_id))
-                    nombre = chat_info.first_name if chat_info.first_name else "Usuario VIP"
-                    usuario_str = f"<b>{nombre}</b> (@{chat_info.username})" if chat_info.username else f"<b>{nombre}</b>"
-                except Exception:
-                    usuario_str = f"Usuario ID (<code>{user_id}</code>)"
+            try:
+                chat_info = bot.get_chat(int(user_id))
+                nombre = chat_info.first_name if chat_info.first_name else "Usuario VIP"
+                usuario_str = f"<b>{nombre}</b> (@{chat_info.username})" if chat_info.username else f"<b>{nombre}</b>"
+            except Exception:
+                usuario_str = f"Usuario ID (<code>{user_id}</code>)"
 
-                total_vips += 1
-                msj += f"{e('CUENTAS_FALSAS', '🙈')} <b>{pos}. {usuario_str}</b>\n"
-                msj += f"{e('RELOJERA', '🕐')} <i>Tiempo restante: {tiempo_txt}</i>\n\n"
+            total_vips += 1
+            msj += f"{e('CUENTAS_FALSAS', '🙈')} <b>{pos}. {usuario_str}</b>\n"
+            msj += f"{e('RELOJERA', '🕐')} <i>Tiempo restante: {tiempo_txt}</i>\n\n"
 
-            msj += f"{e('ESTADISTICA', '📊')} <b>Total de Miembros VIP: {total_vips}</b>\n"
-            msj += f"-----------------------------------------\n"
-            msj += f"{e('clic', '🕐')} <i>¿Quieres aparecer en la lista y desbloquear todas las funciones? Dale clic al bot @BancoIDV_bot para seguir los pasos y activar tu suscripción.</i>"
+        msj += f"{e('ESTADISTICA', '📊')} <b>Total de Miembros VIP: {total_vips}</b>\n"
+        msj += f"-----------------------------------------\n"
+        msj += f"{e('clic', '🕐')} <i>¿Quieres aparecer en la lista y desbloquear todas las funciones? Dale clic al bot @BancoIDV_bot para seguir los pasos y activar tu suscripción.</i>"
 
-            bot.send_message(message.chat.id, msj, parse_mode="HTML")
+        bot.send_message(message.chat.id, msj, parse_mode="HTML")
 
-        except Exception as err:
-            print(f"⚠️ Error en comando vips_activos: {err}")
+    except Exception as err:
+        print(f"⚠️ Error en comando vips_activos: {err}")
         
         
 # Manejador para /p y el botón P2P

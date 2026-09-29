@@ -1666,9 +1666,6 @@ def cmd_vips_activos(message):
 
         except Exception as err:
             print(f"⚠️ Error en comando vips_activos: {err}")
-
-    except Exception as e:
-        print(f"⚠️ Error general en vips_activos: {e}")
         
         
 # Manejador para /p y el botón P2P

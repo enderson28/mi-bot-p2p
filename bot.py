@@ -1562,70 +1562,113 @@ def handle_anuncio_vip(message):
 @bot.message_handler(commands=['vips_activos', 'vips'])
 def cmd_vips_activos(message):
     try:
-        bot.delete_message(message.chat.id, message.message_id)
-    except Exception:
-        pass
+        try:
+            bot.delete_message(message.chat.id, message.message_id)
+        except Exception:
+            pass
 
-    if str(message.from_user.id) != str(OWNER_ID):
-        return
-
-    try:
-        keys_vip = r.keys("vip_user:*") if r else []
-        
-        if not keys_vip:
-            bot.send_message(message.chat.id, "ℹ️ Actualmente no hay usuarios VIP registrados en Redis.")
+        if str(message.from_user.id) != str(OWNER_ID):
             return
 
-        lista_vips = []
-        for k in keys_vip:
-            key_str = k.decode('utf-8') if isinstance(k, bytes) else k
-            user_id = key_str.split(":")[1]
-            ttl_segundos = r.ttl(key_str)
-            
-            if ttl_segundos <= 0:
-                continue
+        try:
+            keys_vip = r.keys("vip_user:*") if r else []
 
-            lista_vips.append({
-                'key_str': key_str,
-                'user_id': user_id,
-                'ttl': ttl_segundos
-            })
+            if not keys_vip:
+                bot.send_message(message.chat.id, "⚠️ Actualmente no hay usuarios VIP registrados en Redis.")
+                return
 
-        # ORDENAR: reverse=False ubica a los más antiguos arriba (menor TTL) 
-        # y a los recién ingresados al final (mayor TTL y nuevo ingreso)
-        lista_vips.sort(key=lambda x: (x['ttl'], int(x['user_id'])), reverse=False)
+            lista_vips_raw = []
+            for k in keys_vip:
+                key_str = k.decode('utf-8') if isinstance(k, bytes) else k
+                user_id = key_str.split(":")[1]
+                ttl_segundos = r.ttl(key_str)
 
-        msj = f"{e('ESCUDO', '🛡️')} <b><u>USUARIOS VIP ACTIVOS</u></b> {e('ESCUDO', '🛡️')}\n\n"
-        total_vips = 0
+                if ttl_segundos <= 0:
+                    continue
 
-        for item in lista_vips:
-            user_id = item['user_id']
-            ttl_segundos = item['ttl']
+                lista_vips_raw.append({
+                    'key_str': key_str,
+                    'user_id': str(user_id),
+                    'ttl': ttl_segundos
+                })
 
-            dias_restantes = ttl_segundos // 86400
-            horas_restantes = (ttl_segundos % 86400) // 3600
-            tiempo_txt = f"{dias_restantes}d {horas_restantes}h" if dias_restantes > 0 else f"{horas_restantes}h restantes"
+            # Ordenamos primero por menor TTL (o el criterio habitual que tengas)
+            lista_vips_raw.sort(key=lambda x: (x['ttl'], int(x['user_id'])), reverse=False)
 
-            try:
-                chat_info = bot.get_chat(int(user_id))
-                nombre = chat_info.first_name if chat_info.first_name else "Usuario VIP"
-                username = f" (@{chat_info.username})" if chat_info.username else ""
-                usuario_fmt = f"{nombre}{username}"
-            except Exception:
-                usuario_fmt = f"Usuario ID: {user_id}"
+            # --- DICCIONARIO DE PUESTOS RESERVADOS ---
+            # ID: Puesto deseado (Base 1)
+            PUESTOS_FIJOS = {
+                "1920750484": 7,   # Cristiano Ronaldo
+                "8573557834": 10   # Lionel
+            }
 
-            total_vips += 1
-            msj += f"{e('CUENTAS_FALSAS', '👤')} <b>{total_vips}. {usuario_fmt}</b>\n"
-            msj += f"{e('RELOJERA', '⏳')} <i>Tiempo restante: {tiempo_txt}</i>\n\n"
+            # Separar usuarios en fijos y normales (dinámicos)
+            reservados_activos = {} # puesto -> item
+            dinamicos = []
 
-        msj += f"{e('ESTADISTICA', '📊')} <b>Total de Miembros VIP: {total_vips}</b>\n"
-        msj += "───────────────\n"
-        msj += f"{e('clic', '🚀')} <i>¿Quieres aparecer en la lista y desbloquear todas las funciones? Dale clic al bot @{BOT_USERNAME} para seguir los pasos y activar tu suscripción.</i>"
+            for item in lista_vips_raw:
+                uid = item['user_id']
+                if uid in PUESTOS_FIJOS:
+                    puesto = PUESTOS_FIJOS[uid]
+                    reservados_activos[puesto] = item
+                else:
+                    dinamicos.append(item)
 
-        bot.send_message(message.chat.id, msj, parse_mode='HTML')
+            # Construir la lista final preservando los puestos
+            lista_ordenada_final = []
+            total_elementos = len(lista_vips_raw)
 
-    except Exception as err:
-        print(f"⚠️ Error en comando /vips_activos: {err}")
+            # Determinamos cuántas posiciones mostrar en total
+            # (Asegura cubrir los puestos fijos si el total de usuarios VIP lo permite)
+            max_posicion = max([total_elementos] + [p for p in reservados_activos.keys() if p <= total_elementos])
+
+            idx_dinamico = 0
+            for pos in range(1, max_posicion + 1):
+                if pos in reservados_activos:
+                    lista_ordenada_final.append((pos, reservados_activos[pos]))
+                else:
+                    if idx_dinamico < len(dinamicos):
+                        lista_ordenada_final.append((pos, dinamicos[idx_dinamico]))
+                        idx_dinamico += 1
+
+            # --- CONSTRUCCIÓN DEL MENSAJE HTML ---
+            msj = f"{e('ESCUDO', '🛡️')} <b>USUARIOS VIP ACTIVOS</b> {e('ESCUDO', '🛡️')}\n\n"
+            total_vips = 0
+
+            for pos, item in lista_ordenada_final:
+                user_id = item['user_id']
+                ttl_segundos = item['ttl']
+
+                dias_restantes = ttl_segundos // 86400
+                horas_restantes = (ttl_segundos % 86400) // 3600
+                
+                if dias_restantes > 0:
+                    tiempo_txt = f"{dias_restantes}d {horas_restantes}h restantes"
+                else:
+                    tiempo_txt = f"{horas_restantes}h restantes"
+
+                try:
+                    chat_info = bot.get_chat(int(user_id))
+                    nombre = chat_info.first_name if chat_info.first_name else "Usuario VIP"
+                    usuario_str = f"<b>{nombre}</b> (@{chat_info.username})" if chat_info.username else f"<b>{nombre}</b>"
+                except Exception:
+                    usuario_str = f"Usuario ID (<code>{user_id}</code>)"
+
+                total_vips += 1
+                msj += f"{e('CUENTAS_FALSAS', '🙈')} <b>{pos}. {usuario_str}</b>\n"
+                msj += f"{e('RELOJERA', '🕐')} <i>Tiempo restante: {tiempo_txt}</i>\n\n"
+
+            msj += f"{e('ESTADISTICA', '📊')} <b>Total de Miembros VIP: {total_vips}</b>\n"
+            msj += f"-----------------------------------------\n"
+            msj += f"{e('clic', '🕐')} <i>¿Quieres aparecer en la lista y desbloquear todas las funciones? Dale clic al bot @BancoIDV_bot para seguir los pasos y activar tu suscripción.</i>"
+
+            bot.send_message(message.chat.id, msj, parse_mode="HTML")
+
+        except Exception as err:
+            print(f"⚠️ Error en comando vips_activos: {err}")
+
+    except Exception as e:
+        print(f"⚠️ Error general en vips_activos: {e}")
         
         
 # Manejador para /p y el botón P2P

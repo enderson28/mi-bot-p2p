@@ -3,8 +3,8 @@ import threading
 from emojis import TG_EMOJIS, e
 
 # ⏱️ Configuración de tiempos
-INTERVALO_HORAS = 2          # Frecuencia del anuncio automático (2 horas)
-DURACION_VISIBLE_MIN = 15     # Minutos visible antes de borrarse
+INTERVALO_HORAS = 6          # Frecuencia del anuncio automático (2 horas)
+DURACION_VISIBLE_MIN = 5     # Minutos visible antes de borrarse
 
 
 def obtener_texto_anuncio():
@@ -17,7 +17,7 @@ def obtener_texto_anuncio():
         f"{e('NUMERO2', '2️⃣')} {e('clic', '🎯')} Presiona el botón <b>INICIAR</b> o envía <code>/start</code>.\n"
         f"{e('NUMERO3', '3️⃣')} {e('check', '✔️')} Resuelve la suma matemática súper sencilla.\n\n"
         f"{e('ARENITA', '☄️')} <b>¡IMPORTANTE!</b> Dispones de <b>1 hora</b> desde que solicitas tu entrada para resolver la verificación o la solicitud será {e('RECHAZO', '👎')} rechazada automáticamente (puedes volver a hacer la solicitud cuando gustes 👏🏼).\n\n"
-        f"{e('BOOM', '💥')} <i>Este mensaje se autodestruirá en 15 minutos para mantener el chat limpio.</i>\n"
+        f"{e('BOOM', '💥')} <i>Este mensaje se autodestruirá en 5 minutos para mantener el chat limpio.</i>\n"
         f"-----------------------------------------------------------\n"
     )
 

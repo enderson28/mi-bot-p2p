@@ -321,22 +321,22 @@ setup_verification_handlers(
 
 def obtener_datos_bcv_validos():
     datos_defecto = {
-        "tasa_hoy": 853.4993,
-        "fecha_hoy": "Miércoles, 23 Septiembre 2026",
+        "tasa_hoy": 876.798,
+        "fecha_hoy": "Martes, 13 Octubre 2026",
         "tasa_manana": 0.0,
         "fecha_manana": "",
-        "tasa_anterior": 852.417,
-        "fecha_anterior": "Martes, 22 Septiembre 2026",
-        "fecha_ultima_rotacion": "Miércoles, 23 Septiembre 2026"
+        "tasa_anterior": 875.650,
+        "fecha_anterior": "Lunes, 12 Octubre 2026",
+        "fecha_ultima_rotacion": "Martes, 13 Octubre 2026"
     }
 
     try:
         if 'r' in globals() and r:
-            val = r.get("bcv_datos_v14")
+            val = r.get("bcv_datos_v15")
             if val:
                 datos = json.loads(val)
             else:
-                r.set("bcv_datos_v14", json.dumps(datos_defecto))
+                r.set("bcv_datos_v15", json.dumps(datos_defecto))
                 datos = datos_defecto.copy()
 
             # ROTACIÓN AUTOMÁTICA DE MEDIANOCHE
@@ -367,7 +367,7 @@ def obtener_datos_bcv_validos():
                 datos["fecha_manana"] = ""
                 datos["fecha_ultima_rotacion"] = fecha_hoy_sistema
 
-                r.set("bcv_datos_v14", json.dumps(datos))
+                r.set("bcv_datos_v15", json.dumps(datos))
                 print(f"🔥 [ROTACIÓN NOCTURNA] Tasa de mañana ({tasa_manana_val}) promovida a Tasa Hoy para {fecha_hoy_sistema}")
 
             return datos
@@ -2616,7 +2616,7 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
                         datos_bcv["fecha_manana"] = fecha_nueva
 
                         if 'r' in globals() and r:
-                            r.set("bcv_datos_v14", json.dumps(datos_bcv))
+                            r.set("bcv_datos_v15", json.dumps(datos_bcv))
 
                         print(f"🔥 [WEBHOOK] Tasa de mañana ({tasa_nueva} Bs) guardada exitosamente en Redis.")
 

@@ -514,6 +514,7 @@ def obtener_detalle_binance_p2p(tipo_operacion, monto_bs=0):
     
     trans_amount_str = str(int(monto_bs)) if monto_bs and monto_bs > 0 else ""
 
+    # Sin payTypes restrictivos para capturar el mercado global absoluto en VES
     payload = {
         "asset": "USDT",
         "flat": "VES",
@@ -527,6 +528,7 @@ def obtener_detalle_binance_p2p(tipo_operacion, monto_bs=0):
         "additionalKycVerifyFilter": 0,
         "periods": []
     }
+    
     try:
         r = requests.post(url, json=payload, headers=headers, timeout=(5.0, 5.0))
         if r.status_code == 200:
@@ -548,18 +550,17 @@ def obtener_detalle_binance_p2p(tipo_operacion, monto_bs=0):
                     min_limite = float(adv.get('minSingleTransAmount', 0))
                     comercio = advertiser.get('nickName', 'Comerciante')
                     
-                    # Extracción segura de métodos de pago
+                    # Lectura abierta y limpia de los métodos de pago que traiga el mejor anuncio
                     banco_str = "Pago Móvil / Transferencia"
                     metodos = adv.get('tradeMethods', [])
                     if metodos and isinstance(metodos, list):
                         nombres_bancos = []
                         for m in metodos:
-                            # Capturamos cualquier variante de nombre que envíe Binance
                             nombre = m.get('tradeMethodName') or m.get('payType') or m.get('identifier') or ''
-                            if nombre:
+                            if nombre and nombre not in nombres_bancos:
                                 nombres_bancos.append(nombre)
                         if nombres_bancos:
-                            banco_str = ", ".join(nombres_bancos)
+                            banco_str = " | ".join(nombres_bancos)
 
                     return {
                         "precio": float(precio),
@@ -570,8 +571,7 @@ def obtener_detalle_binance_p2p(tipo_operacion, monto_bs=0):
     except Exception as e:
         print(f"⚠️ Error conectando con Binance P2P Detalle: {e}")
     
-    # 🛡️ RED DE SEGURIDAD: Si por alguna razón la API falla o no parsea, 
-    # devolvemos un diccionario por defecto con la tasa de tu función estable para que el bot NUNCA se caiga.
+    # Red de seguridad contra fallas de red
     tasa_fallback = obtener_tasa_binance_p2p(tipo_operacion, monto_bs)
     if tasa_fallback and tasa_fallback > 0:
         return {
@@ -582,9 +582,7 @@ def obtener_detalle_binance_p2p(tipo_operacion, monto_bs=0):
         }
         
     return None
-    
-                    
-    
+     
 
 def obtener_tasa_binance_zinli(tipo_operacion, monto_usd=0):
     """

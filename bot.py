@@ -514,16 +514,21 @@ def obtener_detalle_binance_p2p(tipo_operacion, monto_bs=0):
     
     trans_amount_str = str(int(monto_bs)) if monto_bs and monto_bs > 0 else ""
 
-    # Sin payTypes restrictivos para capturar el mercado global absoluto en VES
+    # Incluimos los payTypes oficiales de la banca nacional para acotar y asegurar resultados limpios
     payload = {
         "asset": "USDT",
         "flat": "VES",
         "merchantCheck": True,
         "publisherType": "merchant",
         "page": 1,
-        "rows": 10,
+        "rows": 5,
         "tradeType": tipo_operacion.upper(),
         "transAmount": trans_amount_str,
+        "payTypes": [
+            "Banesco", "Mercantil", "PagoMovil", "Provincial", 
+            "BancoDeVenezuela", "Banplus", "Bancaribe", "Bancamiga", "BFC", "BNC",
+            "BancoDelTesoro", "Bancamiga", "BancoPlaza", "BancoActivo", "BancoVenezolanoDeCredito"
+        ],
         "filterType": "tradable",
         "additionalKycVerifyFilter": 0,
         "periods": []
@@ -550,12 +555,13 @@ def obtener_detalle_binance_p2p(tipo_operacion, monto_bs=0):
                     min_limite = float(adv.get('minSingleTransAmount', 0))
                     comercio = advertiser.get('nickName', 'Comerciante')
                     
-                    # Lectura abierta y limpia de los métodos de pago que traiga el mejor anuncio
+                    # Extracción optimizada de los bancos aceptados en el anuncio
                     banco_str = "Pago Móvil / Transferencia"
                     metodos = adv.get('tradeMethods', [])
                     if metodos and isinstance(metodos, list):
                         nombres_bancos = []
                         for m in metodos:
+                            # Capturamos las diferentes formas en que Binance nombra el banco
                             nombre = m.get('tradeMethodName') or m.get('payType') or m.get('identifier') or ''
                             if nombre and nombre not in nombres_bancos:
                                 nombres_bancos.append(nombre)
@@ -571,17 +577,18 @@ def obtener_detalle_binance_p2p(tipo_operacion, monto_bs=0):
     except Exception as e:
         print(f"⚠️ Error conectando con Binance P2P Detalle: {e}")
     
-    # Red de seguridad contra fallas de red
+    # Red de seguridad por si la API llegase a demorar
     tasa_fallback = obtener_tasa_binance_p2p(tipo_operacion, monto_bs)
     if tasa_fallback and tasa_fallback > 0:
         return {
             "precio": float(tasa_fallback),
             "min_limite": 0.0,
-            "banco": "Mercado General P2P",
+            "banco": "Banca Nacional P2P",
             "comercio": "Binance P2P"
         }
         
     return None
+    
      
 
 def obtener_tasa_binance_zinli(tipo_operacion, monto_usd=0):

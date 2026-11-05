@@ -527,7 +527,7 @@ def obtener_detalle_binance_p2p(tipo_operacion, monto_bs=0):
         "payTypes": [
             "Banesco", "Mercantil", "PagoMovil", "Provincial", 
             "BancoDeVenezuela", "Banplus", "Bancaribe", "Bancamiga", "BFC", "BNC",
-            "BancoDelTesoro", "Bancamiga", "BancoPlaza", "BancoActivo", "BancoVenezolanoDeCredito"
+            "BancoDelTesoro", "BancoPlaza", "BancoActivo", "BancoVenezolanoDeCredito"
         ],
         "filterType": "tradable",
         "additionalKycVerifyFilter": 0,
@@ -562,7 +562,7 @@ def obtener_detalle_binance_p2p(tipo_operacion, monto_bs=0):
                         nombres_bancos = []
                         for m in metodos:
                             # Capturamos las diferentes formas en que Binance nombra el banco
-                            nombre = m.get('tradeMethodName') or m.get('payType') or m.get('identifier') or ''
+                            nombre = m.get('tradeMethodName') or m.get('payTypes') or m.get('identifier') or ''
                             if nombre and nombre not in nombres_bancos:
                                 nombres_bancos.append(nombre)
                         if nombres_bancos:

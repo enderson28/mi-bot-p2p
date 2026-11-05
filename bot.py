@@ -511,15 +511,19 @@ def obtener_detalle_binance_p2p(tipo_operacion, monto_bs=0):
         "Content-Type": "application/json",
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
     }
+    
+    # Manejo seguro del monto igual que tus otras funciones funcionales
+    trans_amount_str = str(int(monto_bs)) if monto_bs and monto_bs > 0 else ""
+
     payload = {
         "asset": "USDT",
         "flat": "VES",
         "merchantCheck": True,
         "publisherType": "merchant",
         "page": 1,
-        "rows": 5,
+        "rows": 10,
         "tradeType": tipo_operacion.upper(),
-        "transAmount": str(int(monto_bs)) if monto_bs > 0 else "",
+        "transAmount": trans_amount_str,
         "filterType": "tradable",
         "additionalKycVerifyFilter": 0,
         "periods": []
@@ -536,19 +540,28 @@ def obtener_detalle_binance_p2p(tipo_operacion, monto_bs=0):
                 if user_status in ["BLOCKED", "INACTIVE"]:
                     continue
                 
+                # Filtro robusto igual al que ya usa tu bot
                 is_restricted = adv.get('isRestricted') or adv.get('restricted') or False
-                if is_restricted:
+                trade_conditions = bool(adv.get('tradeConditions'))
+                class_conditions = bool(adv.get('classificationConditions'))
+                press_conditions = bool(adv.get('advConditions'))
+
+                if is_restricted or trade_conditions or class_conditions or press_conditions:
                     continue
 
                 precio = adv.get('price')
                 if precio:
-                    # Extraemos metadatos adicionales del mejor anuncio
                     min_limite = float(adv.get('minSingleTransAmount', 0))
                     comercio = advertiser.get('nickName', 'Comerciante')
                     
-                    # Extraer nombres de los bancos/métodos de pago
                     metodos = adv.get('tradeMethods', [])
-                    bancos = [m.get('tradeMethodName', '') for m in metodos if m.get('tradeMethodName')]
+                    bancos = []
+                    for m in metodos:
+                        # Extraer el nombre del banco de forma segura
+                        banco_nombre = m.get('tradeMethodName') or m.get('identifier') or ''
+                        if banco_nombre:
+                            bancos.append(banco_nombre)
+                    
                     banco_str = ", ".join(bancos) if bancos else "Pago Móvil / Transferencia"
 
                     return {

@@ -520,7 +520,7 @@ def obtener_detalle_binance_p2p(tipo_operacion, monto_bs=0):
         "merchantCheck": True,
         "publisherType": "merchant",
         "page": 1,
-        "rows": 5,
+        "rows": 10,
         "tradeType": tipo_operacion.upper(),
         "transAmount": trans_amount_str,
         "filterType": "tradable",
@@ -535,12 +535,10 @@ def obtener_detalle_binance_p2p(tipo_operacion, monto_bs=0):
                 adv = elemento.get('adv', {})
                 advertiser = elemento.get('advertiser', {})
                 
-                # 1. Ignorar usuarios bloqueados o inactivos
                 user_status = advertiser.get('userStatus', '')
                 if user_status in ["BLOCKED", "INACTIVE"]:
                     continue
                 
-                # 2. Filtro flexible centrado solo en restricciones reales del anuncio
                 is_restricted = adv.get('isRestricted') or adv.get('restricted') or False
                 if is_restricted:
                     continue
@@ -550,14 +548,18 @@ def obtener_detalle_binance_p2p(tipo_operacion, monto_bs=0):
                     min_limite = float(adv.get('minSingleTransAmount', 0))
                     comercio = advertiser.get('nickName', 'Comerciante')
                     
+                    # Extracción segura de métodos de pago
+                    banco_str = "Pago Móvil / Transferencia"
                     metodos = adv.get('tradeMethods', [])
-                    bancos = []
-                    for m in metodos:
-                        banco_nombre = m.get('tradeMethodName') or m.get('identifier') or ''
-                        if banco_nombre:
-                            bancos.append(banco_nombre)
-                    
-                    banco_str = ", ".join(bancos) if bancos else "Pago Móvil / Transferencia"
+                    if metodos and isinstance(metodos, list):
+                        nombres_bancos = []
+                        for m in metodos:
+                            # Capturamos cualquier variante de nombre que envíe Binance
+                            nombre = m.get('tradeMethodName') or m.get('payType') or m.get('identifier') or ''
+                            if nombre:
+                                nombres_bancos.append(nombre)
+                        if nombres_bancos:
+                            banco_str = ", ".join(nombres_bancos)
 
                     return {
                         "precio": float(precio),
@@ -568,7 +570,19 @@ def obtener_detalle_binance_p2p(tipo_operacion, monto_bs=0):
     except Exception as e:
         print(f"⚠️ Error conectando con Binance P2P Detalle: {e}")
     
+    # 🛡️ RED DE SEGURIDAD: Si por alguna razón la API falla o no parsea, 
+    # devolvemos un diccionario por defecto con la tasa de tu función estable para que el bot NUNCA se caiga.
+    tasa_fallback = obtener_tasa_binance_p2p(tipo_operacion, monto_bs)
+    if tasa_fallback and tasa_fallback > 0:
+        return {
+            "precio": float(tasa_fallback),
+            "min_limite": 0.0,
+            "banco": "Mercado General P2P",
+            "comercio": "Binance P2P"
+        }
+        
     return None
+    
                     
     
 

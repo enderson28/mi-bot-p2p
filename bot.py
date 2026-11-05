@@ -503,6 +503,64 @@ def obtener_tasa_binance_p2p_bdv(tipo_operacion, monto_bs):
         print(f"⚠️ Error conectando con Binance P2P BDV: {e}")
         
     return None
+
+def obtener_detalle_binance_p2p(tipo_operacion, monto_bs=0):
+    url = "https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search"
+    headers = {
+        "Accept": "*/*",
+        "Content-Type": "application/json",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+    }
+    payload = {
+        "asset": "USDT",
+        "flat": "VES",
+        "merchantCheck": True,
+        "publisherType": "merchant",
+        "page": 1,
+        "rows": 5,
+        "tradeType": tipo_operacion.upper(),
+        "transAmount": str(int(monto_bs)) if monto_bs > 0 else "",
+        "filterType": "tradable",
+        "additionalKycVerifyFilter": 0,
+        "periods": []
+    }
+    try:
+        r = requests.post(url, json=payload, headers=headers, timeout=(5.0, 5.0))
+        if r.status_code == 200:
+            datos = r.json().get('data', [])
+            for elemento in datos:
+                adv = elemento.get('adv', {})
+                advertiser = elemento.get('advertiser', {})
+                
+                user_status = advertiser.get('userStatus', '')
+                if user_status in ["BLOCKED", "INACTIVE"]:
+                    continue
+                
+                is_restricted = adv.get('isRestricted') or adv.get('restricted') or False
+                if is_restricted:
+                    continue
+
+                precio = adv.get('price')
+                if precio:
+                    # Extraemos metadatos adicionales del mejor anuncio
+                    min_limite = float(adv.get('minSingleTransAmount', 0))
+                    comercio = advertiser.get('nickName', 'Comerciante')
+                    
+                    # Extraer nombres de los bancos/métodos de pago
+                    metodos = adv.get('tradeMethods', [])
+                    bancos = [m.get('tradeMethodName', '') for m in metodos if m.get('tradeMethodName')]
+                    banco_str = ", ".join(bancos) if bancos else "Pago Móvil / Transferencia"
+
+                    return {
+                        "precio": float(precio),
+                        "min_limite": min_limite,
+                        "banco": banco_str,
+                        "comercio": comercio
+                    }
+    except Exception as e:
+        print(f"⚠️ Error conectando con Binance P2P Detalle: {e}")
+    
+    return None
     
 
 def obtener_tasa_binance_zinli(tipo_operacion, monto_usd=0):
@@ -719,30 +777,36 @@ def refrescar_tasas_en_vivo():
       
 
 def construir_monitor_canal_html():
-    """Genera la ficha resumen simplificada para el Canal Principal con Custom Emojis dinámicos"""
-    # Consulta la mejor tasa de compra y venta general
-    compra_base = obtener_tasa_binance_p2p("buy", 0) or 0.0
-    venta_base = obtener_tasa_binance_p2p("sell", 0) or 0.0
+    """Genera la ficha resumen detallada para el Canal Principal con Bancos y Límites"""
+    
+    # Obtenemos los diccionarios completos con detalles para compra y venta
+    info_compra = obtener_detalle_binance_p2p("BUY", 0)
+    info_venta = obtener_detalle_binance_p2p("SELL", 0)
 
-    if compra_base == 0.0 or venta_base == 0.0:
-        return f"⚠️ <b>Error temporal al obtener tasas de Binance P2P.</b>"
+    if not info_compra or not info_venta:
+        return f"⚠️ <b>Error temporal al obtener tasas detalladas de Binance P2P.</b>"
+
+    compra_base = info_compra["precio"]
+    venta_base = info_venta["precio"]
 
     spread = round(venta_base - compra_base, 2)
     porcentaje = round((spread / compra_base) * 100, 2) if compra_base > 0 else 0.0
     
     hora_actual = (datetime.now() - timedelta(hours=4)).strftime("%I:%M:%S %p")
-
-    # Emoji dinámico de Spread (SUBIDA si es >= 0, BAJADA si es negativo)
+    
     emoji_spread = e("SUBIDA", "📈") if spread >= 0 else e("BAJADA", "📉")
 
-    # Formato corto usando el diccionario TG_EMOJIS mediante la función e()
+    # Formato enriquecido incluyendo Banco y Límite Mínimo
     texto = (
-        f"{e('BINANCE_P2P', '🪙')} <b>TASAS P2P EN VIVO</b>\n\n"
-        f"{e('VERDE', '🟢')} <b>COMPRA USDT:</b> {compra_base:.2f} Bs\n"
-        f"{e('ROJO', '🔴')} <b>VENTA USDT:</b> {venta_base:.2f} Bs\n\n"
-        f"{emoji_spread} <b>Spread:</b> {spread:.2f} Bs ({porcentaje:.2f}%)\n\n"
-        f"{e('MUNDO', '🌎')} <i>Última actualización: {hora_actual}</i>"
+        f"{e('BINANCE_P2P', '🌐')} <b>TASAS P2P EN VIVO</b>\n\n"
+        f"{e('VERDE', '🟢')} <b>COMPRA USDT:</b> <code>{compra_base:,.2f}</code> Bs\n"
+        f"   └ <i>Banco: {info_compra['banco']} | Mín: {info_compra['min_limite']:,.0f} Bs</i>\n\n"
+        f"{e('ROJO', '🔴')} <b>VENTA USDT:</b> <code>{venta_base:,.2f}</code> Bs\n"
+        f"   └ <i>Banco: {info_venta['banco']} | Mín: {info_venta['min_limite']:,.0f} Bs</i>\n\n"
+        f"{e(emoji_spread, '📊')} <b>Spread:</b> <code>{spread:,.2f}</code> Bs (<code>{porcentaje}%</code>)\n"
+        f"{e('MUNDO', '🌍')} <i>Última actualización: {hora_actual}</i>"
     )
+    
     return texto
     
 

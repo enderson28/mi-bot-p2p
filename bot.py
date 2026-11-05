@@ -512,7 +512,6 @@ def obtener_detalle_binance_p2p(tipo_operacion, monto_bs=0):
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
     }
     
-    # Manejo seguro del monto igual que tus otras funciones funcionales
     trans_amount_str = str(int(monto_bs)) if monto_bs and monto_bs > 0 else ""
 
     payload = {
@@ -521,7 +520,7 @@ def obtener_detalle_binance_p2p(tipo_operacion, monto_bs=0):
         "merchantCheck": True,
         "publisherType": "merchant",
         "page": 1,
-        "rows": 10,
+        "rows": 5,
         "tradeType": tipo_operacion.upper(),
         "transAmount": trans_amount_str,
         "filterType": "tradable",
@@ -536,17 +535,14 @@ def obtener_detalle_binance_p2p(tipo_operacion, monto_bs=0):
                 adv = elemento.get('adv', {})
                 advertiser = elemento.get('advertiser', {})
                 
+                # 1. Ignorar usuarios bloqueados o inactivos
                 user_status = advertiser.get('userStatus', '')
                 if user_status in ["BLOCKED", "INACTIVE"]:
                     continue
                 
-                # Filtro robusto igual al que ya usa tu bot
+                # 2. Filtro flexible centrado solo en restricciones reales del anuncio
                 is_restricted = adv.get('isRestricted') or adv.get('restricted') or False
-                trade_conditions = bool(adv.get('tradeConditions'))
-                class_conditions = bool(adv.get('classificationConditions'))
-                press_conditions = bool(adv.get('advConditions'))
-
-                if is_restricted or trade_conditions or class_conditions or press_conditions:
+                if is_restricted:
                     continue
 
                 precio = adv.get('price')
@@ -557,7 +553,6 @@ def obtener_detalle_binance_p2p(tipo_operacion, monto_bs=0):
                     metodos = adv.get('tradeMethods', [])
                     bancos = []
                     for m in metodos:
-                        # Extraer el nombre del banco de forma segura
                         banco_nombre = m.get('tradeMethodName') or m.get('identifier') or ''
                         if banco_nombre:
                             bancos.append(banco_nombre)
@@ -574,6 +569,7 @@ def obtener_detalle_binance_p2p(tipo_operacion, monto_bs=0):
         print(f"⚠️ Error conectando con Binance P2P Detalle: {e}")
     
     return None
+                    
     
 
 def obtener_tasa_binance_zinli(tipo_operacion, monto_usd=0):

@@ -520,7 +520,7 @@ def obtener_detalle_binance_p2p(tipo_operacion, monto_bs=0):
         "page": 1,
         "rows": 10,
         "tradeType": tipo_operacion.upper(),
-        "transAmount": str(int(monto_bs)) if monto_bs > 0 else "",
+        "transAmount": str(int(monto_bs)) if monto_bs and monto_bs > 0 else "",
         "filterType": "tradable",
         "additionalKycVerifyFilter": 0,
         "periods": []
@@ -529,72 +529,98 @@ def obtener_detalle_binance_p2p(tipo_operacion, monto_bs=0):
     try:
         r = requests.post(url, json=payload, headers=headers, timeout=(5.0, 5.0))
         if r.status_code == 200:
-            datos = r.json().get('data', [])
-            for elemento in datos:
-                adv = elemento.get('adv', {})
-                advertiser = elemento.get('advertiser', {})
-                
-                user_status = advertiser.get('userStatus', '')
-                if user_status in ["BLOCKED", "INACTIVE"]:
-                    continue
-                
-                is_restricted = adv.get('isRestricted') or adv.get('restricted') or False
-                if is_restricted:
-                    continue
-
-                precio = adv.get('price')
-                if precio:
-                    # Capturamos el límite mínimo real del anuncio con seguridad
-                    min_limite = float(adv.get('minSingleTransAmount', 0))
-                    comercio = advertiser.get('nickName', 'Comerciante')
+            res_json = r.json()
+            datos = res_json.get('data', []) if isinstance(res_json, dict) else []
+            
+            if datos:
+                for elemento in datos:
+                    if not isinstance(elemento, dict):
+                        continue
+                    adv = elemento.get('adv', {})
+                    advertiser = elemento.get('advertiser', {})
                     
-                    # --- EXTRACCIÓN BLINDADA DE BANCOS ---
-                    banco_str = "Pago Móvil / Transferencia"
-                    metodos = adv.get('tradeMethods', [])
+                    if not isinstance(adv, dict) or not isinstance(advertiser, dict):
+                        continue
+                        
+                    user_status = str(advertiser.get('userStatus', ''))
+                    if user_status in ["BLOCKED", "INACTIVE"]:
+                        continue
                     
-                    if metodos and isinstance(metodos, list):
-                        nombres_bancos = []
-                        for m in metodos:
-                            # Si el método es un diccionario, buscamos en sus diferentes variantes de llaves
-                            if isinstance(m, dict):
-                                nombre = (
-                                    m.get('tradeMethodName') or 
-                                    m.get('identifier') or 
-                                    m.get('payType') or 
-                                    m.get('title') or ''
-                                )
-                            elif isinstance(m, str):
-                                nombre = m
-                            else:
-                                nombre = ''
-                                
-                            if nombre and nombre not in nombres_bancos:
-                                nombres_bancos.append(str(nombre))
-                                
-                        if nombres_bancos:
-                            banco_str = " | ".join(nombres_bancos)
+                    is_restricted = bool(adv.get('isRestricted') or adv.get('restricted') or False)
+                    if is_restricted:
+                        continue
 
-                    # Retornamos el diccionario con los datos reales encontrados
-                    return {
-                        "precio": float(precio),
-                        "min_limite": min_limite,
-                        "banco": banco_str,
-                        "comercio": comercio
-                    }
+                    precio_raw = adv.get('price')
+                    if precio_raw is not None:
+                        try:
+                            precio = float(precio_raw)
+                        except (ValueError, TypeError):
+                            continue
+                            
+                        # Búsqueda segura del límite mínimo con múltiples opciones de llaves
+                        min_limite = 0.0
+                        for key_min in ['minSingleTransAmount', 'dynamicMinSingleTransAmount', 'minLimit']:
+                            val_min = adv.get(key_min)
+                            if val_min is not None:
+                                try:
+                                    min_limite = float(val_min)
+                                    break
+                                except (ValueError, TypeError):
+                                    pass
+                                    
+                        comercio = str(advertiser.get('nickName', 'Comerciante'))
+                        
+                        # Extracción blindada de métodos de pago y bancos
+                        banco_str = "Pago Móvil / Transferencia"
+                        metodos = adv.get('tradeMethods', [])
+                        
+                        if metodos and isinstance(metodos, list):
+                            nombres_bancos = []
+                            for m in metodos:
+                                nombre = ""
+                                if isinstance(m, dict):
+                                    nombre = (
+                                        m.get('tradeMethodName') or 
+                                        m.get('identifier') or 
+                                        m.get('payType') or 
+                                        m.get('title') or ''
+                                    )
+                                elif isinstance(m, str):
+                                    nombre = m
+                                    
+                                if nombre:
+                                    nombre_str = str(nombre).strip()
+                                    if nombre_str and nombre_str not in nombres_bancos:
+                                        nombres_bancos.append(nombre_str)
+                                        
+                            if nombres_bancos:
+                                banco_str = " | ".join(nombres_bancos)
+
+                        # ¡Éxito! Retornamos los datos reales del mejor anuncio
+                        return {
+                            "precio": precio,
+                            "min_limite": min_limite,
+                            "banco": banco_str,
+                            "comercio": comercio
+                        }
     except Exception as e:
-        print(f"⚠️ Error conectando con Binance P2P Detalle: {e}")
+        print(f"⚠️ Error crítico en obtener_detalle_binance_p2p: {e}")
     
-    # Red de seguridad única si la conexión fallara por completo
-    tasa_fallback = obtener_tasa_binance_p2p(tipo_operacion, monto_bs)
-    if tasa_fallback and tasa_fallback > 0:
-        return {
-            "precio": float(tasa_fallback),
-            "min_limite": 0.0,
-            "banco": "Banca Nacional P2P",
-            "comercio": "Binance P2P"
-        }
+    # Red de seguridad final solo si la petición web falla por completo
+    try:
+        tasa_fallback = obtener_tasa_binance_p2p(tipo_operacion, monto_bs)
+        if tasa_fallback and tasa_fallback > 0:
+            return {
+                "precio": float(tasa_fallback),
+                "min_limite": 0.0,
+                "banco": "Mercado General P2P",
+                "comercio": "Binance P2P"
+            }
+    except Exception:
+        pass
         
     return None
+                            
                                           
 
 def obtener_tasa_binance_zinli(tipo_operacion, monto_usd=0):

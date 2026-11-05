@@ -553,42 +553,44 @@ def obtener_detalle_binance_p2p(tipo_operacion, monto_bs=0):
                     except (ValueError, TypeError):
                         continue
                         
-                    # Extracción segura del límite mínimo
+                    # --- EXTRACCIÓN DEL LÍMITE MÍNIMO (Abarcando minLimit, limit y minSingleTransAmount) ---
                     min_limite = 0.0
-                    for key_min in ['minSingleTransAmount', 'dynamicMinSingleTransAmount', 'minLimit']:
+                    for key_min in ['minLimit', 'minSingleTransAmount', 'dynamicMinSingleTransAmount', 'limit']:
                         val_min = adv.get(key_min)
                         if val_min is not None:
                             try:
                                 min_limite = float(val_min)
-                                break
+                                if min_limite > 0:
+                                    break
                             except (ValueError, TypeError):
                                 pass
                                 
                     comercio = str(advertiser.get('nickName', 'Comerciante'))
                     
-                    # --- EXTRACCIÓN DIRECTA DE MÉTODOS DE PAGO ---
-                    banco_str = "Pago Móvil / Transferencia"
+                    # --- EXTRACCIÓN GLOBAL DE BANCOS Y MÉTODOS DE PAGO ---
+                    banco_str = "Banca Nacional P2P"
                     metodos = adv.get('tradeMethods', [])
                     
                     if metodos and isinstance(metodos, list):
                         nombres_bancos = []
                         for m in metodos:
                             if isinstance(m, dict):
-                                # Buscamos las denominaciones exactas que entrega Binance
                                 nombre = (
                                     m.get('tradeMethodName') or 
-                                    m.get('identifier') or 
                                     m.get('payType') or 
-                                    m.get('title') or ''
+                                    m.get('identifier') or 
+                                    m.get('title') or 
+                                    m.get('bankName') or ''
                                 )
                                 if nombre:
-                                    nombres_bancos.append(str(nombre))
+                                    nombres_bancos.append(str(nombre).strip())
                             elif isinstance(m, str):
-                                nombres_bancos.append(m)
+                                nombres_bancos.append(m.strip())
                                 
                         if nombres_bancos:
                             banco_str = " | ".join(nombres_bancos)
 
+                    # Si encontramos los datos limpios, los retornamos de inmediato
                     return {
                         "precio": precio,
                         "min_limite": min_limite,
@@ -598,7 +600,7 @@ def obtener_detalle_binance_p2p(tipo_operacion, monto_bs=0):
     except Exception as e:
         print(f"⚠️ Error en obtener_detalle_binance_p2p: {e}")
     
-    # Respaldo seguro si la API web llegase a fallar
+    # Respaldo en caso de fallo de red crítico
     try:
         tasa_fallback = obtener_tasa_binance_p2p(tipo_operacion, monto_bs)
         if tasa_fallback and tasa_fallback > 0:
@@ -612,6 +614,7 @@ def obtener_detalle_binance_p2p(tipo_operacion, monto_bs=0):
         pass
         
     return None
+                            
                                                                    
 
 def obtener_tasa_binance_zinli(tipo_operacion, monto_usd=0):

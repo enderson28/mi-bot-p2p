@@ -518,9 +518,9 @@ def obtener_detalle_binance_p2p(tipo_operacion, monto_bs=0):
         "merchantCheck": True,
         "publisherType": "merchant",
         "page": 1,
-        "rows": 5,
+        "rows": 10,
         "tradeType": tipo_operacion.upper(),
-        "transAmount": str(int(monto_bs)) if monto_bs and monto_bs > 0 else "",
+        "transAmount": str(int(monto_bs)) if monto_bs > 0 else "",
         "filterType": "tradable",
         "additionalKycVerifyFilter": 0,
         "periods": []
@@ -529,36 +529,30 @@ def obtener_detalle_binance_p2p(tipo_operacion, monto_bs=0):
     try:
         r = requests.post(url, json=payload, headers=headers, timeout=(5.0, 5.0))
         if r.status_code == 200:
-            res_json = r.json()
-            datos = res_json.get('data', []) if isinstance(res_json, dict) else []
-            
-            if datos and isinstance(datos, list):
-                # Recorremos los anuncios para tomar el primero que sea válido y tenga métodos de pago
+            datos = r.json().get('data', [])
+            if datos:
                 for elemento in datos:
-                    if not isinstance(elemento, dict):
-                        continue
                     adv = elemento.get('adv', {})
                     advertiser = elemento.get('advertiser', {})
                     
-                    if not isinstance(adv, dict):
-                        continue
-
-                    # Validar estado del usuario
-                    user_status = str(advertiser.get('userStatus', ''))
+                    # Filtros idénticos a los de tu función principal que sí funciona
+                    user_status = advertiser.get('userStatus', '')
                     if user_status in ["BLOCKED", "INACTIVE"]:
                         continue
                     
-                    if bool(adv.get('isRestricted') or adv.get('restricted') or False):
+                    is_restricted = adv.get('isRestricted') or adv.get('restricted') or False
+                    trade_conditions = bool(adv.get('tradeConditions'))
+                    class_conditions = bool(adv.get('classificationConditions'))
+                    adv_conditions = bool(adv.get('advConditions'))
+                    
+                    if is_restricted or trade_conditions or class_conditions or adv_conditions:
                         continue
-
-                    precio_raw = adv.get('price')
-                    if precio_raw is not None:
-                        try:
-                            precio = float(precio_raw)
-                        except (ValueError, TypeError):
-                            continue
-                            
-                        # 1. Extracción segura del límite mínimo
+                        
+                    precio = adv.get('price')
+                    if precio:
+                        precio_float = float(precio)
+                        
+                        # 1. Extracción del límite mínimo probando las llaves correctas
                         min_limite = 0.0
                         for k in ['minSingleTransAmount', 'minLimit', 'limit', 'dynamicMinSingleTransAmount']:
                             val = adv.get(k)
@@ -570,49 +564,28 @@ def obtener_detalle_binance_p2p(tipo_operacion, monto_bs=0):
                                 except:
                                     pass
                                     
-                        comercio = str(advertiser.get('nickName', 'Comerciante'))
+                        comercio = advertiser.get('nickName', 'Comerciante')
                         
-                        # 2. Extracción profunda de los bancos en tradeMethods
-                        banco_str = ""
+                        # 2. Extracción de los bancos aceptados en el anuncio
+                        banco_str = "Banca Nacional P2P"
                         nombres_bancos = []
                         metodos = adv.get('tradeMethods', [])
                         
                         if metodos and isinstance(metodos, list):
                             for m in metodos:
                                 if isinstance(m, dict):
-                                    # Binance P2P guarda el nombre del banco en estas llaves exactas
-                                    nombre_banco = (
-                                        m.get('tradeMethodName') or 
-                                        m.get('payType') or 
-                                        m.get('identifier') or 
-                                        m.get('title') or 
-                                        m.get('bankName') or ''
-                                    )
-                                    if nombre_banco:
-                                        nombres_bancos.append(str(nombre_banco).strip())
+                                    nb = m.get('tradeMethodName') or m.get('payType') or m.get('identifier') or m.get('title') or m.get('bankName') or ''
+                                    if nb:
+                                        nombres_bancos.append(str(nb).strip())
                                 elif isinstance(m, str):
                                     nombres_bancos.append(m.strip())
-                        
-                        # Si por alguna razón tradeMethods viene vacío, probamos payTypes
-                        if not nombres_bancos:
-                            pay_types = adv.get('payTypes', [])
-                            if isinstance(pay_types, list):
-                                for pt in pay_types:
-                                    if isinstance(pt, str):
-                                        nombres_bancos.append(pt.strip())
-                                    elif isinstance(pt, dict):
-                                        nb = pt.get('tradeMethodName') or pt.get('payType') or ''
-                                        if nb:
-                                            nombres_bancos.append(nb.strip())
-
+                                    
                         if nombres_bancos:
-                            banco_str = " | ".join(dict.fromkeys(nombres_bancos)) # Elimina duplicados manteniendo orden
-                        else:
-                            banco_str = "Pago Móvil / Transferencia"
-
-                        # Retornamos el diccionario completo con datos reales
+                            banco_str = " | ".join(dict.fromkeys(nombres_bancos))
+                            
+                        # ¡Anuncio ganador encontrado con todos sus detalles!
                         return {
-                            "precio": precio,
+                            "precio": precio_float,
                             "min_limite": min_limite,
                             "banco": banco_str,
                             "comercio": comercio
@@ -620,20 +593,18 @@ def obtener_detalle_binance_p2p(tipo_operacion, monto_bs=0):
     except Exception as e:
         print(f"⚠️ Error en obtener_detalle_binance_p2p: {e}")
     
-    # Respaldo de emergencia
-    try:
-        tasa_fallback = obtener_tasa_binance_p2p(tipo_operacion, monto_bs)
-        if tasa_fallback and tasa_fallback > 0:
-            return {
-                "precio": float(tasa_fallback),
-                "min_limite": 0.0,
-                "banco": "Mercado General P2P",
-                "comercio": "Binance P2P"
-            }
-    except:
-        pass
+    # Respaldo de seguridad en caso de emergencia extrema
+    tasa_fallback = obtener_tasa_binance_p2p(tipo_operacion, monto_bs)
+    if tasa_fallback and tasa_fallback > 0:
+        return {
+            "precio": float(tasa_fallback),
+            "min_limite": 0.0,
+            "banco": "Mercado General P2P",
+            "comercio": "Binance P2P"
+        }
         
     return None
+    
                                                                                        
 
 def obtener_tasa_binance_zinli(tipo_operacion, monto_usd=0):

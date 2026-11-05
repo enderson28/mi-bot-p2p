@@ -524,10 +524,7 @@ def obtener_detalle_binance_p2p(tipo_operacion, monto_bs=0):
         "rows": 5,
         "tradeType": tipo_operacion.upper(),
         "transAmount": trans_amount_str,
-        "payTypes": [
-            "Banesco", "Mercantil", "Provincial", 
-            "BancoDeVenezuela"
-        ],
+        "payTypes": ["BancoDeVenezuela"],
         "filterType": "tradable",
         "additionalKycVerifyFilter": 0,
         "periods": []

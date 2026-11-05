@@ -512,9 +512,6 @@ def obtener_detalle_binance_p2p(tipo_operacion, monto_bs=0):
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
     }
     
-    trans_amount_str = str(int(monto_bs)) if monto_bs and monto_bs > 0 else ""
-
-    # Sin payTypes restrictivos para capturar el mejor anuncio real de todo el mercado
     payload = {
         "asset": "USDT",
         "flat": "VES",
@@ -523,7 +520,7 @@ def obtener_detalle_binance_p2p(tipo_operacion, monto_bs=0):
         "page": 1,
         "rows": 10,
         "tradeType": tipo_operacion.upper(),
-        "transAmount": trans_amount_str,
+        "transAmount": str(int(monto_bs)) if monto_bs > 0 else "", # <-- Idéntico a tus funciones funcionales
         "filterType": "tradable",
         "additionalKycVerifyFilter": 0,
         "periods": []
@@ -551,13 +548,13 @@ def obtener_detalle_binance_p2p(tipo_operacion, monto_bs=0):
                     min_limite = float(adv.get('minSingleTransAmount', 0))
                     comercio = advertiser.get('nickName', 'Comerciante')
                     
-                    # Extracción directa de los bancos del campo tradeMethods
+                    # Extracción directa y robusta de los bancos aceptados
                     banco_str = "Pago Móvil / Transferencia"
                     metodos = adv.get('tradeMethods', [])
                     if metodos and isinstance(metodos, list):
                         nombres_bancos = []
                         for m in metodos:
-                            # Binance a veces guarda el nombre en tradeMethodName o identifier
+                            # Buscamos en las llaves comunes que entrega Binance
                             nombre = m.get('tradeMethodName') or m.get('identifier') or m.get('payType') or ''
                             if nombre and nombre not in nombres_bancos:
                                 nombres_bancos.append(nombre)
@@ -573,7 +570,7 @@ def obtener_detalle_binance_p2p(tipo_operacion, monto_bs=0):
     except Exception as e:
         print(f"⚠️ Error conectando con Binance P2P Detalle: {e}")
     
-    # Red de seguridad contra fallas de red
+    # Red de seguridad en caso de fallo temporal de red
     tasa_fallback = obtener_tasa_binance_p2p(tipo_operacion, monto_bs)
     if tasa_fallback and tasa_fallback > 0:
         return {
@@ -584,8 +581,7 @@ def obtener_detalle_binance_p2p(tipo_operacion, monto_bs=0):
         }
         
     return None
-    
-     
+                                          
 
 def obtener_tasa_binance_zinli(tipo_operacion, monto_usd=0):
     """

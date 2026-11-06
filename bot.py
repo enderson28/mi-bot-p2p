@@ -531,11 +531,14 @@ def obtener_detalle_binance_p2p(tipo_operacion, monto_bs=0):
         if r.status_code == 200:
             datos = r.json().get('data', [])
             if datos:
+                precios_validos = []
+                elementos_validos = []
+                
+                # Usamos el mismo motor de filtrado exacto de tu función principal
                 for elemento in datos:
                     adv = elemento.get('adv', {})
                     advertiser = elemento.get('advertiser', {})
                     
-                    # Filtros idénticos a los de tu función principal que sí funciona
                     user_status = advertiser.get('userStatus', '')
                     if user_status in ["BLOCKED", "INACTIVE"]:
                         continue
@@ -550,50 +553,64 @@ def obtener_detalle_binance_p2p(tipo_operacion, monto_bs=0):
                         
                     precio = adv.get('price')
                     if precio:
-                        precio_float = float(precio)
-                        
-                        # 1. Extracción del límite mínimo probando las llaves correctas
-                        min_limite = 0.0
-                        for k in ['minSingleTransAmount', 'minLimit', 'limit', 'dynamicMinSingleTransAmount']:
-                            val = adv.get(k)
-                            if val is not None:
-                                try:
-                                    min_limite = float(val)
-                                    if min_limite > 0:
-                                        break
-                                except:
-                                    pass
-                                    
-                        comercio = advertiser.get('nickName', 'Comerciante')
-                        
-                        # 2. Extracción de los bancos aceptados en el anuncio
-                        banco_str = "Banca Nacional P2P"
-                        nombres_bancos = []
-                        metodos = adv.get('tradeMethods', [])
-                        
-                        if metodos and isinstance(metodos, list):
-                            for m in metodos:
-                                if isinstance(m, dict):
-                                    nb = m.get('tradeMethodName') or m.get('payType') or m.get('identifier') or m.get('title') or m.get('bankName') or ''
-                                    if nb:
-                                        nombres_bancos.append(str(nb).strip())
-                                elif isinstance(m, str):
-                                    nombres_bancos.append(m.strip())
-                                    
-                        if nombres_bancos:
-                            banco_str = " | ".join(dict.fromkeys(nombres_bancos))
+                        precios_validos.append(float(precio))
+                        elementos_validos.append(elemento)
+                
+                if precios_validos and elementos_validos:
+                    # Aplicamos la misma lógica anti-fantasmas
+                    winner_index = 0
+                    if len(precios_validos) >= 2:
+                        diferencia_porcentual = abs(precios_validos[0] - precios_validos[1]) / precios_validos[0]
+                        if diferencia_porcentual > 0.02:
+                            winner_index = 1
                             
-                        # ¡Anuncio ganador encontrado con todos sus detalles!
-                        return {
-                            "precio": precio_float,
-                            "min_limite": min_limite,
-                            "banco": banco_str,
-                            "comercio": comercio
-                        }
+                    ganador_elemento = elementos_validos[winner_index]
+                    ganador_precio = precios_validos[winner_index]
+                    
+                    adv = ganador_elemento.get('adv', {})
+                    advertiser = ganador_elemento.get('advertiser', {})
+                    
+                    # 1. Extracción segura del límite mínimo
+                    min_limite = 0.0
+                    for k in ['minSingleTransAmount', 'minLimit', 'limit', 'dynamicMinSingleTransAmount']:
+                        val = adv.get(k)
+                        if val is not None:
+                            try:
+                                min_limite = float(val)
+                                if min_limite > 0:
+                                    break
+                            except:
+                                pass
+                                
+                    comercio = advertiser.get('nickName', 'Comerciante')
+                    
+                    # 2. Extracción de los bancos del anuncio ganador
+                    banco_str = "Pago Móvil / Transferencia"
+                    nombres_bancos = []
+                    metodos = adv.get('tradeMethods', [])
+                    
+                    if metodos and isinstance(metodos, list):
+                        for m in metodos:
+                            if isinstance(m, dict):
+                                nb = m.get('tradeMethodName') or m.get('payType') or m.get('identifier') or m.get('title') or m.get('bankName') or ''
+                                if nb:
+                                    nombres_bancos.append(str(nb).strip())
+                            elif isinstance(m, str):
+                                nombres_bancos.append(m.strip())
+                                
+                    if nombres_bancos:
+                        banco_str = " | ".join(dict.fromkeys(nombres_bancos))
+
+                    return {
+                        "precio": float(ganador_precio),
+                        "min_limite": min_limite,
+                        "banco": banco_str,
+                        "comercio": comercio
+                    }
     except Exception as e:
         print(f"⚠️ Error en obtener_detalle_binance_p2p: {e}")
     
-    # Respaldo de seguridad en caso de emergencia extrema
+    # Respaldo de seguridad si ocurriera algún fallo de red
     tasa_fallback = obtener_tasa_binance_p2p(tipo_operacion, monto_bs)
     if tasa_fallback and tasa_fallback > 0:
         return {
@@ -604,6 +621,7 @@ def obtener_detalle_binance_p2p(tipo_operacion, monto_bs=0):
         }
         
     return None
+    
     
                                                                                        
 

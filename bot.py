@@ -512,13 +512,10 @@ def obtener_detalle_binance_p2p(tipo_operacion, monto_bs=0):
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
     }
     
-    # Aseguramos monto como string válido o vacío
-    str_monto = ""
     try:
-        if monto_bs and float(monto_bs) > 0:
-            str_monto = str(int(float(monto_bs)))
+        monto_str = str(int(float(monto_bs))) if monto_bs and float(monto_bs) > 0 else ""
     except:
-        str_monto = ""
+        monto_str = ""
 
     payload = {
         "asset": "USDT",
@@ -526,9 +523,9 @@ def obtener_detalle_binance_p2p(tipo_operacion, monto_bs=0):
         "merchantCheck": True,
         "publisherType": "merchant",
         "page": 1,
-        "rows": 5,
-        "tradeType": str(tipo_operacion).upper(),
-        "transAmount": str_monto,
+        "rows": 10,
+        "tradeType": tipo_operacion.upper(),
+        "transAmount": monto_str,
         "filterType": "tradable",
         "additionalKycVerifyFilter": 0,
         "periods": []
@@ -537,130 +534,79 @@ def obtener_detalle_binance_p2p(tipo_operacion, monto_bs=0):
     try:
         r = requests.post(url, json=payload, headers=headers, timeout=(5.0, 5.0))
         if r.status_code == 200:
-            res_json = r.json()
-            datos = res_json.get('data', []) if isinstance(res_json, dict) else []
-            
-            if isinstance(datos, list):
+            datos = r.json().get('data', [])
+            if datos and isinstance(datos, list):
+                precios_validos = []
+                elementos_validos = []
+                
                 for elemento in datos:
                     if not isinstance(elemento, dict):
                         continue
+                    adv = elemento.get('adv', {})
+                    advertiser = elemento.get('advertiser', {})
                     
-                    adv = elemento.get('adv')
-                    advertiser = elemento.get('advertiser')
-                    
-                    if not isinstance(adv, dict) or not isinstance(advertiser, dict):
+                    user_status = advertiser.get('userStatus', '')
+                    if user_status in ["BLOCKED", "INACTIVE"]:
                         continue
-
-                    # 1. Validar precio
+                    
+                    is_restricted = adv.get('isRestricted') or adv.get('restricted') or False
+                    trade_conditions = bool(adv.get('tradeConditions'))
+                    class_conditions = bool(adv.get('classificationConditions'))
+                    adv_conditions = bool(adv.get('advConditions'))
+                    
+                    if is_restricted or trade_conditions or class_conditions or adv_conditions:
+                        continue
+                        
                     precio_raw = adv.get('price')
-                    if precio_raw is None:
-                        continue
-                    try:
-                        precio = float(precio_raw)
-                    except:
-                        continue
+                    if precio_raw is not None:
+                        try:
+                            p = float(precio_raw)
+                            precios_validos.append(p)
+                            elementos_validos.append(elemento)
+                        except:
+                            continue
+                
+                if precios_validos and elementos_validos:
+                    # Aplicamos la misma lógica anti-fantasmas exacta
+                    winner_index = 0
+                    if len(precios_validos) >= 2:
+                        diferencia_porcentual = abs(precios_validos[0] - precios_validos[1]) / precios_validos[0]
+                        if diferencia_porcentual > 0.02:
+                            winner_index = 1
                             
-                    # 2. Límite mínimo
-                    min_limite = 0.0
-                    for k in ['minSingleTransAmount', 'minLimit', 'limit', 'dynamicMinSingleTransAmount']:
-                        val = adv.get(k)
-                        if val is not None:
-                            try:
-                                min_limite = float(val)
-                                if min_limite > 0:
-                                    break
-                            except:
-                                pass
-                                
-                    # 3. Límite máximo
-                    max_limite = 0.0
-                    for k in ['maxSingleTransAmount', 'maxLimit', 'upperLimit']:
-                        val = adv.get(k)
-                        if val is not None:
-                            try:
-                                max_limite = float(val)
-                                if max_limite > 0:
-                                    break
-                            except:
-                                pass
-
-                    # 4. Disponibilidad en USDT
-                    disponible = 0.0
-                    for k in ['tradableQuantity', 'surplusAmount', 'amount']:
-                        val = adv.get(k)
-                        if val is not None:
-                            try:
-                                disponible = float(val)
-                                if disponible > 0:
-                                    break
-                            except:
-                                pass
-
-                    # 5. Comerciante y Órdenes
-                    comercio = str(advertiser.get('nickName') or 'Comerciante Binance')
-                    ordenes = 0
-                    for k_ord in ['monthOrderCount', 'orderCount', 'completedOrderCount']:
-                        v_ord = advertiser.get(k_ord)
-                        if v_ord is not None:
-                            try:
-                                ordenes = int(v_ord)
-                                if ordenes > 0:
-                                    break
-                            except:
-                                pass
-
-                    # 6. Extracción de Bancos
+                    ganador_elem = elementos_validos[winner_index]
+                    ganador_precio = precios_validos[winner_index]
+                    adv_g = ganador_elem.get('adv', {})
+                    
+                    # Extracción del banco del anuncio ganador
                     banco_str = "Pago Móvil / Transferencia"
                     nombres_bancos = []
-                    metodos = adv.get('tradeMethods')
-                    
+                    metodos = adv_g.get('tradeMethods', [])
                     if isinstance(metodos, list):
                         for m in metodos:
                             if isinstance(m, dict):
-                                nb = (
-                                    m.get('tradeMethodName') or 
-                                    m.get('payType') or 
-                                    m.get('identifier') or 
-                                    m.get('title') or 
-                                    m.get('bankName') or ''
-                                )
+                                nb = m.get('tradeMethodName') or m.get('payType') or m.get('identifier') or m.get('title') or m.get('bankName') or ''
                                 if nb:
                                     nombres_bancos.append(str(nb).strip())
                             elif isinstance(m, str):
                                 nombres_bancos.append(m.strip())
-                                
                     if nombres_bancos:
-                        # Elimina duplicados conservando el orden
                         banco_str = " | ".join(list(dict.fromkeys(nombres_bancos)))
-
-                    # Si llegamos aquí con precio válido, retornamos inmediatamente los datos REALES
+                        
                     return {
-                        "precio": precio,
-                        "min_limite": min_limite,
-                        "max_limite": max_limite,
-                        "disponible": disponible,
-                        "ordenes": ordenes,
-                        "banco": banco_str,
-                        "comercio": comercio
+                        "precio": ganador_precio,
+                        "banco": banco_str
                     }
     except Exception as e:
-        print(f"⚠️ Error crítico en obtener_detalle_binance_p2p: {e}")
-    
-    # Respaldo extremo (solo si la red falla completamente)
-    try:
-        tasa_fallback = obtener_tasa_binance_p2p(tipo_operacion, monto_bs)
-        if tasa_fallback and float(tasa_fallback) > 0:
-            return {
-                "precio": float(tasa_fallback),
-                "min_limite": 0.0,
-                "max_limite": 0.0,
-                "disponible": 0.0,
-                "ordenes": 0,
-                "banco": "Mercado General P2P",
-                "comercio": "Binance P2P"
-            }
-    except:
-        pass
+        print(f"⚠️ Error en detalle p2p: {e}")
+        
+    # Respaldo seguro usando tu función original de tasas que nunca falla
+    tasa_fb = obtener_tasa_binance_p2p(tipo_operacion, monto_bs)
+    if tasa_fb and float(tasa_fb) > 0:
+        return {
+            "precio": float(tasa_fb),
+            "banco": "Mercado General P2P"
+        }
         
     return None
                                                                                        
@@ -879,13 +825,13 @@ def refrescar_tasas_en_vivo():
       
 
 def construir_monitor_canal_html():
-    """Genera la ficha resumen detallada para el Canal Principal con toda la info de los anuncios"""
+    """Genera la ficha limpia con Tasa y Banco del mejor anuncio"""
     
     info_compra = obtener_detalle_binance_p2p("BUY", 0)
     info_venta = obtener_detalle_binance_p2p("SELL", 0)
     
     if not info_compra or not info_venta:
-        return "<b>⚠️ Error temporal al obtener tasas detalladas de Binance P2P.</b>"
+        return "<b>⚠️ Error temporal al obtener tasas de Binance P2P.</b>"
     
     compra_base = info_compra["precio"]
     venta_base = info_venta["precio"]
@@ -898,20 +844,15 @@ def construir_monitor_canal_html():
     texto = (
         f"🌐 <b>TASAS P2P EN VIVO</b>\n\n"
         f"🟢 <b>COMPRA USDT:</b> <code>{compra_base:,.2f}</code> Bs\n"
-        f"   ├ 👤 <i>{info_compra['comercio']} ({info_compra['ordenes']} ord.)</i>\n"
-        f"   ├ 🏦 <i>{info_compra['banco']}</i>\n"
-        f"   ├ 📉 <i>Mín: {info_compra['min_limite']:,.0f} | Máx: {info_compra['max_limite']:,.0f} Bs</i>\n"
-        f"   └ 📦 <i>Disp: {info_compra['disponible']:,.2f} USDT</i>\n\n"
+        f"   └ 🏦 <i>Banco: {info_compra['banco']}</i>\n\n"
         f"🔴 <b>VENTA USDT:</b> <code>{venta_base:,.2f}</code> Bs\n"
-        f"   ├ 👤 <i>{info_venta['comercio']} ({info_venta['ordenes']} ord.)</i>\n"
-        f"   ├ 🏦 <i>{info_venta['banco']}</i>\n"
-        f"   ├ 📉 <i>Mín: {info_venta['min_limite']:,.0f} | Máx: {info_venta['max_limite']:,.0f} Bs</i>\n"
-        f"   └ 📦 <i>Disp: {info_venta['disponible']:,.2f} USDT</i>\n\n"
+        f"   └ 🏦 <i>Banco: {info_venta['banco']}</i>\n\n"
         f"📊 <b>Spread:</b> <code>{spread:,.2f}</code> Bs (<code>{porcentaje}%</code>)\n"
         f"🌍 <i>Última actualización: {hora_actual}</i>"
     )
     
     return texto
+    
     
 
 def construir_monitor_texto_html():

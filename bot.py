@@ -377,7 +377,7 @@ def obtener_datos_bcv_validos():
         print(f"⚠️ Error leyendo/rotando Redis: {e}")
         return datos_defecto
         
- def obtener_tasa_binance_p2p(tipo_operacion, monto_bs=0, retornar_dict=False):
+def obtener_tasa_binance_p2p(tipo_operacion, monto_bs=0, retornar_dict=False):
     url = "https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search"
     headers = {
         "Accept": "*/*",
@@ -440,7 +440,6 @@ def obtener_datos_bcv_validos():
                             continue
                 
                 if precios_validos and elementos_validos:
-                    # Lógica anti-fantasmas exacta que ya usabas
                     winner_index = 0
                     if len(precios_validos) >= 2:
                         diferencia_porcentual = abs(precios_validos[0] - precios_validos[1]) / precios_validos[0]
@@ -450,11 +449,9 @@ def obtener_datos_bcv_validos():
                     precio_final = precios_validos[winner_index]
                     ganador_elem = elementos_validos[winner_index]
                     
-                    # Si solo nos piden la tasa (para compatibilidad con el resto del bot)
                     if not retornar_dict:
                         return precio_final
                         
-                    # Extraemos el banco del anuncio ganador
                     banco_str = "Pago Móvil / Transferencia"
                     nombres_bancos = []
                     metodos = ganador_elem.get('adv', {}).get('tradeMethods', [])

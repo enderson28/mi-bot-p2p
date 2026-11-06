@@ -377,7 +377,7 @@ def obtener_datos_bcv_validos():
         print(f"⚠️ Error leyendo/rotando Redis: {e}")
         return datos_defecto
         
-def obtener_tasa_binance_p2p(tipo_operacion, monto_bs=0):
+def obtener_tasa_binance_p2p(tipo_operacion, monto_bs):
     url = "https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search"
     headers = {
         "Accept": "*/*",
@@ -393,7 +393,7 @@ def obtener_tasa_binance_p2p(tipo_operacion, monto_bs=0):
         "page": 1,
         "rows": 10,
         "tradeType": tipo_operacion.upper(),
-        "transAmount": str(int(monto_bs)) if monto_bs and monto_bs > 0 else "",
+        "transAmount": str(int(monto_bs)) if monto_bs > 0 else "",
         "filterType": "tradable",
         "additionalKycVerifyFilter": 0,
         "periods": []

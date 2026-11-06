@@ -444,7 +444,102 @@ def obtener_tasa_binance_p2p(tipo_operacion, monto_bs):
         print(f"⚠️ Error conectando con Binance P2P: {e}")
 
     return None
-     
+
+def obtener_tasa_y_banco_binance_p2p(tipo_operacion, monto_bs=0):
+    """
+    Usa exactamente la misma lógica de tu bloque estable que NUNCA falla,
+    pero adicionalmente extrae el nombre del banco del anuncio ganador.
+    """
+    url = "https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search"
+    headers = {
+        "Accept": "*/*",
+        "Content-Type": "application/json",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+    }
+    
+    payload = {
+        "asset": "USDT",
+        "flat": "VES",
+        "merchantCheck": True,
+        "publisherType": "merchant",
+        "page": 1,
+        "rows": 10,
+        "tradeType": tipo_operacion.upper(),
+        "transAmount": str(int(monto_bs)) if monto_bs and monto_bs > 0 else "",
+        "filterType": "tradable",
+        "additionalKycVerifyFilter": 0,
+        "periods": []
+    }
+    
+    try:
+        r = requests.post(url, json=payload, headers=headers, timeout=(5.0, 5.0))
+        if r.status_code == 200:
+            datos = r.json().get('data', [])
+            if datos:
+                precios_validos = []
+                elementos_validos = []
+                
+                for elemento in datos:
+                    if not isinstance(elemento, dict):
+                        continue
+                    adv = elemento.get('adv', {})
+                    advertiser = elemento.get('advertiser', {})
+                    
+                    user_status = advertiser.get('userStatus', '')
+                    if user_status in ["BLOCKED", "INACTIVE"]:
+                        continue
+                    
+                    is_restricted = adv.get('isRestricted') or adv.get('restricted') or False
+                    trade_conditions = bool(adv.get('tradeConditions'))
+                    class_conditions = bool(adv.get('classificationConditions'))
+                    adv_conditions = bool(adv.get('advConditions'))
+                    
+                    if is_restricted or trade_conditions or class_conditions or adv_conditions:
+                        continue
+                        
+                    precio = adv.get('price')
+                    if precio:
+                        try:
+                            p_val = float(precio)
+                            precios_validos.append(p_val)
+                            elementos_validos.append(elemento)
+                        except:
+                            continue
+                            
+                if precios_validos and elementos_validos:
+                    winner_index = 0
+                    if len(precios_validos) >= 2:
+                        diferencia_porcentual = abs(precios_validos[0] - precios_validos[1]) / precios_validos[0]
+                        if diferencia_porcentual > 0.02:
+                            winner_index = 1
+                            
+                    precio_ganador = precios_validos[winner_index]
+                    ganador_elem = elementos_validos[winner_index]
+                    
+                    # Extraemos el banco de manera segura del anuncio ganador
+                    banco_str = "Pago Móvil / Transferencia"
+                    nombres_bancos = []
+                    metodos = ganador_elem.get('adv', {}).get('tradeMethods', [])
+                    if isinstance(metodos, list):
+                        for m in metodos:
+                            if isinstance(m, dict):
+                                nb = m.get('tradeMethodName') or m.get('payType') or m.get('identifier') or m.get('title') or m.get('bankName') or ''
+                                if nb:
+                                    nombres_bancos.append(str(nb).strip())
+                            elif isinstance(m, str):
+                                nombres_bancos.append(m.strip())
+                    if nombres_bancos:
+                        banco_str = " | ".join(list(dict.fromkeys(nombres_bancos)))
+                        
+                    return {
+                        "precio": precio_ganador,
+                        "banco": banco_str
+                    }
+    except Exception as e:
+        print(f"⚠️ Error conectando con Binance P2P: {e}")
+        
+    return {"precio": 0.0, "banco": "Mercado General P2P"}
+    
 
 def obtener_tasa_binance_p2p_bdv(tipo_operacion, monto_bs):
     url = "https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search"
@@ -718,9 +813,15 @@ def refrescar_tasas_en_vivo():
       
 
 def construir_monitor_canal_html():
-    """Genera la ficha clásica del canal"""
-    compra_base = obtener_tasa_binance_p2p("BUY", 0) or 0.0
-    venta_base = obtener_tasa_binance_p2p("SELL", 0) or 0.0
+    """Genera la ficha del canal mostrando la tasa estable y el banco del mejor anuncio"""
+    info_compra = obtener_tasa_y_banco_binance_p2p("BUY", 0)
+    info_venta = obtener_tasa_y_banco_binance_p2p("SELL", 0)
+    
+    compra_base = info_compra.get("precio", 0.0)
+    banco_compra = info_compra.get("banco", "Mercado General P2P")
+    
+    venta_base = info_venta.get("precio", 0.0)
+    banco_venta = info_venta.get("banco", "Mercado General P2P")
     
     if compra_base <= 0 or venta_base <= 0:
         return "<b>⚠️ Error temporal al obtener tasas de Binance P2P.</b>"
@@ -732,7 +833,9 @@ def construir_monitor_canal_html():
     texto = (
         f"🌐 <b>TASAS P2P EN VIVO</b>\n\n"
         f"🟢 <b>COMPRA USDT:</b> <code>{compra_base:,.2f}</code> Bs\n"
-        f"🔴 <b>VENTA USDT:</b> <code>{venta_base:,.2f}</code> Bs\n\n"
+        f"   └ 🏦 <i>Banco: {banco_compra}</i>\n\n"
+        f"🔴 <b>VENTA USDT:</b> <code>{venta_base:,.2f}</code> Bs\n"
+        f"   └ 🏦 <i>Banco: {banco_venta}</i>\n\n"
         f"📊 <b>Spread:</b> <code>{spread:,.2f}</code> Bs (<code>{porcentaje}%</code>)\n"
         f"🌍 <i>Última actualización: {hora_actual}</i>"
     )

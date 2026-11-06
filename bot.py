@@ -382,7 +382,7 @@ def obtener_tasa_binance_p2p(tipo_operacion, monto_bs=0):
     headers = {
         "Accept": "*/*",
         "Content-Type": "application/json",
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     }
     
     payload = {
@@ -439,8 +439,7 @@ def obtener_tasa_binance_p2p(tipo_operacion, monto_bs=0):
     except Exception as e:
         print(f"⚠️ Error conectando con Binance P2P: {e}")
         
-    return 0.0
-    
+    return None
      
 
 def obtener_tasa_binance_p2p_bdv(tipo_operacion, monto_bs):
@@ -715,7 +714,7 @@ def refrescar_tasas_en_vivo():
       
 
 def construir_monitor_canal_html():
-    """Genera la ficha limpia del canal usando la función estándar"""
+    """Genera la ficha clásica del canal"""
     compra_base = obtener_tasa_binance_p2p("BUY", 0) or 0.0
     venta_base = obtener_tasa_binance_p2p("SELL", 0) or 0.0
     
@@ -725,7 +724,6 @@ def construir_monitor_canal_html():
     spread = round(venta_base - compra_base, 2)
     porcentaje = round((spread / compra_base) * 100, 2) if compra_base > 0 else 0.0
     hora_actual = (datetime.now() - timedelta(hours=4)).strftime('%I:%M:%S %p')
-    emoji_spread = "🟢" if spread >= 0 else "🔴"
     
     texto = (
         f"🌐 <b>TASAS P2P EN VIVO</b>\n\n"

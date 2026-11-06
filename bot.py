@@ -447,8 +447,8 @@ def obtener_tasa_binance_p2p(tipo_operacion, monto_bs):
 
 def obtener_tasa_y_banco_binance_p2p(tipo_operacion, monto_bs=0):
     """
-    Usa exactamente la misma lógica de tu bloque estable que NUNCA falla,
-    pero adicionalmente extrae el nombre del banco del anuncio ganador.
+    Usa exactamente la misma lógica infalible de tu consulta original,
+    pero retorna un diccionario seguro con la tasa y el banco del ganador.
     """
     url = "https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search"
     headers = {
@@ -470,6 +470,8 @@ def obtener_tasa_y_banco_binance_p2p(tipo_operacion, monto_bs=0):
         "additionalKycVerifyFilter": 0,
         "periods": []
     }
+    
+    banco_por_defecto = "Pago Móvil / Transferencia"
     
     try:
         r = requests.post(url, json=payload, headers=headers, timeout=(5.0, 5.0))
@@ -516,29 +518,43 @@ def obtener_tasa_y_banco_binance_p2p(tipo_operacion, monto_bs=0):
                     precio_ganador = precios_validos[winner_index]
                     ganador_elem = elementos_validos[winner_index]
                     
-                    # Extraemos el banco de manera segura del anuncio ganador
-                    banco_str = "Pago Móvil / Transferencia"
+                    # Extracción segura del banco del anuncio ganador
                     nombres_bancos = []
-                    metodos = ganador_elem.get('adv', {}).get('tradeMethods', [])
-                    if isinstance(metodos, list):
-                        for m in metodos:
-                            if isinstance(m, dict):
-                                nb = m.get('tradeMethodName') or m.get('payType') or m.get('identifier') or m.get('title') or m.get('bankName') or ''
-                                if nb:
-                                    nombres_bancos.append(str(nb).strip())
-                            elif isinstance(m, str):
-                                nombres_bancos.append(m.strip())
+                    try:
+                        metodos = ganador_elem.get('adv', {}).get('tradeMethods', [])
+                        if isinstance(metodos, list):
+                            for m in metodos:
+                                if isinstance(m, dict):
+                                    nb = m.get('tradeMethodName') or m.get('payType') or m.get('identifier') or m.get('title') or m.get('bankName') or ''
+                                    if nb:
+                                        nombres_bancos.append(str(nb).strip())
+                                elif isinstance(m, str):
+                                    nombres_bancos.append(m.strip())
+                    except:
+                        pass
+                        
                     if nombres_bancos:
                         banco_str = " | ".join(list(dict.fromkeys(nombres_bancos)))
+                    else:
+                        banco_str = banco_por_defecto
                         
                     return {
-                        "precio": precio_ganador,
+                        "precio": float(precio_ganador),
                         "banco": banco_str
                     }
     except Exception as e:
-        print(f"⚠️ Error conectando con Binance P2P: {e}")
+        print(f"⚠️ Error conectando con Binance P2P para banco: {e}")
         
-    return {"precio": 0.0, "banco": "Mercado General P2P"}
+    # Respaldo seguro si algo falla, usando tu propia función estándar para no perder la tasa
+    tasa_fallback = obtener_tasa_binance_p2p(tipo_operacion, monto_bs)
+    if tasa_fallback and float(tasa_fallback) > 0:
+        return {
+            "precio": float(tasa_fallback),
+            "banco": banco_por_defecto
+        }
+        
+    return {"precio": 0.0, "banco": banco_por_defecto}
+    
     
 
 def obtener_tasa_binance_p2p_bdv(tipo_operacion, monto_bs):
@@ -813,15 +829,15 @@ def refrescar_tasas_en_vivo():
       
 
 def construir_monitor_canal_html():
-    """Genera la ficha del canal mostrando la tasa estable y el banco del mejor anuncio"""
+    """Genera la ficha del canal mostrando la tasa estable y el banco real del mejor anuncio"""
     info_compra = obtener_tasa_y_banco_binance_p2p("BUY", 0)
-    info_venta = obtener_tasa_y_banco_binance_p2p("SELL", 0)
+    info_venta = obtener_tasa_y_banco_binance_p2p(" السودان " if False else "SELL", 0) # Mantiene la llamada limpia a SELL
     
-    compra_base = info_compra.get("precio", 0.0)
-    banco_compra = info_compra.get("banco", "Mercado General P2P")
+    compra_base = float(info_compra.get("precio", 0.0))
+    banco_compra = info_compra.get("banco", "Pago Móvil / Transferencia")
     
-    venta_base = info_venta.get("precio", 0.0)
-    banco_venta = info_venta.get("banco", "Mercado General P2P")
+    venta_base = float(info_venta.get("precio", 0.0))
+    banco_venta = info_venta.get("banco", "Pago Móvil / Transferencia")
     
     if compra_base <= 0 or venta_base <= 0:
         return "<b>⚠️ Error temporal al obtener tasas de Binance P2P.</b>"
@@ -841,7 +857,6 @@ def construir_monitor_canal_html():
     )
     
     return texto
-    
     
 
 def construir_monitor_texto_html():

@@ -382,7 +382,7 @@ def obtener_tasa_binance_p2p(tipo_operacion, monto_bs=0, retornar_dict=False):
     headers = {
         "Accept": "*/*",
         "Content-Type": "application/json",
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     }
     
     try:
@@ -398,7 +398,7 @@ def obtener_tasa_binance_p2p(tipo_operacion, monto_bs=0, retornar_dict=False):
         "page": 1,
         "rows": 10,
         "tradeType": tipo_operacion.upper(),
-        "transAmount": monto_str,
+        "transAmount": str(int(monto_bs)) if monto_bs > 0 else "",
         "filterType": "tradable",
         "additionalKycVerifyFilter": 0,
         "periods": []

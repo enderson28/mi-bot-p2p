@@ -384,61 +384,65 @@ def obtener_tasa_binance_p2p(tipo_operacion, monto_bs):
         "Content-Type": "application/json",
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     }
-    
+
     payload = {
         "asset": "USDT",
-        "flat": "VES",
+        "fiat": "VES",
         "merchantCheck": True,
-        "publisherType": "merchant",
+        "publisherType": "merchant",  # 👈 Esencial para filtrar comerciantes
         "page": 1,
         "rows": 10,
         "tradeType": tipo_operacion.upper(),
-        "transAmount": str(int(monto_bs)) if monto_bs > 0 else "",
+        "transAmount": str(int(monto_bs)),
         "filterType": "tradable",
         "additionalKycVerifyFilter": 0,
         "periods": []
     }
-    
+
     try:
+        # Aumentamos el timeout a 5.0s para evitar fallas silenciosas en Railway
         r = requests.post(url, json=payload, headers=headers, timeout=(5.0, 5.0))
         if r.status_code == 200:
             datos = r.json().get('data', [])
             if datos:
                 precios_validos = []
                 for elemento in datos:
-                    if not isinstance(elemento, dict):
-                        continue
                     adv = elemento.get('adv', {})
                     advertiser = elemento.get('advertiser', {})
-                    
+
+                    precio = adv.get('price')
                     user_status = advertiser.get('userStatus', '')
+
+                    # 1. Ignorar usuarios bloqueados o inactivos
                     if user_status in ["BLOCKED", "INACTIVE"]:
                         continue
-                    
+
+                    # 2. FILTRO DEFINITIVO DE RESTRINGIDOS / CONDICIONES ATÍPICAS
                     is_restricted = adv.get('isRestricted') or adv.get('restricted') or False
-                    trade_conditions = bool(adv.get('tradeConditions'))
+                    trade_conditions = bool(adv.get('tradeConditions'))  # 👈 Corregido a plural 'tradeConditions'
                     class_conditions = bool(adv.get('classificationConditions'))
                     adv_conditions = bool(adv.get('advConditions'))
-                    
+
+                    # Si tiene cualquier tipo de restricción o condición especial, lo saltamos
                     if is_restricted or trade_conditions or class_conditions or adv_conditions:
                         continue
-                        
-                    precio = adv.get('price')
+
                     if precio:
-                        try:
-                            precios_validos.append(float(precio))
-                        except:
-                            continue
-                            
+                        precios_validos.append(float(precio))
+
+                # 3. FILTRO ANTI-FANTASMA (Compara el 1er y 2do precio de la lista)
                 if precios_validos:
                     if len(precios_validos) >= 2:
-                        diferencia_porcentual = abs(precios_validos[0] - precios_validos[1]) / precios_validos[0]
-                        if diferencia_porcentual > 0.02:
+                        # Si la diferencia porcentual con el 2do anuncio es mayor al 2% (anuncio fantasma/desviado)
+                        diferencia_porcentual = abs(precios_validos[0] - precios_validos[1]) / precios_validos[1]
+                        if diferencia_porcentual > 0.02: 
                             return precios_validos[1]
+                    
                     return precios_validos[0]
+
     except Exception as e:
         print(f"⚠️ Error conectando con Binance P2P: {e}")
-        
+
     return None
      
 

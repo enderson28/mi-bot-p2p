@@ -520,7 +520,7 @@ def obtener_detalle_binance_p2p(tipo_operacion, monto_bs=0):
         "page": 1,
         "rows": 10,
         "tradeType": tipo_operacion.upper(),
-        "transAmount": str(int(monto_bs)) if monto_bs > 0 else "",
+        "transAmount": str(int(monto_bs)) if monto_bs and monto_bs > 0 else "",
         "filterType": "tradable",
         "additionalKycVerifyFilter": 0,
         "periods": []
@@ -530,98 +530,121 @@ def obtener_detalle_binance_p2p(tipo_operacion, monto_bs=0):
         r = requests.post(url, json=payload, headers=headers, timeout=(5.0, 5.0))
         if r.status_code == 200:
             datos = r.json().get('data', [])
-            if datos:
-                precios_validos = []
-                elementos_validos = []
-                
-                # Usamos el mismo motor de filtrado exacto de tu función principal
+            if datos and isinstance(datos, list):
                 for elemento in datos:
+                    if not isinstance(elemento, dict):
+                        continue
                     adv = elemento.get('adv', {})
                     advertiser = elemento.get('advertiser', {})
                     
-                    user_status = advertiser.get('userStatus', '')
-                    if user_status in ["BLOCKED", "INACTIVE"]:
-                        continue
-                    
-                    is_restricted = adv.get('isRestricted') or adv.get('restricted') or False
-                    trade_conditions = bool(adv.get('tradeConditions'))
-                    class_conditions = bool(adv.get('classificationConditions'))
-                    adv_conditions = bool(adv.get('advConditions'))
-                    
-                    if is_restricted or trade_conditions or class_conditions or adv_conditions:
+                    if not isinstance(adv, dict) or not isinstance(advertiser, dict):
                         continue
                         
-                    precio = adv.get('price')
-                    if precio:
-                        precios_validos.append(float(precio))
-                        elementos_validos.append(elemento)
-                
-                if precios_validos and elementos_validos:
-                    # Aplicamos la misma lógica anti-fantasmas
-                    winner_index = 0
-                    if len(precios_validos) >= 2:
-                        diferencia_porcentual = abs(precios_validos[0] - precios_validos[1]) / precios_validos[0]
-                        if diferencia_porcentual > 0.02:
-                            winner_index = 1
-                            
-                    ganador_elemento = elementos_validos[winner_index]
-                    ganador_precio = precios_validos[winner_index]
-                    
-                    adv = ganador_elemento.get('adv', {})
-                    advertiser = ganador_elemento.get('advertiser', {})
-                    
-                    # 1. Extracción segura del límite mínimo
-                    min_limite = 0.0
-                    for k in ['minSingleTransAmount', 'minLimit', 'limit', 'dynamicMinSingleTransAmount']:
-                        val = adv.get(k)
-                        if val is not None:
-                            try:
-                                min_limite = float(val)
-                                if min_limite > 0:
-                                    break
-                            except:
-                                pass
-                                
-                    comercio = advertiser.get('nickName', 'Comerciante')
-                    
-                    # 2. Extracción de los bancos del anuncio ganador
-                    banco_str = "Pago Móvil / Transferencia"
-                    nombres_bancos = []
-                    metodos = adv.get('tradeMethods', [])
-                    
-                    if metodos and isinstance(metodos, list):
-                        for m in metodos:
-                            if isinstance(m, dict):
-                                nb = m.get('tradeMethodName') or m.get('payType') or m.get('identifier') or m.get('title') or m.get('bankName') or ''
-                                if nb:
-                                    nombres_bancos.append(str(nb).strip())
-                            elif isinstance(m, str):
-                                nombres_bancos.append(m.strip())
-                                
-                    if nombres_bancos:
-                        banco_str = " | ".join(dict.fromkeys(nombres_bancos))
+                    # Verificar que el comerciante no esté bloqueado
+                    user_status = str(advertiser.get('userStatus', ''))
+                    if user_status in ["BLOCKED", "INACTIVE"]:
+                        continue
 
-                    return {
-                        "precio": float(ganador_precio),
-                        "min_limite": min_limite,
-                        "banco": banco_str,
-                        "comercio": comercio
-                    }
+                    precio_raw = adv.get('price')
+                    if precio_raw is not None:
+                        try:
+                            precio = float(precio_raw)
+                        except (ValueError, TypeError):
+                            continue
+                            
+                        # Límite mínimo
+                        min_limite = 0.0
+                        for k in ['minSingleTransAmount', 'minLimit', 'limit', 'dynamicMinSingleTransAmount']:
+                            val = adv.get(k)
+                            if val is not None:
+                                try:
+                                    min_limite = float(val)
+                                    if min_limite > 0:
+                                        break
+                                except:
+                                    pass
+                                    
+                        # Límite máximo
+                        max_limite = 0.0
+                        for k in ['maxSingleTransAmount', 'maxLimit', 'upperLimit']:
+                            val = adv.get(k)
+                            if val is not None:
+                                try:
+                                    max_limite = float(val)
+                                    if max_limite > 0:
+                                        break
+                                except:
+                                    pass
+
+                        # Disponibilidad en USDT
+                        disponible = 0.0
+                        for k in ['tradableQuantity', 'surplusAmount', 'amount']:
+                            val = adv.get(k)
+                            if val is not None:
+                                try:
+                                    disponible = float(val)
+                                    if disponible > 0:
+                                        break
+                                except:
+                                    pass
+
+                        # Comerciante y Órdenes
+                        comercio = str(advertiser.get('nickName', 'Comerciante'))
+                        ordenes = (
+                            advertiser.get('monthOrderCount') or 
+                            advertiser.get('orderCount') or 
+                            advertiser.get('completedOrderCount') or 0
+                        )
+
+                        # Bancos / Métodos de pago
+                        banco_str = "Pago Móvil / Transferencia"
+                        nombres_bancos = []
+                        metodos = adv.get('tradeMethods', [])
+                        
+                        if metodos and isinstance(metodos, list):
+                            for m in metodos:
+                                if isinstance(m, dict):
+                                    nb = (
+                                        m.get('tradeMethodName') or 
+                                        m.get('payType') or 
+                                        m.get('identifier') or 
+                                        m.get('title') or 
+                                        m.get('bankName') or ''
+                                    )
+                                    if nb:
+                                        nombres_bancos.append(str(nb).strip())
+                                elif isinstance(m, str):
+                                    nombres_bancos.append(m.strip())
+                                    
+                        if nombres_bancos:
+                            banco_str = " | ".join(dict.fromkeys(nombres_bancos))
+
+                        return {
+                            "precio": precio,
+                            "min_limite": min_limite,
+                            "max_limite": max_limite,
+                            "disponible": disponible,
+                            "ordenes": ordenes,
+                            "banco": banco_str,
+                            "comercio": comercio
+                        }
     except Exception as e:
         print(f"⚠️ Error en obtener_detalle_binance_p2p: {e}")
     
-    # Respaldo de seguridad si ocurriera algún fallo de red
+    # Respaldo por seguridad si ocurriera algún fallo de red
     tasa_fallback = obtener_tasa_binance_p2p(tipo_operacion, monto_bs)
     if tasa_fallback and tasa_fallback > 0:
         return {
             "precio": float(tasa_fallback),
             "min_limite": 0.0,
+            "max_limite": 0.0,
+            "disponible": 0.0,
+            "ordenes": 0,
             "banco": "Mercado General P2P",
             "comercio": "Binance P2P"
         }
         
     return None
-    
     
                                                                                        
 
@@ -839,34 +862,36 @@ def refrescar_tasas_en_vivo():
       
 
 def construir_monitor_canal_html():
-    """Genera la ficha resumen detallada para el Canal Principal con Bancos y Límites"""
+    """Genera la ficha resumen detallada para el Canal Principal con toda la info de los anuncios"""
     
-    # Obtenemos los diccionarios completos con detalles para compra y venta
     info_compra = obtener_detalle_binance_p2p("BUY", 0)
     info_venta = obtener_detalle_binance_p2p("SELL", 0)
-
+    
     if not info_compra or not info_venta:
-        return f"⚠️ <b>Error temporal al obtener tasas detalladas de Binance P2P.</b>"
-
+        return "<b>⚠️ Error temporal al obtener tasas detalladas de Binance P2P.</b>"
+    
     compra_base = info_compra["precio"]
     venta_base = info_venta["precio"]
-
+    
     spread = round(venta_base - compra_base, 2)
     porcentaje = round((spread / compra_base) * 100, 2) if compra_base > 0 else 0.0
+    hora_actual = (datetime.now() - timedelta(hours=4)).strftime('%I:%M:%S %p')
+    emoji_spread = "🟢" if spread >= 0 else "🔴"
     
-    hora_actual = (datetime.now() - timedelta(hours=4)).strftime("%I:%M:%S %p")
-    
-    emoji_spread = e("SUBIDA", "📈") if spread >= 0 else e("BAJADA", "📉")
-
-    # Formato enriquecido incluyendo Banco y Límite Mínimo
     texto = (
-        f"{e('BINANCE_P2P', '🌐')} <b>TASAS P2P EN VIVO</b>\n\n"
-        f"{e('VERDE', '🟢')} <b>COMPRA USDT:</b> <code>{compra_base:,.2f}</code> Bs\n"
-        f"   └ <i>Banco: {info_compra['banco']} | Mín: {info_compra['min_limite']:,.0f} Bs</i>\n\n"
-        f"{e('ROJO', '🔴')} <b>VENTA USDT:</b> <code>{venta_base:,.2f}</code> Bs\n"
-        f"   └ <i>Banco: {info_venta['banco']} | Mín: {info_venta['min_limite']:,.0f} Bs</i>\n\n"
-        f"{e(emoji_spread, '📊')} <b>Spread:</b> <code>{spread:,.2f}</code> Bs (<code>{porcentaje}%</code>)\n"
-        f"{e('MUNDO', '🌍')} <i>Última actualización: {hora_actual}</i>"
+        f"🌐 <b>TASAS P2P EN VIVO</b>\n\n"
+        f"🟢 <b>COMPRA USDT:</b> <code>{compra_base:,.2f}</code> Bs\n"
+        f"   ├ 👤 <i>{info_compra['comercio']} ({info_compra['ordenes']} ord.)</i>\n"
+        f"   ├ 🏦 <i>{info_compra['banco']}</i>\n"
+        f"   ├ 📉 <i>Mín: {info_compra['min_limite']:,.0f} | Máx: {info_compra['max_limite']:,.0f} Bs</i>\n"
+        f"   └ 📦 <i>Disp: {info_compra['disponible']:,.2f} USDT</i>\n\n"
+        f"🔴 <b>VENTA USDT:</b> <code>{venta_base:,.2f}</code> Bs\n"
+        f"   ├ 👤 <i>{info_venta['comercio']} ({info_venta['ordenes']} ord.)</i>\n"
+        f"   ├ 🏦 <i>{info_venta['banco']}</i>\n"
+        f"   ├ 📉 <i>Mín: {info_venta['min_limite']:,.0f} | Máx: {info_venta['max_limite']:,.0f} Bs</i>\n"
+        f"   └ 📦 <i>Disp: {info_venta['disponible']:,.2f} USDT</i>\n\n"
+        f"📊 <b>Spread:</b> <code>{spread:,.2f}</code> Bs (<code>{porcentaje}%</code>)\n"
+        f"🌍 <i>Última actualización: {hora_actual}</i>"
     )
     
     return texto

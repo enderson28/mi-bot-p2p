@@ -1096,11 +1096,11 @@ def construir_intervencion_texto_html(user=None, porcentaje=None):
     diferencia = round(tasa_bcv - tasa_base_comparar, 4) if tasa_base_comparar > 0 else 0.0
 
     if diferencia > 0:
-        texto_tendencia = f"{e('SUBIDA', '📈')} BCV AUMENTÓ {abs(diferencia):.2f} BS PARA SU FECHA VALOR BCV {e('CALENDARIO', '📅')}"
+        texto_tendencia = f"{e('SUBIDA', '📈')} BCV AUMENTÓ {abs(diferencia):.2f} BS PARA SU FECHA VALOR {e('CALENDARIO', '📅')}"
     elif diferencia < 0:
-        texto_tendencia = f"{e('BAJADA', '📉')} BCV BAJÓ {abs(diferencia):.2f} BS PARA SU FECHA VALOR BCV {e('CALENDARIO', '📅')}"
+        texto_tendencia = f"{e('BAJADA', '📉')} BCV BAJÓ {abs(diferencia):.2f} BS PARA SU FECHA VALOR {e('CALENDARIO', '📅')}"
     else:
-        texto_tendencia = f"{e('BALANZA', '⚖️')} BCV MANTIENE SU TASA PARA SU FECHA VALOR BCV {e('CALENDARIO', '📅')}"
+        texto_tendencia = f"{e('BALANZA', '⚖️')} BCV MANTIENE SU TASA PARA SU FECHA VALOR {e('CALENDARIO', '📅')}"
 
     tasa_intervencion = tasa_bcv * (1 + (porcentaje / 100))
 
@@ -1108,14 +1108,14 @@ def construir_intervencion_texto_html(user=None, porcentaje=None):
         f"{e('MONITOR', '🖥️')} <b>¿Cuántos bolívares necesitas para comprar en Intervención?</b>\n\n"
         f"<blockquote>{e('CALENDARIO', '📅')} <b>Fecha Valor BCV:</b> {fecha_valor_bcv}</blockquote>\n"
         f"<blockquote>{texto_tendencia}</blockquote>\n"
-        f"<blockquote>{e('BCV', '🏛️')} <b>BCV Oficial:</b> <code>{tasa_bcv:.3f}</code> Bs</blockquote>\n"
-        f"<blockquote>{e('BALANZA', '⚖️')} <b>BCV + {porcentaje_txt}:</b> <code>{tasa_intervencion:.3f}</code> Bs ({porcentaje_txt})</blockquote>\n"
+        f"<blockquote>{e('BCV', '🏛️')} <b>BCV Oficial:</b> <code>{tasa_bcv:.3f}</code> BS</blockquote>\n"
+        f"<blockquote>{e('BALANZA', '⚖️')} <b>BCV + {porcentaje_txt}:</b> <code>{tasa_intervencion:.3f}</code> BS</blockquote>\n"
         f"----------------------------------------\n\n"
     )
 
     for monto_usd in range(100, 1100, 100):
         monto_bs = monto_usd * tasa_intervencion
-        texto += f"{e('DINERO', '💵')} <b>{monto_usd} USD:</b> {e('FLECHA_DERECHA', '➡️')} Bs: <code>{monto_bs:,.0f}</code>\n"
+        texto += f"{e('DINERO', '💵')} <b>{monto_usd} USD:</b> {e('FLECHA_DERECHA', '➡️')} BS: <code>{monto_bs:,.0f}</code>\n"
 
     return texto
 

@@ -103,7 +103,7 @@ COMISIONES_BANCOS = {
     },
     "bdt": {
         "emoji": TG_EMOJIS["bdt"],  # Asegúrate de tener el emoji registrado en TG_EMOJIS o usa uno directo ej. "💳"
-        "nombre": "BDT Prepagada (1.5%)",
+        "nombre": "BDT Prepagada",
         "porcentaje_str": f"1.5{TG_EMOJIS['percent']}",
         "comision": 0.015,
     },
@@ -250,6 +250,7 @@ def calcular_arbitraje_reposicion(monto_usd, comision_banco, tasa_bcv_hoy, tasa_
         "tasa_interv_hoy": tasa_interv_hoy,
         "bs_invertidos_hoy": bs_invertidos_hoy,
         "costo_recarga_bs_hoy": costo_recarga_bs_hoy,
+        "costo_recarga_bs_manana": costo_recarga_bs_manana,
         "usd_fiat_netos": usd_fiat_netos,
         "usdt_netos_binance": usdt_netos_binance,
         "tasa_usd_usdt": tasa_usd_usdt,
@@ -619,6 +620,12 @@ def generar_y_enviar_resultado(chat_id, user_id, tasa_p2p_venta, bot, redis_clie
         f"{TG_EMOJIS['binance']} <b>Vender en P2P:</b> <code>{res['usdt_recuperar_hoy']:.2f}</code> {TG_EMOJIS['usdt']}\n"
         f"<blockquote>{TG_EMOJIS['party']} <b>Ganancia Actual:</b> <code>{res['ganancia_usdt_hoy']:.2f}</code> {TG_EMOJIS['usdt']}</blockquote>\n"
     )
+    
+    # ---> AÑADIDO: Línea visible de recarga BDT en Ganancia Actual
+    if data_user.get("banco_key") == "bdt" and res.get("costo_recarga_bs_hoy", 0) > 0:
+        msg += f"<i>(Recarga tarjeta prepagada: {res['costo_recarga_bs_hoy']:,.2f} Bs)</i>\n"
+
+    msg += "-------------------------\n"
 
     # --- DETECTAR PRÓXIMO DÍA HÁBIL REAL ---
     hora_ve = datetime.now(timezone.utc) - timedelta(hours=4)
@@ -650,6 +657,10 @@ def generar_y_enviar_resultado(chat_id, user_id, tasa_p2p_venta, bot, redis_clie
             f"{TG_EMOJIS['binance']} <b>Vender en P2P:</b> <code>{res['usdt_recuperar_manana']:.2f}</code> {TG_EMOJIS['usdt']}\n"
             f"<blockquote>{TG_EMOJIS['party']} <b>Ganancia Real Aislada:</b> <code>{res['ganancia_usdt_manana']:.2f}</code> {TG_EMOJIS['usdt']}</blockquote>\n"
         )
+        
+        # ---> AÑADIDO: Línea visible de recarga BDT en Ganancia Real Aislada
+        if data_user.get("banco_key") == "bdt" and res.get("costo_recarga_bs_manana", 0) > 0:
+            msg += f"<i>(Recarga tarjeta prepagada: {res['costo_recarga_bs_manana']:,.2f} Bs)</i>\n"
     else:
         msj += (
             f"\n-------------------------------\n"

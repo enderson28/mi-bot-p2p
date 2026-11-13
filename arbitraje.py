@@ -205,7 +205,7 @@ def calcular_arbitraje_reposicion(monto_usd, comision_banco, tasa_bcv_hoy, tasa_
     costo_recarga_bs_hoy = 0
     if banco_key == "bdt":
         # 1% en Bs del monto comprado en divisa al BCV
-        costo_recarga_bs_hoy = (monto_usd * tasa_interv_hoy) * 0.01
+        costo_recarga_bs_hoy = (monto_usd * tasa_bcv_hoy) * 0.01
 
     usd_tras_banco = monto_usd * (1 - comision_banco)
     usd_fiat_netos = usd_tras_banco * (1 - COMISION_PASARELA_BINANCE)
@@ -235,14 +235,14 @@ def calcular_arbitraje_reposicion(monto_usd, comision_banco, tasa_bcv_hoy, tasa_
     bs_necesarios_manana = monto_usd * tasa_interv_manana if tasa_interv_manana > 0 else 0.0
     
     costo_recarga_bs_manana = 0
-    if banco_key == "bdt" and tasa_interv_manana > 0:
-        costo_recarga_bs_manana = (monto_usd * tasa_interv_manana) * 0.01
+    if banco_key == "bdt" and tasa_bcv_manana > 0:
+        costo_recarga_bs_manana = (monto_usd * tasa_bcv_manana) * 0.01
 
     usdt_recuperar_manana = bs_necesarios_manana / tasa_p2p_venta if tasa_p2p_venta > 0 else 0
     ganancia_usdt_manana = usdt_netos_binance - usdt_recuperar_manana
     ganancia_bs_manana = ganancia_usdt_manana * tasa_p2p_venta
     
-    if banco_key == "bdt" and tasa_p2p_venta > 0 and tasa_interv_manana > 0:
+    if banco_key == "bdt" and tasa_p2p_venta > 0 and tasa_bcv_manana > 0:
         ganancia_bs_manana -= costo_recarga_bs_manana
         ganancia_usdt_manana -= (costo_recarga_bs_manana / tasa_p2p_venta)
 

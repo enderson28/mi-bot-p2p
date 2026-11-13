@@ -623,9 +623,9 @@ def generar_y_enviar_resultado(chat_id, user_id, tasa_p2p_venta, bot, redis_clie
     
     # ---> AÑADIDO: Línea visible de recarga BDT en Ganancia Actual
     if data_user.get("banco_key") == "bdt" and res.get("costo_recarga_bs_hoy", 0) > 0:
-        msg += f"<i>(Recarga tarjeta prepagada: {res['costo_recarga_bs_hoy']:,.2f} Bs)</i>\n"
+        msj += f"<i>(Recarga tarjeta prepagada: {res['costo_recarga_bs_hoy']:,.2f} Bs)</i>\n"
 
-    msg += "-------------------------\n"
+    msj += "-------------------------\n"
 
     # --- DETECTAR PRÓXIMO DÍA HÁBIL REAL ---
     hora_ve = datetime.now(timezone.utc) - timedelta(hours=4)
@@ -660,7 +660,7 @@ def generar_y_enviar_resultado(chat_id, user_id, tasa_p2p_venta, bot, redis_clie
         
         # ---> AÑADIDO: Línea visible de recarga BDT en Ganancia Real Aislada
         if data_user.get("banco_key") == "bdt" and res.get("costo_recarga_bs_manana", 0) > 0:
-            msg += f"<i>(Recarga tarjeta prepagada: {res['costo_recarga_bs_manana']:,.2f} Bs)</i>\n"
+            msj += f"<i>(Recarga tarjeta prepagada: {res['costo_recarga_bs_manana']:,.2f} Bs)</i>\n"
     else:
         msj += (
             f"\n-------------------------------\n"

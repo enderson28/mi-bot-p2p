@@ -42,6 +42,7 @@ TG_EMOJIS = {
     "bnc": '<tg-emoji emoji-id="5100832907396646323">😃</tg-emoji>',
     "bancoexterior": '<tg-emoji emoji-id="4949665988611146999">😉</tg-emoji>',
     "clic": '<tg-emoji emoji-id="5310278924616356636">🎯</tg-emoji>',
+    "bdt": '<tg-emoji emoji-id="4949801799772014263">🎯</tg-emoji>',
     
 }
 
@@ -99,7 +100,13 @@ COMISIONES_BANCOS = {
         "nombre": "MERCANTIL",
         "porcentaje_str": f"{TG_EMOJIS['zinli']}",
         "comision": 0.0,
-    },   
+    },
+    "bdt": {
+        "emoji": TG_EMOJIS["bdt"],  # Asegúrate de tener el emoji registrado en TG_EMOJIS o usa uno directo ej. "💳"
+        "nombre": "BDT Prepagada (1.5%)",
+        "porcentaje_str": f"1.5{TG_EMOJIS['percent']}",
+        "comision": 0.015,
+    },
 }
 
 COMISION_PASARELA_BINANCE = 0.041  # 4.1% fija
@@ -185,40 +192,64 @@ def obtener_precio_spot_usdt_usd(redis_client):
 
 # --- LÓGICA DE CÁLCULO Y ARBITRAJE ---
 
-def calcular_arbitraje_reposicion(monto_usd, comision_banco, tasa_bcv_hoy, tasa_bcv_manana, tasa_p2p_venta, tasa_usd_usdt=1.00018, tasa_zinli=None):
+def calcular_arbitraje_reposicion(monto_usd, comision_banco, tasa_bcv_hoy, tasa_bcv_manana, tasa_p2p_venta, tasa_usd_usdt=1.00018, tasa_zinli_usada=None, banco_key=None):
     if not tasa_bcv_hoy or float(tasa_bcv_hoy) <= 0:
-        tasa_bcv_hoy = 798.326
-
+        tasa_bcv_hoy = 708.326  # Valor por defecto de respaldo
+        
     tasa_interv_hoy = tasa_bcv_hoy * 1.005
     bs_invertidos_hoy = monto_usd * tasa_interv_hoy
+    
+    # ----------------------------------------------------
+    # LÓGICA ESPECIAL BDT: 1% en Bs de recarga a tarjeta
+    # ----------------------------------------------------
+    costo_recarga_bs_hoy = 0
+    if banco_key == "bdt":
+        # 1% en Bs del monto comprado en divisa al BCV
+        costo_recarga_bs_hoy = (monto_usd * tasa_interv_hoy) * 0.01
 
     usd_tras_banco = monto_usd * (1 - comision_banco)
     usd_fiat_netos = usd_tras_banco * (1 - COMISION_PASARELA_BINANCE)
-
-    if tasa_zinli and tasa_zinli > 0:
-        usdt_brutos = monto_usd / tasa_zinli
+    
+    if tasa_zinli_usada and tasa_zinli_usada > 0:
+        usdt_brutos = monto_usd / tasa_zinli_usada
         comision_taker = 0.08  # Taker Binance
         usdt_netos_binance = usdt_brutos - comision_taker
     else:
         comision_taker = 0.0
-        usd_tras_banco = monto_usd * (1 - comision_banco)
-        usd_fiat_netos = usd_tras_banco * (1 - COMISION_PASARELA_BINANCE)
         usdt_netos_binance = usd_fiat_netos / tasa_usd_usdt if tasa_usd_usdt > 0 else usd_fiat_netos
-
+        
     usdt_recuperar_hoy = bs_invertidos_hoy / tasa_p2p_venta if tasa_p2p_venta > 0 else 0
+    
+    # Ganancia inicial antes de descontar recarga BDT
     ganancia_usdt_hoy = usdt_netos_binance - usdt_recuperar_hoy
     ganancia_bs_hoy = ganancia_usdt_hoy * tasa_p2p_venta
+    
+    # Descontar el 1% en Bs del BDT de las ganancias
+    if banco_key == "bdt" and tasa_p2p_venta > 0:
+        ganancia_bs_hoy -= costo_recarga_bs_hoy
+        ganancia_usdt_hoy -= (costo_recarga_bs_hoy / tasa_p2p_venta)
 
-    base_manana = tasa_bcv_manana if tasa_bcv_manana else 0.0
-    tasa_interv_manana = base_manana * 1.005
-    bs_necesarios_manana = monto_usd * tasa_interv_manana
+    # --- BLOQUE 2: REPOSICIÓN MAÑANA ---
+    tasa_bcv_manana = tasa_bcv_manana if tasa_bcv_manana else 0.0
+    tasa_interv_manana = tasa_bcv_manana * 1.005 if tasa_bcv_manana > 0 else 0.0
+    bs_necesarios_manana = monto_usd * tasa_interv_manana if tasa_interv_manana > 0 else 0.0
+    
+    costo_recarga_bs_manana = 0
+    if banco_key == "bdt" and tasa_interv_manana > 0:
+        costo_recarga_bs_manana = (monto_usd * tasa_interv_manana) * 0.01
+
     usdt_recuperar_manana = bs_necesarios_manana / tasa_p2p_venta if tasa_p2p_venta > 0 else 0
     ganancia_usdt_manana = usdt_netos_binance - usdt_recuperar_manana
     ganancia_bs_manana = ganancia_usdt_manana * tasa_p2p_venta
+    
+    if banco_key == "bdt" and tasa_p2p_venta > 0 and tasa_interv_manana > 0:
+        ganancia_bs_manana -= costo_recarga_bs_manana
+        ganancia_usdt_manana -= (costo_recarga_bs_manana / tasa_p2p_venta)
 
     return {
         "tasa_interv_hoy": tasa_interv_hoy,
         "bs_invertidos_hoy": bs_invertidos_hoy,
+        "costo_recarga_bs_hoy": costo_recarga_bs_hoy,
         "usd_fiat_netos": usd_fiat_netos,
         "usdt_netos_binance": usdt_netos_binance,
         "tasa_usd_usdt": tasa_usd_usdt,
@@ -232,6 +263,7 @@ def calcular_arbitraje_reposicion(monto_usd, comision_banco, tasa_bcv_hoy, tasa_
         "ganancia_bs_manana": ganancia_bs_manana,
         "comision_taker": comision_taker,
     }
+    
 
 
 # --- REGISTRO DE HANDLERS Y FLUJO DEL BOT ---
@@ -281,7 +313,8 @@ def registrar_handlers_arbitraje(bot, redis_client):
             InlineKeyboardButton("6. 📲 Otros Bancos (2.5%)", callback_data="arb_banco_otros_2_5"),
             InlineKeyboardButton("7. 🏦 BANCO ACTIVO (3%)", callback_data="arb_banco_activo"),
             InlineKeyboardButton("8. 🏦 BANCO BANCAMIGA (5%)", callback_data="arb_banco_amiga"),
-            InlineKeyboardButton("9. 🏬 MERCANTIL", callback_data="arb_banco_mercantil"),
+            InlineKeyboardButton("9. 💳 BDT - Banco Digital Trabajadores (1.5% + 1% Bs)", callback_data="arb_banco_bdt"),
+            InlineKeyboardButton("10. 🏬 MERCANTIL", callback_data="arb_banco_mercantil"),
             InlineKeyboardButton("🔙 Salir al Menú", callback_data="arb_salir_menu")
         )
 
@@ -533,6 +566,9 @@ def generar_y_enviar_resultado(chat_id, user_id, tasa_p2p_venta, bot, redis_clie
 
     tasa_hoy_val = float(datos_bcv.get("tasa_hoy", 798.326))
     tasa_manana_val = float(datos_bcv.get("tasa_manana", 0.0))
+    
+    banco_key = data_user.get("banco_key")
+    comision_banco = data_user.get("comision_banco", 0)
 
     # BLOQUE 1 (Hoy): Usa estrictamente la tasa de hoy
     tasa_bcv_hoy = tasa_hoy_val
@@ -554,7 +590,8 @@ def generar_y_enviar_resultado(chat_id, user_id, tasa_p2p_venta, bot, redis_clie
         tasa_bcv_manana=tasa_bcv_manana,
         tasa_p2p_venta=tasa_p2p_venta,
         tasa_usd_usdt=tasa_usd_usdt,
-        tasa_zinli=tasa_zinli_usada
+        tasa_zinli=tasa_zinli_usada,
+        banco_key=banco_key
     )
 
     # --- BLOQUE 1: RESULTADO PRINCIPAL HOY ---

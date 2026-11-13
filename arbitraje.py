@@ -590,7 +590,7 @@ def generar_y_enviar_resultado(chat_id, user_id, tasa_p2p_venta, bot, redis_clie
         tasa_bcv_manana=tasa_bcv_manana,
         tasa_p2p_venta=tasa_p2p_venta,
         tasa_usd_usdt=tasa_usd_usdt,
-        tasa_zinli=tasa_zinli_usada,
+        tasa_zinli_usada=tasa_zinli_usada,
         banco_key=banco_key
     )
 

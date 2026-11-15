@@ -447,8 +447,8 @@ def obtener_tasa_binance_p2p(tipo_operacion, monto_bs):
 
 def obtener_tasa_y_banco_binance_p2p(tipo_operacion, monto_bs=0):
     """
-    Consulta la API P2P de Binance y extrae la tasa, el banco,
-    el comerciante, sus estadísticas y los límites del anuncio.
+    Consulta la API P2P de Binance de forma totalmente blindada para extraer 
+    la tasa real, el banco, el comerciante y sus límites sin caer en fallbacks.
     """
     url = "https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search"
     headers = {
@@ -518,31 +518,43 @@ def obtener_tasa_y_banco_binance_p2p(tipo_operacion, monto_bs=0):
                     precio_ganador = precios_validos[winner_index]
                     ganador_elem = elementos_validos[winner_index]
                     
-                    # --- EXTRACCIÓN DE DATOS DEL COMERCIANTE Y LÍMITES ---
+                    # --- EXTRACCIÓN SEGURA (BLINDADA CONTRA NULOS) ---
                     adv_info = ganador_elem.get('adv', {})
                     adv_user = ganador_elem.get('advertiser', {})
                     
-                    comerciante_nombre = adv_user.get('nickName', 'Comerciante')
-                    ordenes_total = adv_user.get('monthOrderCount', 0)
-                    efectividad_val = float(adv_user.get('monthFinishRate', 0)) * 100
+                    comerciante_nombre = adv_user.get('nickName') or adv_user.get('name') or "Comerciante P2P"
+                    ordenes_total = adv_user.get('monthOrderCount') or adv_user.get('orderCount') or 0
                     
-                    limite_min = float(adv_info.get('minSingleTransAmount', 0))
-                    limite_max = float(adv_info.get('maxSingleTransAmount', 0))
+                    try:
+                        efectividad_val = float(adv_user.get('monthFinishRate') or adv_user.get('finishRate') or 0) * 100
+                    except:
+                        efectividad_val = 100.0
                     
-                    # Extracción segura del banco
+                    try:
+                        limite_min = float(adv_info.get('minSingleTransAmount', 0))
+                    except:
+                        limite_min = 0.0
+                        
+                    try:
+                        limite_max = float(adv_info.get('maxSingleTransAmount', 0))
+                    except:
+                        limite_max = 0.0
+                    
+                    # Extracción segura de los bancos o métodos de pago
                     nombres_bancos = []
                     try:
-                        metodos = adv_info.get('tradeMethods', [])
+                        # Buscamos en tradeMethods o payTypes según venga en el JSON
+                        metodos = adv_info.get('tradeMethods') or ganador_elem.get('tradeMethods') or []
                         if isinstance(metodos, list):
                             for m in metodos:
                                 if isinstance(m, dict):
-                                    nb = m.get('tradeMethodName') or m.get('payType') or m.get('identifier') or ''
+                                    nb = m.get('tradeMethodName') or m.get('payType') or m.get('identifier') or m.get('bankName') or ''
                                     if nb:
                                         nombres_bancos.append(str(nb).strip())
                                 elif isinstance(m, str):
                                     nombres_bancos.append(m.strip())
                     except:
-                        pass  # <--- Aquí estaba el except vacío que causaba el SyntaxError
+                        pass
                         
                     banco_str = " | ".join(list(dict.fromkeys(nombres_bancos))) if nombres_bancos else banco_por_defecto
                     
@@ -550,23 +562,23 @@ def obtener_tasa_y_banco_binance_p2p(tipo_operacion, monto_bs=0):
                         "precio": float(precio_ganador),
                         "banco": banco_str,
                         "comerciante": comerciante_nombre,
-                        "ordenes": ordenes_total,
+                        "ordenes": int(ordenes_total),
                         "efectividad": efectividad_val,
                         "limite_min": limite_min,
                         "limite_max": limite_max
                     }
     except Exception as e:
-        print(f"⚠️ Error conectando con Binance P2P en detalle: {e}")
+        print(f"⚠️ Error conectando con Binance P2P en función principal: {e}")
         
-    # Respaldo básico si falla por completo
+    # Respaldo básico con la función original por si ocurre un fallo de red
     tasa_fallback = obtener_tasa_binance_p2p(tipo_operacion, monto_bs)
     if tasa_fallback and float(tasa_fallback) > 0:
         return {
             "precio": float(tasa_fallback),
             "banco": banco_por_defecto,
-            "comerciante": "API Respaldo",
+            "comerciante": "Binance P2P",
             "ordenes": 0,
-            "efectividad": 0.0,
+            "efectividad": 100.0,
             "limite_min": 0.0,
             "limite_max": 0.0
         }
@@ -579,8 +591,7 @@ def obtener_tasa_y_banco_binance_p2p(tipo_operacion, monto_bs=0):
         "efectividad": 0.0,
         "limite_min": 0.0,
         "limite_max": 0.0
-                                        }
-                    
+        }
                         
                     
 

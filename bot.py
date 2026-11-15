@@ -447,7 +447,7 @@ def obtener_tasa_binance_p2p(tipo_operacion, monto_bs):
 
 def obtener_tasa_y_banco_binance_p2p(tipo_operacion, monto_bs=0):
     """
-    Consulta la API P2P de Binance y extrae la tasa, el banco, 
+    Consulta la API P2P de Binance y extrae la tasa, el banco,
     el comerciante, sus estadísticas y los límites del anuncio.
     """
     url = "https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search"
@@ -459,7 +459,7 @@ def obtener_tasa_y_banco_binance_p2p(tipo_operacion, monto_bs=0):
     
     payload = {
         "asset": "USDT",
-        "fiat": "VES",
+        "flat": "VES",
         "merchantCheck": True,
         "publisherType": "merchant",
         "page": 1,
@@ -475,11 +475,6 @@ def obtener_tasa_y_banco_binance_p2p(tipo_operacion, monto_bs=0):
     
     try:
         r = requests.post(url, json=payload, headers=headers, timeout=(5.0, 5.0))
-        
-        # Depuración en logs de Railway si Binance rechaza o bloquea
-        if r.status_code != 200:
-            print(f"⚠️ Aviso P2P Binance: Status code {r.status_code} para {tipo_operacion}")
-            
         if r.status_code == 200:
             datos = r.json().get('data', [])
             if datos:
@@ -495,7 +490,7 @@ def obtener_tasa_y_banco_binance_p2p(tipo_operacion, monto_bs=0):
                     user_status = advertiser.get('userStatus', '')
                     if user_status in ["BLOCKED", "INACTIVE"]:
                         continue
-                        
+                    
                     is_restricted = adv.get('isRestricted') or adv.get('restricted') or False
                     trade_conditions = bool(adv.get('tradeConditions'))
                     class_conditions = bool(adv.get('classificationConditions'))
@@ -512,14 +507,14 @@ def obtener_tasa_y_banco_binance_p2p(tipo_operacion, monto_bs=0):
                             elementos_validos.append(elemento)
                         except:
                             continue
-                
+                            
                 if precios_validos and elementos_validos:
                     winner_index = 0
-                    if len(precios_validos) > 2:
+                    if len(precios_validos) >= 2:
                         diferencia_porcentual = abs(precios_validos[0] - precios_validos[1]) / precios_validos[0]
                         if diferencia_porcentual > 0.02:
                             winner_index = 1
-                    
+                            
                     precio_ganador = precios_validos[winner_index]
                     ganador_elem = elementos_validos[winner_index]
                     
@@ -533,7 +528,6 @@ def obtener_tasa_y_banco_binance_p2p(tipo_operacion, monto_bs=0):
                     
                     limite_min = float(adv_info.get('minSingleTransAmount', 0))
                     limite_max = float(adv_info.get('maxSingleTransAmount', 0))
-                    # ----------------------------------------------------
                     
                     # Extracción segura del banco
                     nombres_bancos = []
@@ -542,15 +536,15 @@ def obtener_tasa_y_banco_binance_p2p(tipo_operacion, monto_bs=0):
                         if isinstance(metodos, list):
                             for m in metodos:
                                 if isinstance(m, dict):
-                                    nb = m.get('tradeMethodName') or m.get('payType') or m.get('identifier')
+                                    nb = m.get('tradeMethodName') or m.get('payType') or m.get('identifier') or ''
                                     if nb:
                                         nombres_bancos.append(str(nb).strip())
                                 elif isinstance(m, str):
                                     nombres_bancos.append(m.strip())
-                        except:
-                            pass
-                            
-                    banco_str = ", ".join(list(dict.fromkeys(nombres_bancos))) if nombres_bancos else banco_por_defecto
+                    except:
+                        pass  # <--- Aquí estaba el except vacío que causaba el SyntaxError
+                        
+                    banco_str = " | ".join(list(dict.fromkeys(nombres_bancos))) if nombres_bancos else banco_por_defecto
                     
                     return {
                         "precio": float(precio_ganador),
@@ -561,11 +555,10 @@ def obtener_tasa_y_banco_binance_p2p(tipo_operacion, monto_bs=0):
                         "limite_min": limite_min,
                         "limite_max": limite_max
                     }
-                    
     except Exception as e:
-        print(f"❌ Error conectando con Binance P2P en detalle: {e}")
+        print(f"⚠️ Error conectando con Binance P2P en detalle: {e}")
         
-    # Respaldo básico si falla por completo (devuelve estructura compatible)
+    # Respaldo básico si falla por completo
     tasa_fallback = obtener_tasa_binance_p2p(tipo_operacion, monto_bs)
     if tasa_fallback and float(tasa_fallback) > 0:
         return {
@@ -585,11 +578,11 @@ def obtener_tasa_y_banco_binance_p2p(tipo_operacion, monto_bs=0):
         "ordenes": 0,
         "efectividad": 0.0,
         "limite_min": 0.0,
-        "limite_max": 0.0                   
-    }
-                                                    
-    
-    
+        "limite_max": 0.0
+                                        }
+                    
+                        
+                    
 
 def obtener_tasa_binance_p2p_bdv(tipo_operacion, monto_bs):
     url = "https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search"

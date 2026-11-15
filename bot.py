@@ -863,14 +863,14 @@ def refrescar_tasas_en_vivo():
       
 
 def construir_monitor_canal_html():
-    """Genera la ficha del canal mostrando la tasa estable, el banco real, 
+    """Genera la ficha del canal mostrando la tasa, el banco, 
     el comerciante, su efectividad y los límites del mejor anuncio."""
     
-    # 1. Obtenemos los diccionarios completos enriquecidos con la nueva estructura
+    # Obtenemos los diccionarios completos con la estructura enriquecida
     info_compra = obtener_tasa_y_banco_binance_p2p("BUY", 0)
     info_venta = obtener_tasa_y_banco_binance_p2p("SELL", 0)
     
-    # 2. Extracción segura de datos para COMPRA
+    # Extracción de datos para COMPRA
     compra_base = float(info_compra.get("precio", 0.0))
     banco_compra = info_compra.get("banco", "Pago Móvil / Transferencia")
     comprador_nick = info_compra.get("comerciante", "Comerciante")
@@ -879,7 +879,7 @@ def construir_monitor_canal_html():
     compra_lim_min = info_compra.get("limite_min", 0.0)
     compra_lim_max = info_compra.get("limite_max", 0.0)
     
-    # 3. Extracción segura de datos para VENTA
+    # Extracción de datos para VENTA
     venta_base = float(info_venta.get("precio", 0.0))
     banco_venta = info_venta.get("banco", "Pago Móvil / Transferencia")
     vendedor_nick = info_venta.get("comerciante", "Comerciante")
@@ -895,7 +895,6 @@ def construir_monitor_canal_html():
     porcentaje = round((spread / compra_base) * 100, 2) if compra_base > 0 else 0.0
     hora_actual = (datetime.now(timezone.utc) - timedelta(hours=4)).strftime('%I:%M:%S %p')
     
-    # 4. Construcción del mensaje optimizado para tu canal/bot con todos los detalles
     texto = (
         f"🌐 <b>TASAS P2P EN VIVO</b>\n\n"
         f"🟢 <b>COMPRA USDT:</b> <code>{compra_base:,.2f}</code> Bs\n"
@@ -913,6 +912,7 @@ def construir_monitor_canal_html():
     )
     
     return texto
+    
         
     
 

@@ -445,11 +445,8 @@ def obtener_tasa_binance_p2p(tipo_operacion, monto_bs):
 
     return None
 
+
 def obtener_tasa_y_banco_binance_p2p(tipo_operacion, monto_bs=0):
-    """
-    Consulta la API P2P de Binance de forma totalmente blindada para extraer 
-    la tasa real, el banco, el comerciante y sus límites sin caer en fallbacks.
-    """
     url = "https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search"
     headers = {
         "Accept": "*/*",
@@ -518,37 +515,64 @@ def obtener_tasa_y_banco_binance_p2p(tipo_operacion, monto_bs=0):
                     precio_ganador = precios_validos[winner_index]
                     ganador_elem = elementos_validos[winner_index]
                     
-                    # --- EXTRACCIÓN SEGURA (BLINDADA CONTRA NULOS) ---
+                    # --- DEPURO EN CONSOLA LA ESTRUCTURA REAL ---
+                    print(f"🔍 [DEBUG GANADOR {tipo_operacion}] Advertiser: {ganador_elem.get('advertiser')}")
+                    print(f"🔍 [DEBUG GANADOR {tipo_operacion}] Adv: {ganador_elem.get('adv')}")
+                    
                     adv_info = ganador_elem.get('adv', {})
                     adv_user = ganador_elem.get('advertiser', {})
                     
-                    comerciante_nombre = adv_user.get('nickName') or adv_user.get('name') or "Comerciante P2P"
-                    ordenes_total = adv_user.get('monthOrderCount') or adv_user.get('orderCount') or 0
+                    # Extracción flexible de datos del comerciante
+                    comerciante_nombre = (
+                        adv_user.get('nickName') or 
+                        adv_user.get('name') or 
+                        adv_user.get('userNickName') or 
+                        "Comerciante P2P"
+                    )
+                    
+                    ordenes_total = (
+                        adv_user.get('monthOrderCount') or 
+                        adv_user.get('orderCount') or 
+                        adv_user.get('completedOrderCount') or 
+                        0
+                    )
                     
                     try:
-                        efectividad_val = float(adv_user.get('monthFinishRate') or adv_user.get('finishRate') or 0) * 100
+                        efectividad_val = float(
+                            adv_user.get('monthFinishRate') or 
+                            adv_user.get('finishRate') or 
+                            adv_user.get('recentExecuteRate') or 
+                            0
+                        )
+                        if efectividad_val <= 1.0:
+                            efectividad_val *= 100
                     except:
                         efectividad_val = 100.0
                     
                     try:
-                        limite_min = float(adv_info.get('minSingleTransAmount', 0))
+                        limite_min = float(adv_info.get('minSingleTransAmount') or adv_info.get('lowerLimit') or 0)
                     except:
                         limite_min = 0.0
                         
                     try:
-                        limite_max = float(adv_info.get('maxSingleTransAmount', 0))
+                        limite_max = float(adv_info.get('maxSingleTransAmount') or adv_info.get('upperLimit') or 0)
                     except:
                         limite_max = 0.0
                     
-                    # Extracción segura de los bancos o métodos de pago
+                    # Extracción de bancos desde tradeMethods
                     nombres_bancos = []
                     try:
-                        # Buscamos en tradeMethods o payTypes según venga en el JSON
                         metodos = adv_info.get('tradeMethods') or ganador_elem.get('tradeMethods') or []
                         if isinstance(metodos, list):
                             for m in metodos:
                                 if isinstance(m, dict):
-                                    nb = m.get('tradeMethodName') or m.get('payType') or m.get('identifier') or m.get('bankName') or ''
+                                    nb = (
+                                        m.get('tradeMethodName') or 
+                                        m.get('payType') or 
+                                        m.get('identifier') or 
+                                        m.get('bankName') or 
+                                        m.get('title') or ''
+                                    )
                                     if nb:
                                         nombres_bancos.append(str(nb).strip())
                                 elif isinstance(m, str):
@@ -563,14 +587,14 @@ def obtener_tasa_y_banco_binance_p2p(tipo_operacion, monto_bs=0):
                         "banco": banco_str,
                         "comerciante": comerciante_nombre,
                         "ordenes": int(ordenes_total),
-                        "efectividad": efectividad_val,
-                        "limite_min": limite_min,
-                        "limite_max": limite_max
+                        "efectividad": float(efectividad_val),
+                        "limite_min": float(limite_min),
+                        "limite_max": float(limite_max)
                     }
     except Exception as e:
-        print(f"⚠️ Error conectando con Binance P2P en función principal: {e}")
+        print(f"⚠️ Error conectando con Binance P2P en detalle: {e}")
         
-    # Respaldo básico con la función original por si ocurre un fallo de red
+    # Respaldo en caso de emergencia extrema
     tasa_fallback = obtener_tasa_binance_p2p(tipo_operacion, monto_bs)
     if tasa_fallback and float(tasa_fallback) > 0:
         return {
@@ -591,7 +615,9 @@ def obtener_tasa_y_banco_binance_p2p(tipo_operacion, monto_bs=0):
         "efectividad": 0.0,
         "limite_min": 0.0,
         "limite_max": 0.0
-        }
+                    }
+                        
+
                         
                     
 

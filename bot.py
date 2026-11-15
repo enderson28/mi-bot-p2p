@@ -447,19 +447,19 @@ def obtener_tasa_binance_p2p(tipo_operacion, monto_bs):
 
 def obtener_tasa_y_banco_binance_p2p(tipo_operacion, monto_bs=0):
     """
-    Usa exactamente la misma lógica infalible de tu consulta original,
-    pero retorna un diccionario seguro con la tasa y el banco del ganador.
+    Consulta la API P2P de Binance y extrae la tasa, el banco, 
+    el comerciante, sus estadísticas y los límites del anuncio.
     """
     url = "https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search"
     headers = {
         "Accept": "*/*",
         "Content-Type": "application/json",
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     }
     
     payload = {
         "asset": "USDT",
-        "flat": "VES",
+        "fiat": "VES",
         "merchantCheck": True,
         "publisherType": "merchant",
         "page": 1,
@@ -475,6 +475,11 @@ def obtener_tasa_y_banco_binance_p2p(tipo_operacion, monto_bs=0):
     
     try:
         r = requests.post(url, json=payload, headers=headers, timeout=(5.0, 5.0))
+        
+        # Depuración en logs de Railway si Binance rechaza o bloquea
+        if r.status_code != 200:
+            print(f"⚠️ Aviso P2P Binance: Status code {r.status_code} para {tipo_operacion}")
+            
         if r.status_code == 200:
             datos = r.json().get('data', [])
             if datos:
@@ -490,7 +495,7 @@ def obtener_tasa_y_banco_binance_p2p(tipo_operacion, monto_bs=0):
                     user_status = advertiser.get('userStatus', '')
                     if user_status in ["BLOCKED", "INACTIVE"]:
                         continue
-                    
+                        
                     is_restricted = adv.get('isRestricted') or adv.get('restricted') or False
                     trade_conditions = bool(adv.get('tradeConditions'))
                     class_conditions = bool(adv.get('classificationConditions'))
@@ -507,53 +512,82 @@ def obtener_tasa_y_banco_binance_p2p(tipo_operacion, monto_bs=0):
                             elementos_validos.append(elemento)
                         except:
                             continue
-                            
+                
                 if precios_validos and elementos_validos:
                     winner_index = 0
-                    if len(precios_validos) >= 2:
+                    if len(precios_validos) > 2:
                         diferencia_porcentual = abs(precios_validos[0] - precios_validos[1]) / precios_validos[0]
                         if diferencia_porcentual > 0.02:
                             winner_index = 1
-                            
+                    
                     precio_ganador = precios_validos[winner_index]
                     ganador_elem = elementos_validos[winner_index]
                     
-                    # Extracción segura del banco del anuncio ganador
+                    # --- EXTRACCIÓN DE DATOS DEL COMERCIANTE Y LÍMITES ---
+                    adv_info = ganador_elem.get('adv', {})
+                    adv_user = ganador_elem.get('advertiser', {})
+                    
+                    comerciante_nombre = adv_user.get('nickName', 'Comerciante')
+                    ordenes_total = adv_user.get('monthOrderCount', 0)
+                    efectividad_val = float(adv_user.get('monthFinishRate', 0)) * 100
+                    
+                    limite_min = float(adv_info.get('minSingleTransAmount', 0))
+                    limite_max = float(adv_info.get('maxSingleTransAmount', 0))
+                    # ----------------------------------------------------
+                    
+                    # Extracción segura del banco
                     nombres_bancos = []
                     try:
-                        metodos = ganador_elem.get('adv', {}).get('tradeMethods', [])
+                        metodos = adv_info.get('tradeMethods', [])
                         if isinstance(metodos, list):
                             for m in metodos:
                                 if isinstance(m, dict):
-                                    nb = m.get('tradeMethodName') or m.get('payType') or m.get('identifier') or m.get('title') or m.get('bankName') or ''
+                                    nb = m.get('tradeMethodName') or m.get('payType') or m.get('identifier')
                                     if nb:
                                         nombres_bancos.append(str(nb).strip())
                                 elif isinstance(m, str):
                                     nombres_bancos.append(m.strip())
-                    except:
-                        pass
-                        
-                    if nombres_bancos:
-                        banco_str = " | ".join(list(dict.fromkeys(nombres_bancos)))
-                    else:
-                        banco_str = banco_por_defecto
-                        
+                        except:
+                            pass
+                            
+                    banco_str = ", ".join(list(dict.fromkeys(nombres_bancos))) if nombres_bancos else banco_por_defecto
+                    
                     return {
                         "precio": float(precio_ganador),
-                        "banco": banco_str
+                        "banco": banco_str,
+                        "comerciante": comerciante_nombre,
+                        "ordenes": ordenes_total,
+                        "efectividad": efectividad_val,
+                        "limite_min": limite_min,
+                        "limite_max": limite_max
                     }
+                    
     except Exception as e:
-        print(f"⚠️ Error conectando con Binance P2P para banco: {e}")
+        print(f"❌ Error conectando con Binance P2P en detalle: {e}")
         
-    # Respaldo seguro si algo falla, usando tu propia función estándar para no perder la tasa
+    # Respaldo básico si falla por completo (devuelve estructura compatible)
     tasa_fallback = obtener_tasa_binance_p2p(tipo_operacion, monto_bs)
     if tasa_fallback and float(tasa_fallback) > 0:
         return {
             "precio": float(tasa_fallback),
-            "banco": banco_por_defecto
+            "banco": banco_por_defecto,
+            "comerciante": "API Respaldo",
+            "ordenes": 0,
+            "efectividad": 0.0,
+            "limite_min": 0.0,
+            "limite_max": 0.0
         }
         
-    return {"precio": 0.0, "banco": banco_por_defecto}
+    return {
+        "precio": 0.0,
+        "banco": banco_por_defecto,
+        "comerciante": "N/D",
+        "ordenes": 0,
+        "efectividad": 0.0,
+        "limite_min": 0.0,
+        "limite_max": 0.0                   
+    }
+                                                    
     
     
 
@@ -829,34 +863,57 @@ def refrescar_tasas_en_vivo():
       
 
 def construir_monitor_canal_html():
-    """Genera la ficha del canal mostrando la tasa estable y el banco real del mejor anuncio"""
-    info_compra = obtener_tasa_y_banco_binance_p2p("BUY", 0)
-    info_venta = obtener_tasa_y_banco_binance_p2p(" السودان " if False else "SELL", 0) # Mantiene la llamada limpia a SELL
+    """Genera la ficha del canal mostrando la tasa estable, el banco real, 
+    el comerciante, su efectividad y los límites del mejor anuncio."""
     
+    # 1. Obtenemos los diccionarios completos enriquecidos con la nueva estructura
+    info_compra = obtener_tasa_y_banco_binance_p2p("BUY", 0)
+    info_venta = obtener_tasa_y_banco_binance_p2p("SELL", 0)
+    
+    # 2. Extracción segura de datos para COMPRA
     compra_base = float(info_compra.get("precio", 0.0))
     banco_compra = info_compra.get("banco", "Pago Móvil / Transferencia")
+    comprador_nick = info_compra.get("comerciante", "Comerciante")
+    comprador_ordenes = info_compra.get("ordenes", 0)
+    comprador_efectividad = info_compra.get("efectividad", 0.0)
+    compra_lim_min = info_compra.get("limite_min", 0.0)
+    compra_lim_max = info_compra.get("limite_max", 0.0)
     
+    # 3. Extracción segura de datos para VENTA
     venta_base = float(info_venta.get("precio", 0.0))
     banco_venta = info_venta.get("banco", "Pago Móvil / Transferencia")
+    vendedor_nick = info_venta.get("comerciante", "Comerciante")
+    vendedor_ordenes = info_venta.get("ordenes", 0)
+    vendedor_efectividad = info_venta.get("efectividad", 0.0)
+    venta_lim_min = info_venta.get("limite_min", 0.0)
+    venta_lim_max = info_venta.get("limite_max", 0.0)
     
     if compra_base <= 0 or venta_base <= 0:
-        return "<b>⚠️ Error temporal al obtener tasas de Binance P2P.</b>"
-    
+        return "⚠️ Error temporal al obtener tasas de Binance P2P."
+        
     spread = round(venta_base - compra_base, 2)
     porcentaje = round((spread / compra_base) * 100, 2) if compra_base > 0 else 0.0
-    hora_actual = (datetime.now() - timedelta(hours=4)).strftime('%I:%M:%S %p')
+    hora_actual = (datetime.now(timezone.utc) - timedelta(hours=4)).strftime('%I:%M:%S %p')
     
+    # 4. Construcción del mensaje optimizado para tu canal/bot con todos los detalles
     texto = (
         f"🌐 <b>TASAS P2P EN VIVO</b>\n\n"
         f"🟢 <b>COMPRA USDT:</b> <code>{compra_base:,.2f}</code> Bs\n"
-        f"   └ 🏦 <i>Banco: {banco_compra}</i>\n\n"
+        f"👤 <code>{comprador_nick}</code> ({comprador_ordenes} órd. | {comprador_efectividad:.1f}%)\n"
+        f"📊 <b>Límite:</b> {compra_lim_min:,.0f} - {compra_lim_max:,.0f} VES\n"
+        f"└ 🏛️ <b>Banco:</b> {banco_compra}\n\n"
+        
         f"🔴 <b>VENTA USDT:</b> <code>{venta_base:,.2f}</code> Bs\n"
-        f"   └ 🏦 <i>Banco: {banco_venta}</i>\n\n"
-        f"📊 <b>Spread:</b> <code>{spread:,.2f}</code> Bs (<code>{porcentaje}%</code>)\n"
-        f"🌍 <i>Última actualización: {hora_actual}</i>"
+        f"👤 <code>{vendedor_nick}</code> ({vendedor_ordenes} órd. | {vendedor_efectividad:.1f}%)\n"
+        f"📊 <b>Límite:</b> {venta_lim_min:,.0f} - {venta_lim_max:,.0f} VES\n"
+        f"└ 🏛️ <b>Banco:</b> {banco_venta}\n\n"
+        
+        f"📊 <b>Spread:</b> {spread:,.2f} Bs (<code>{porcentaje:.2f}%</code>)\n"
+        f"🌐 <i>Última actualización: {hora_actual}</i>"
     )
     
     return texto
+        
     
 
 def construir_monitor_texto_html():

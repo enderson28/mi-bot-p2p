@@ -719,7 +719,7 @@ def refrescar_tasas_en_vivo():
 
 
 def obtener_detalles_canal_p2p(tipo_operacion):
-    """Consulta exclusiva para extraer comerciante, límites y bancos en el canal"""
+    """Consulta exclusiva para extraer comerciante, límites y bancos en el canal sin afectar Redis"""
     url = "https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search"
     headers = {
         "Accept": "*/*",
@@ -742,7 +742,8 @@ def obtener_detalles_canal_p2p(tipo_operacion):
     
     banco_por_defecto = "Pago Móvil / Transferencia"
     try:
-        r = requests.post(url, json=payload, headers=headers, timeout=(5.0, 5.0))
+        # Aumentamos el timeout a 7 segundos para evitar los cortes de red
+        r = requests.post(url, json=payload, headers=headers, timeout=(7.0, 7.0))
         if r.status_code == 200:
             datos = r.json().get('data', [])
             if datos:
@@ -758,7 +759,7 @@ def obtener_detalles_canal_p2p(tipo_operacion):
                         
                     precio = adv.get('price')
                     if precio:
-                        comercio = advertiser.get('nickName', 'Comerciante P2P')
+                        comercio_nombre = advertiser.get('nickName', 'Comerciante P2P')
                         ordenes = advertiser.get('monthOrderCount', 0)
                         
                         try:
@@ -787,7 +788,8 @@ def obtener_detalles_canal_p2p(tipo_operacion):
                         return {
                             "precio": float(precio),
                             "banco": banco_str,
-                            "comerciante": comercio,
+                            "comercio": comercio_nombre,       # Compatible con llamadas antiguas
+                            "comerciante": comercio_nombre,    # Compatible con llamadas nuevas
                             "ordenes": int(ordenes),
                             "efectividad": efectividad,
                             "limite_min": lim_min,
@@ -796,17 +798,19 @@ def obtener_detalles_canal_p2p(tipo_operacion):
     except Exception as e:
         print(f"⚠️ Error en detalles canal: {e}")
         
-    # Respaldo usando tu tasa normal
+    # Respaldo seguro usando tu tasa normal intacta
     tasa_base = obtener_tasa_binance_p2p(tipo_operacion, 0)
     return {
         "precio": float(tasa_base) if tasa_base else 0.0,
         "banco": banco_por_defecto,
+        "comercio": "Binance P2P",
         "comerciante": "Binance P2P",
         "ordenes": 0,
         "efectividad": 100.0,
         "limite_min": 0.0,
         "limite_max": 0.0
-                    } 
+    }
+    
       
 
 def construir_monitor_canal_html():

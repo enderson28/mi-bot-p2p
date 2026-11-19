@@ -717,15 +717,42 @@ def refrescar_tasas_en_vivo():
 
         r.set("p2p_rangos_bdv", json.dumps(nuevos_rangos_bdv))
 
-def _parsear_anuncio_p2p(elemento, banco_por_defecto="Pago Móvil / Transferencia"):
+def _es_anuncio_comerciable_y_verificado(elemento):
     if not isinstance(elemento, dict):
-        return None
+        return False
 
     adv = elemento.get("adv") or {}
     advertiser = elemento.get("advertiser") or {}
 
+    # 1. Estado del usuario activo
     if advertiser.get("userStatus") in ("BLOCKED", "INACTIVE"):
+        return False
+
+    # 2. Solo anuncios comerciables (no restringidos ni no comerciables)
+    if adv.get("isRestricted") or adv.get("restricted"):
+        return False
+    if adv.get("isTradable") is False or adv.get("tradable") is False:
+        return False
+
+    # 3. Solo comerciantes verificados
+    user_type = str(advertiser.get("userType") or "").lower()
+    es_comerciante = (
+        user_type == "merchant"
+        or bool(advertiser.get("proMerchant"))
+        or bool(advertiser.get("isMerchant"))
+    )
+    # En Binance P2P, los comerciantes verificados suelen tener merchantCheck / badge o userType == "merchant"
+    tiene_verificacion = es_comerciante or bool(advertiser.get("merchantVerified"))
+
+    return tiene_verificacion
+
+
+def _parsear_anuncio_p2p(elemento, banco_por_defecto="Pago Móvil / Transferencia"):
+    if not _es_anuncio_comerciable_y_verificado(elemento):
         return None
+
+    adv = elemento.get("adv") or {}
+    advertiser = elemento.get("advertiser") or {}
 
     try:
         precio = float(adv.get("price") or 0)
@@ -737,18 +764,9 @@ def _parsear_anuncio_p2p(elemento, banco_por_defecto="Pago Móvil / Transferenci
     comercio = (
         advertiser.get("nickName")
         or advertiser.get("userName")
-        or "Comerciante P2P"
+        or "Comerciante Verificado"
     )
 
-    # Insignia de verificado (comerciante verificado / pro)
-    user_type = str(advertiser.get("userType") or "").lower()
-    es_verificado = bool(
-        user_type == "merchant"
-        or advertiser.get("proMerchant")
-        or advertiser.get("isMerchant")
-    )
-
-    # Órdenes
     ordenes_raw = (
         advertiser.get("monthOrderCount")
         if advertiser.get("monthOrderCount") is not None
@@ -759,7 +777,6 @@ def _parsear_anuncio_p2p(elemento, banco_por_defecto="Pago Móvil / Transferenci
     except (TypeError, ValueError):
         ordenes = 0
 
-    # Efectividad (%)
     try:
         tasa_raw = advertiser.get("monthFinishRate")
         if tasa_raw is None:
@@ -770,14 +787,12 @@ def _parsear_anuncio_p2p(elemento, banco_por_defecto="Pago Móvil / Transferenci
     except (TypeError, ValueError):
         efectividad = 100.0
 
-    # Límites en VES
     try:
         limite_min = float(adv.get("minSingleTransAmount") or 0)
         limite_max = float(adv.get("maxSingleTransAmount") or 0)
     except (TypeError, ValueError):
         limite_min, limite_max = 0.0, 0.0
 
-    # Disponibilidad en USDT
     disp_raw = adv.get("tradableQuantity")
     if disp_raw is None:
         disp_raw = adv.get("surplusAmount")
@@ -786,10 +801,8 @@ def _parsear_anuncio_p2p(elemento, banco_por_defecto="Pago Móvil / Transferenci
     except (TypeError, ValueError):
         disponible = 0.0
 
-    # Bancos / métodos de pago
     nombres_bancos = []
-    metodos = adv.get("tradeMethods") or []
-    for m in metodos:
+    for m in (adv.get("tradeMethods") or []):
         if isinstance(m, dict):
             nb = (
                 m.get("tradeMethodName")
@@ -803,7 +816,7 @@ def _parsear_anuncio_p2p(elemento, banco_por_defecto="Pago Móvil / Transferenci
             nombres_bancos.append(m.strip())
 
     banco_str = (
-        " | ".join(dict.fromkeys(nombres_bancos))
+        " · ".join(dict.fromkeys(nombres_bancos))
         if nombres_bancos
         else banco_por_defecto
     )
@@ -811,9 +824,9 @@ def _parsear_anuncio_p2p(elemento, banco_por_defecto="Pago Móvil / Transferenci
     return {
         "precio": precio,
         "comercio": comercio,
-        "verificado": es_verificado,
+        "verificado": True,
         "ordenes": ordenes,
-        "efectividad": round(efectividad, 2),
+        "efectividad": round(efectividad, 1),
         "limite_min": limite_min,
         "limite_max": limite_max,
         "disponible": disponible,
@@ -822,11 +835,6 @@ def _parsear_anuncio_p2p(elemento, banco_por_defecto="Pago Móvil / Transferenci
 
 
 def obtener_top5_canal_p2p(tipo_operacion, top_n=5):
-    """
-    Devuelve un dict con:
-      - 'mejor': dict del mejor anuncio válido (o fallback)
-      - 'top': lista de hasta `top_n` anuncios parseados
-    """
     url = "https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search"
     headers = {
         "Accept": "application/json, text/plain, */*",
@@ -843,10 +851,10 @@ def obtener_top5_canal_p2p(tipo_operacion, top_n=5):
     payload = {
         "asset": "USDT",
         "fiat": "VES",
-        "merchantCheck": False,
-        "publisherType": None,
+        "merchantCheck": True,
+        "publisherType": "merchant",
         "page": 1,
-        "rows": 15,
+        "rows": 20,
         "tradeType": tipo_operacion.upper(),
         "transAmount": "",
         "filterType": "tradable",
@@ -873,24 +881,20 @@ def obtener_top5_canal_p2p(tipo_operacion, top_n=5):
         "mejor": mejor,
         "top": top_lista,
     }
-
-    
-      
+  
 
 
 def _formatear_linea_top(idx, item):
-    badge = "✅" if item.get("verificado") else "—"
     return (
-        f"<code>{idx}.</code> <b>{item['precio']:,.2f}</b> Bs | "
-        f"{item['comercio']} {badge} "
-        f"({item['ordenes']} órd. | {item['efectividad']:.1f}%)\n"
-        f"    <i>Lím: {item['limite_min']:,.0f}–{item['limite_max']:,.0f} VES | "
-        f"Disp: {item['disponible']:,.2f} USDT</i>"
+        f"<b>{idx}.</b> <code>{item['precio']:,.2f}</code> Bs · "
+        f"<b>{item['comercio']}</b> ✅\n"
+        f"    <i>{item['ordenes']} órd. ({item['efectividad']:.1f}%) · "
+        f"{item['limite_min']:,.0f}–{item['limite_max']:,.0f} VES · "
+        f"{item['disponible']:,.2f} USDT</i>"
     )
 
 
 def construir_monitor_canal_html():
-    """Genera el monitor en vivo con mejor anuncio + Top 5 de Compra y Venta."""
     res_compra = obtener_top5_canal_p2p("BUY", top_n=5)
     res_venta = obtener_top5_canal_p2p("SELL", top_n=5)
 
@@ -898,7 +902,7 @@ def construir_monitor_canal_html():
     mejor_venta = res_venta.get("mejor")
 
     if not mejor_compra or not mejor_venta:
-        return "<b>⚠️ Error temporal al obtener tasas de Binance P2P.</b>"
+        return "<b>⚠️ No se encontraron anuncios comerciables verificados en este momento.</b>"
 
     compra_base = float(mejor_compra.get("precio") or 0.0)
     venta_base = float(mejor_venta.get("precio") or 0.0)
@@ -908,39 +912,41 @@ def construir_monitor_canal_html():
 
     spread = round(venta_base - compra_base, 2)
     porcentaje = round((spread / compra_base) * 100, 2) if compra_base > 0 else 0.0
-    hora_actual = (datetime.utcnow() - timedelta(hours=4)).strftime("%I:%M:%S %p")
+    hora_actual = (datetime.now(timezone.utc) - timedelta(hours=4)).strftime("%I:%M:%S %p")
 
-    verif_c = "✅ Verificado" if mejor_compra.get("verificado") else "No verificado"
-    verif_v = "✅ Verificado" if mejor_venta.get("verificado") else "No verificado"
-
-    top_compra_txt = "\n".join(
+    top_compra_txt = "\n\n".join(
         _formatear_linea_top(i + 1, item)
         for i, item in enumerate(res_compra.get("top") or [])
     )
-    top_venta_txt = "\n".join(
+    top_venta_txt = "\n\n".join(
         _formatear_linea_top(i + 1, item)
         for i, item in enumerate(res_venta.get("top") or [])
     )
 
     texto = (
-        "🌐 <b>TASAS P2P EN VIVO</b>\n\n"
-        f"🟢 <b>MEJOR COMPRA USDT:</b> <code>{compra_base:,.2f}</code> Bs\n"
-        f"👤 <i>{mejor_compra['comercio']} ({verif_c} | {mejor_compra['ordenes']} órd. | {mejor_compra['efectividad']:.1f}%)</i>\n"
-        f"📉 <i>Límite: {mejor_compra['limite_min']:,.0f} - {mejor_compra['limite_max']:,.0f} VES | Disp: {mejor_compra['disponible']:,.2f} USDT</i>\n"
-        f"🏦 <i>Banco: {mejor_compra['banco']}</i>\n\n"
-        f"🔴 <b>MEJOR VENTA USDT:</b> <code>{venta_base:,.2f}</code> Bs\n"
-        f"👤 <i>{mejor_venta['comercio']} ({verif_v} | {mejor_venta['ordenes']} órd. | {mejor_venta['efectividad']:.1f}%)</i>\n"
-        f"📈 <i>Límite: {mejor_venta['limite_min']:,.0f} - {mejor_venta['limite_max']:,.0f} VES | Disp: {mejor_venta['disponible']:,.2f} USDT</i>\n"
-        f"🏦 <i>Banco: {mejor_venta['banco']}</i>\n\n"
+        "🌐 <b>MONITOR P2P · SOLO VERIFICADOS</b>\n"
+        "━━━━━━━━━━━━━━━━━━━━\n\n"
+        f"🟢 <b>MEJOR COMPRA:</b> <code>{compra_base:,.2f}</code> Bs\n"
+        f"👤 <b>{mejor_compra['comercio']}</b> ✅ · {mejor_compra['ordenes']} órd. ({mejor_compra['efectividad']:.1f}%)\n"
+        f"💵 <b>Límite:</b> {mejor_compra['limite_min']:,.0f} – {mejor_compra['limite_max']:,.0f} VES\n"
+        f"🪙 <b>Disponible:</b> {mejor_compra['disponible']:,.2f} USDT\n"
+        f"🏦 <b>Pagos:</b> {mejor_compra['banco']}\n\n"
+        f"🔴 <b>MEJOR VENTA:</b> <code>{venta_base:,.2f}</code> Bs\n"
+        f"👤 <b>{mejor_venta['comercio']}</b> ✅ · {mejor_venta['ordenes']} órd. ({mejor_venta['efectividad']:.1f}%)\n"
+        f"💵 <b>Límite:</b> {mejor_venta['limite_min']:,.0f} – {mejor_venta['limite_max']:,.0f} VES\n"
+        f"🪙 <b>Disponible:</b> {mejor_venta['disponible']:,.2f} USDT\n"
+        f"🏦 <b>Pagos:</b> {mejor_venta['banco']}\n\n"
         f"📊 <b>Spread:</b> <code>{spread:,.2f}</code> Bs (<code>{porcentaje:.2f}%</code>)\n"
-        f"🕒 <i>Última actualización: {hora_actual}</i>\n\n"
+        f"🕒 <i>Actualizado: {hora_actual}</i>\n\n"
         "━━━━━━━━━━━━━━━━━━━━\n"
-        "🟢 <b>TOP 5 COMPRA</b>\n"
+        "🟢 <b>TOP 5 COMPRA (VERIFICADOS)</b>\n\n"
         f"{top_compra_txt}\n\n"
-        "🔴 <b>TOP 5 VENTA</b>\n"
+        "━━━━━━━━━━━━━━━━━━━━\n"
+        "🔴 <b>TOP 5 VENTA (VERIFICADOS)</b>\n\n"
         f"{top_venta_txt}"
     )
     return texto
+
 
     
 

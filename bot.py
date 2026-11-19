@@ -889,14 +889,14 @@ def _formatear_linea_top(idx, item):
         f"<b>{idx}.</b> <code>{item['precio']:,.2f}</code> Bs · "
         f"<b>{item['comercio']}</b> ✅\n"
         f"    <i>{item['ordenes']} órd. ({item['efectividad']:.1f}%) · "
-        f"{item['limite_min']:,.0f}–{item['limite_max']:,.0f} VES · "
-        f"{item['disponible']:,.2f} USDT</i>"
+        f"{item['limite_min']:,.0f}–{item['limite_max']:,.0f} VES\n"
+        f"    {item['disponible']:,.2f} USDT · {item['banco']}</i>"
     )
 
 
 def construir_monitor_canal_html():
-    res_compra = obtener_top5_canal_p2p("BUY", top_n=5)
-    res_venta = obtener_top5_canal_p2p("SELL", top_n=5)
+    res_compra = obtener_top5_canal_p2p("BUY", top_n=3)
+    res_venta = obtener_top5_canal_p2p("SELL", top_n=3)
 
     mejor_compra = res_compra.get("mejor")
     mejor_venta = res_venta.get("mejor")
@@ -939,13 +939,14 @@ def construir_monitor_canal_html():
         f"📊 <b>Spread:</b> <code>{spread:,.2f}</code> Bs (<code>{porcentaje:.2f}%</code>)\n"
         f"🕒 <i>Actualizado: {hora_actual}</i>\n\n"
         "━━━━━━━━━━━━━━━━━━━━\n"
-        "🟢 <b>TOP 5 COMPRA (VERIFICADOS)</b>\n\n"
+        "🟢 <b>TOP 3 COMPRA (VERIFICADOS)</b>\n\n"
         f"{top_compra_txt}\n\n"
         "━━━━━━━━━━━━━━━━━━━━\n"
-        "🔴 <b>TOP 5 VENTA (VERIFICADOS)</b>\n\n"
+        "🔴 <b>TOP 3 VENTA (VERIFICADOS)</b>\n\n"
         f"{top_venta_txt}"
     )
     return texto
+
 
 
     

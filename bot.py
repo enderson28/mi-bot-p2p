@@ -889,14 +889,14 @@ def _formatear_linea_top(idx, item):
         f"<b>{idx}.</b> <code>{item['precio']:,.2f}</code> Bs · "
         f"<b>{item['comercio']}</b> ✅\n"
         f"    <i>{item['ordenes']} órd. ({item['efectividad']:.1f}%) · "
-        f"{item['limite_min']:,.0f}–{item['limite_max']:,.0f}\n"
+        f"{item['limite_min']:,.0f}\n"
         f"    {item['disponible']:,.2f} {e('USDT', '⚖️')} · {item['banco']}</i>"
     )
 
 
 def construir_monitor_canal_html():
-    res_compra = obtener_top5_canal_p2p("BUY", top_n=3)
-    res_venta = obtener_top5_canal_p2p("SELL", top_n=3)
+    res_compra = obtener_top5_canal_p2p("BUY", top_n=2)
+    res_venta = obtener_top5_canal_p2p("SELL", top_n=2)
 
     mejor_compra = res_compra.get("mejor")
     mejor_venta = res_venta.get("mejor")
@@ -928,21 +928,21 @@ def construir_monitor_canal_html():
         f"━━━━━━━━━━━━━━━━━━━━\n\n"
         f"<blockquote>{e('VERDE', '💻')} <b>TASA COMPRA:</b> <code>{compra_base:,.2f}</code> Bs</blockquote>\n"
         f"{e('REVISION', '⚖️')} <b>{mejor_compra['comercio']}</b> ✅ · {mejor_compra['ordenes']} órd. ({mejor_compra['efectividad']:.1f}%)\n"
-        f"💵 <b>Límite:</b> {mejor_compra['limite_min']:,.0f} – {mejor_compra['limite_max']:,.0f}\n"
-        f"🪙 <b>Disponible:</b> {mejor_compra['disponible']:,.2f} USDT\n"
+        f"{e('pago_movil', '⚖️')} <b>Límite:</b> {mejor_compra['limite_min']:,.0f} – {mejor_compra['limite_max']:,.0f}\n"
+        f"{e('DOLAR', '⚖️')} <b>Disponible:</b> {mejor_compra['disponible']:,.2f} USDT\n"
         f"{e('BALANZA', '⚖️')} <b>Pagos:</b> {mejor_compra['banco']}\n\n"
         f"<blockquote>{e('ROJO', '💻')} <b>TASA VENTA:</b> <code>{venta_base:,.2f}</code> Bs</blockquote>\n"
         f"{e('REVISION', '⚖️')} <b>{mejor_venta['comercio']}</b> ✅ · {mejor_venta['ordenes']} órd. ({mejor_venta['efectividad']:.1f}%)\n"
-        f"💵 <b>Límite:</b> {mejor_venta['limite_min']:,.0f} – {mejor_venta['limite_max']:,.0f}\n"
-        f"🪙 <b>Disponible:</b> {mejor_venta['disponible']:,.2f} USDT\n"
+        f"{e('pago_movil', '⚖️')} <b>Límite:</b> {mejor_venta['limite_min']:,.0f} – {mejor_venta['limite_max']:,.0f}\n"
+        f"{e('DOLAR', '⚖️')} <b>Disponible:</b> {mejor_venta['disponible']:,.2f} USDT\n"
         f"{e('BALANZA', '⚖️')} <b>Pagos:</b> {mejor_venta['banco']}\n\n"
-        f"📊 <b>Spread:</b> <code>{spread:,.2f}</code> Bs (<code>{porcentaje:.2f}%</code>)\n"
+        f"{e('ESTADÍSTICA', '⚖️')} <b>Spread:</b> <code>{spread:,.2f}</code> Bs (<code>{porcentaje:.2f}%</code>)\n"
         f"{e('MUNDO', '💻')} <i>Actualizado: {hora_actual}</i>\n\n"
         "━━━━━━━━━━━━━━━━━━━━\n"
-        f"<blockquote>{e('VERDE', '💻')} <b>TOP 3 COMPRA (VERIFICADOS)</b></blockquote>\n\n"
+        f"<blockquote>{e('VERDE', '💻')} <b>TOP 2 COMPRA (VERIFICADOS)</b></blockquote>\n\n"
         f"{top_compra_txt}\n\n"
         "━━━━━━━━━━━━━━━━━━━━\n"
-        f"<blockquote>{e('ROJO', '💻')} <b>TOP 3 VENTA (VERIFICADOS)</b></blockquote>\n\n"
+        f"<blockquote>{e('ROJO', '💻')} <b>TOP 2 VENTA (VERIFICADOS)</b></blockquote>\n\n"
         f"{top_venta_txt}"
     )
     return texto

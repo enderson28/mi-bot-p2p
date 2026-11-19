@@ -717,141 +717,229 @@ def refrescar_tasas_en_vivo():
 
         r.set("p2p_rangos_bdv", json.dumps(nuevos_rangos_bdv))
 
-def obtener_detalles_canal_p2p(tipo_operacion):
-    """Consulta exclusiva y blindada para extraer los datos reales del mejor anuncio sin caer en patrocinados"""
+def _parsear_anuncio_p2p(elemento, banco_por_defecto="Pago Móvil / Transferencia"):
+    if not isinstance(elemento, dict):
+        return None
+
+    adv = elemento.get("adv") or {}
+    advertiser = elemento.get("advertiser") or {}
+
+    if advertiser.get("userStatus") in ("BLOCKED", "INACTIVE"):
+        return None
+
+    try:
+        precio = float(adv.get("price") or 0)
+        if precio <= 0:
+            return None
+    except (TypeError, ValueError):
+        return None
+
+    comercio = (
+        advertiser.get("nickName")
+        or advertiser.get("userName")
+        or "Comerciante P2P"
+    )
+
+    # Insignia de verificado (comerciante verificado / pro)
+    user_type = str(advertiser.get("userType") or "").lower()
+    es_verificado = bool(
+        user_type == "merchant"
+        or advertiser.get("proMerchant")
+        or advertiser.get("isMerchant")
+    )
+
+    # Órdenes
+    ordenes_raw = (
+        advertiser.get("monthOrderCount")
+        if advertiser.get("monthOrderCount") is not None
+        else advertiser.get("orderCount")
+    )
+    try:
+        ordenes = int(float(ordenes_raw or 0))
+    except (TypeError, ValueError):
+        ordenes = 0
+
+    # Efectividad (%)
+    try:
+        tasa_raw = advertiser.get("monthFinishRate")
+        if tasa_raw is None:
+            tasa_raw = advertiser.get("finishRate")
+        efectividad = float(tasa_raw) if tasa_raw is not None else 100.0
+        if 0 < efectividad <= 1.0:
+            efectividad *= 100.0
+    except (TypeError, ValueError):
+        efectividad = 100.0
+
+    # Límites en VES
+    try:
+        limite_min = float(adv.get("minSingleTransAmount") or 0)
+        limite_max = float(adv.get("maxSingleTransAmount") or 0)
+    except (TypeError, ValueError):
+        limite_min, limite_max = 0.0, 0.0
+
+    # Disponibilidad en USDT
+    disp_raw = adv.get("tradableQuantity")
+    if disp_raw is None:
+        disp_raw = adv.get("surplusAmount")
+    try:
+        disponible = float(disp_raw or 0)
+    except (TypeError, ValueError):
+        disponible = 0.0
+
+    # Bancos / métodos de pago
+    nombres_bancos = []
+    metodos = adv.get("tradeMethods") or []
+    for m in metodos:
+        if isinstance(m, dict):
+            nb = (
+                m.get("tradeMethodName")
+                or m.get("payType")
+                or m.get("bankName")
+                or m.get("identifier")
+            )
+            if nb and str(nb).strip():
+                nombres_bancos.append(str(nb).strip())
+        elif isinstance(m, str) and m.strip():
+            nombres_bancos.append(m.strip())
+
+    banco_str = (
+        " | ".join(dict.fromkeys(nombres_bancos))
+        if nombres_bancos
+        else banco_por_defecto
+    )
+
+    return {
+        "precio": precio,
+        "comercio": comercio,
+        "verificado": es_verificado,
+        "ordenes": ordenes,
+        "efectividad": round(efectividad, 2),
+        "limite_min": limite_min,
+        "limite_max": limite_max,
+        "disponible": disponible,
+        "banco": banco_str,
+    }
+
+
+def obtener_top5_canal_p2p(tipo_operacion, top_n=5):
+    """
+    Devuelve un dict con:
+      - 'mejor': dict del mejor anuncio válido (o fallback)
+      - 'top': lista de hasta `top_n` anuncios parseados
+    """
     url = "https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search"
     headers = {
-        "Accept": "*/*",
+        "Accept": "application/json, text/plain, */*",
+        "Accept-Language": "es-VE,es;q=0.9,en;q=0.8",
         "Content-Type": "application/json",
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        "Origin": "https://p2p.binance.com",
+        "Referer": "https://p2p.binance.com/",
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/124.0.0.0 Safari/537.36"
+        ),
     }
     payload = {
         "asset": "USDT",
-        "flat": "VES",
-        "merchantCheck": False,  # Desactivamos el filtro estricto para evitar bloqueos en anuncios reales
-        "publisherType": "",     # Vacio para aceptar comerciantes y profesionales por igual
+        "fiat": "VES",
+        "merchantCheck": False,
+        "publisherType": None,
         "page": 1,
-        "rows": 10,
+        "rows": 15,
         "tradeType": tipo_operacion.upper(),
         "transAmount": "",
         "filterType": "tradable",
         "additionalKycVerifyFilter": 0,
-        "periods": []
+        "periods": [],
     }
-    
-    banco_por_defecto = "Pago Móvil / Transferencia"
-    try:
-        r = requests.post(url, json=payload, headers=headers, timeout=(7.0, 7.0))
-        if r.status_code == 200:
-            datos = r.json().get('data', [])
-            if datos:
-                for idx, elemento in enumerate(datos):
-                    if not isinstance(elemento, dict): continue
-                    
-                    adv = elemento.get('adv', {})
-                    advertiser = elemento.get('advertiser', {})
-                    
-                    # Ignorar estados bloqueados o inactivos
-                    if advertiser.get('userStatus') in ["BLOCKED", "INACTIVE"]:
-                        continue
-                    if adv.get('isRestricted') or adv.get('restricted'):
-                        continue
-                        
-                    precio = adv.get('price')
-                    if precio:
-                        # Si es el primer anuncio y es patrocinado (suele venir indicado o con distintivos), lo saltamos opcionalmente
-                        # para asegurar que agarremos el mejor comerciante real con estadísticas completas como josealtu
-                        comercio_nombre = advertiser.get('nickName') or advertiser.get('name') or "Comerciante P2P"
-                        if idx == 0 and ("patrocinado" in comercio_nombre.lower() or adv.get('isAds')). __bool__():
-                            # Opcional: si quieres saltar el exacto patrocinado del Top 1 para ir al comercial limpio
-                            pass
 
-                        ordenes = advertiser.get('monthOrderCount') or advertiser.get('orderCount') or 0
-                        
-                        try:
-                            efectividad = float(advertiser.get('monthFinishRate') or advertiser.get('finishRate') or 1) * 100
-                            if efectividad <= 1.0: efectividad *= 100
-                        except:
-                            efectividad = 100.0
-                            
-                        try:
-                            lim_min = float(adv.get('minSingleTransAmount') or 0)
-                            lim_max = float(adv.get('maxSingleTransAmount') or 0)
-                        except:
-                            lim_min, lim_max = 0.0, 0.0
-                            
-                        # Extracción de bancos (tradeMethods / payTypes)
-                        nombres_bancos = []
-                        try:
-                            metodos = adv.get('tradeMethods') or elemento.get('tradeMethods') or []
-                            for m in metodos:
-                                if isinstance(m, dict):
-                                    nb = m.get('tradeMethodName') or m.get('payType') or m.get('bankName') or m.get('identifier') or ''
-                                    if nb: nombres_bancos.append(str(nb).strip())
-                                elif isinstance(m, str):
-                                    nombres_bancos.append(m.strip())
-                        except:
-                            pass
-                            
-                        banco_str = " | ".join(list(dict.fromkeys(nombres_bancos))) if nombres_bancos else banco_por_defecto
-                        
-                        return {
-                            "precio": float(precio),
-                            "banco": banco_str,
-                            "comercio": comercio_nombre,
-                            "comerciante": comercio_nombre,
-                            "ordenes": int(ordenes),
-                            "efectividad": float(efectividad),
-                            "limite_min": lim_min,
-                            "limite_max": lim_max
-                        }
+    anuncios_validos = []
+    try:
+        r = requests.post(url, json=payload, headers=headers, timeout=(5.0, 8.0))
+        if r.status_code == 200:
+            data = r.json().get("data") or []
+            for elemento in data:
+                item = _parsear_anuncio_p2p(elemento)
+                if item:
+                    anuncios_validos.append(item)
     except Exception as e:
-        print(f"⚠️ Error en detalles canal: {e}")
-        
-    # Respaldo seguro
-    tasa_base = obtener_tasa_binance_p2p(tipo_operacion, 0)
+        print(f"⚠️ Error obteniendo Top 5 canal P2P ({tipo_operacion}): {e}")
+
+    top_lista = anuncios_validos[:top_n]
+    mejor = top_lista[0] if top_lista else None
+
     return {
-        "precio": float(tasa_base) if tasa_base else 0.0,
-        "banco": banco_por_defecto,
-        "comercio": "Binance P2P",
-        "comerciante": "Binance P2P",
-        "ordenes": 0,
-        "efectividad": 100.0,
-        "limite_min": 0.0,
-        "limite_max": 0.0
-                            }
+        "mejor": mejor,
+        "top": top_lista,
+    }
+
     
       
 
+
+def _formatear_linea_top(idx, item):
+    badge = "✅" if item.get("verificado") else "—"
+    return (
+        f"<code>{idx}.</code> <b>{item['precio']:,.2f}</b> Bs | "
+        f"{item['comercio']} {badge} "
+        f"({item['ordenes']} órd. | {item['efectividad']:.1f}%)\n"
+        f"    <i>Lím: {item['limite_min']:,.0f}–{item['limite_max']:,.0f} VES | "
+        f"Disp: {item['disponible']:,.2f} USDT</i>"
+    )
+
+
 def construir_monitor_canal_html():
-    """Genera la ficha detallada del canal sin afectar los hilos de Redis"""
-    info_compra = obtener_detalles_canal_p2p("BUY")
-    info_venta = obtener_detalles_canal_p2p("SELL")
-    
-    compra_base = info_compra.get("precio", 0.0)
-    venta_base = info_venta.get("precio", 0.0)
-    
+    """Genera el monitor en vivo con mejor anuncio + Top 5 de Compra y Venta."""
+    res_compra = obtener_top5_canal_p2p("BUY", top_n=5)
+    res_venta = obtener_top5_canal_p2p("SELL", top_n=5)
+
+    mejor_compra = res_compra.get("mejor")
+    mejor_venta = res_venta.get("mejor")
+
+    if not mejor_compra or not mejor_venta:
+        return "<b>⚠️ Error temporal al obtener tasas de Binance P2P.</b>"
+
+    compra_base = float(mejor_compra.get("precio") or 0.0)
+    venta_base = float(mejor_venta.get("precio") or 0.0)
+
     if compra_base <= 0 or venta_base <= 0:
         return "<b>⚠️ Error temporal al obtener tasas de Binance P2P.</b>"
-    
+
     spread = round(venta_base - compra_base, 2)
     porcentaje = round((spread / compra_base) * 100, 2) if compra_base > 0 else 0.0
-    hora_actual = (datetime.now() - timedelta(hours=4)).strftime('%I:%M:%S %p')
-    
-    texto = (
-        f"🌐 <b>TASAS P2P EN VIVO</b>\n\n"
-        f"🟢 <b>COMPRA USDT:</b> <code>{compra_base:,.2f}</code> Bs\n"
-        f"   👤 <i>{info_compra['comercio']} ({info_compra['ordenes']} órd. | {info_compra['efectividad']:.1f}%)</i>\n"
-        f"   📉 <i>Límite: {info_compra['limite_min']:,.0f} - {info_compra['limite_max']:,.0f} VES</i>\n"
-        f"   🏦 <i>Banco: {info_compra['banco']}</i>\n\n"
-        f"🔴 <b>VENTA USDT:</b> <code>{venta_base:,.2f}</code> Bs\n"
-        f"   👤 <i>{info_venta['comercio']} ({info_venta['ordenes']} órd. | {info_venta['efectividad']:.1f}%)</i>\n"
-        f"   📉 <i>Límite: {info_venta['limite_min']:,.0f} - {info_venta['limite_max']:,.0f} VES</i>\n"
-        f"   🏦 <i>Banco: {info_venta['banco']}</i>\n\n"
-        f"📊 <b>Spread:</b> <code>{spread:,.2f}</code> Bs (<code>{porcentaje}%</code>)\n"
-        f"🌍 <i>Última actualización: {hora_actual}</i>"
+    hora_actual = (datetime.utcnow() - timedelta(hours=4)).strftime("%I:%M:%S %p")
+
+    verif_c = "✅ Verificado" if mejor_compra.get("verificado") else "No verificado"
+    verif_v = "✅ Verificado" if mejor_venta.get("verificado") else "No verificado"
+
+    top_compra_txt = "\n".join(
+        _formatear_linea_top(i + 1, item)
+        for i, item in enumerate(res_compra.get("top") or [])
     )
-    
+    top_venta_txt = "\n".join(
+        _formatear_linea_top(i + 1, item)
+        for i, item in enumerate(res_venta.get("top") or [])
+    )
+
+    texto = (
+        "🌐 <b>TASAS P2P EN VIVO</b>\n\n"
+        f"🟢 <b>MEJOR COMPRA USDT:</b> <code>{compra_base:,.2f}</code> Bs\n"
+        f"👤 <i>{mejor_compra['comercio']} ({verif_c} | {mejor_compra['ordenes']} órd. | {mejor_compra['efectividad']:.1f}%)</i>\n"
+        f"📉 <i>Límite: {mejor_compra['limite_min']:,.0f} - {mejor_compra['limite_max']:,.0f} VES | Disp: {mejor_compra['disponible']:,.2f} USDT</i>\n"
+        f"🏦 <i>Banco: {mejor_compra['banco']}</i>\n\n"
+        f"🔴 <b>MEJOR VENTA USDT:</b> <code>{venta_base:,.2f}</code> Bs\n"
+        f"👤 <i>{mejor_venta['comercio']} ({verif_v} | {mejor_venta['ordenes']} órd. | {mejor_venta['efectividad']:.1f}%)</i>\n"
+        f"📈 <i>Límite: {mejor_venta['limite_min']:,.0f} - {mejor_venta['limite_max']:,.0f} VES | Disp: {mejor_venta['disponible']:,.2f} USDT</i>\n"
+        f"🏦 <i>Banco: {mejor_venta['banco']}</i>\n\n"
+        f"📊 <b>Spread:</b> <code>{spread:,.2f}</code> Bs (<code>{porcentaje:.2f}%</code>)\n"
+        f"🕒 <i>Última actualización: {hora_actual}</i>\n\n"
+        "━━━━━━━━━━━━━━━━━━━━\n"
+        "🟢 <b>TOP 5 COMPRA</b>\n"
+        f"{top_compra_txt}\n\n"
+        "🔴 <b>TOP 5 VENTA</b>\n"
+        f"{top_venta_txt}"
+    )
     return texto
 
     

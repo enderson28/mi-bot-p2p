@@ -1416,10 +1416,10 @@ def callback_refrescar_brecha(call):
 
 PARES_MERCADO = [
     {"symbol": "BTCUSDT", "label": "BTC / USDT", "emoji": f"{e('btc', '💻')}"},
-    {"symbol": "BTCUSD",  "label": "BTC / USD",  "emoji": "💵"},
-    {"symbol": "ETHUSDT", "label": "ETH / USDT", "emoji": "🔹"},
-    {"symbol": "BNBUSDT", "label": "BNB / USDT", "emoji": "🟡"},
-    {"symbol": "USDCUSDT","label": "USDC / USDT","emoji": "🔵"},
+    {"symbol": "BTCUSD",  "label": "BTC / USD",  "emoji": f"{e('btc', '💻')}"},
+    {"symbol": "ETHUSDT", "label": "ETH / USDT", "emoji": f"{e('eth', '💻')}"},
+    {"symbol": "BNBUSDT", "label": "BNB / USDT", "emoji": f"{e('bnb', '💻')}"},
+    {"symbol": "USDCUSDT","label": "USDC / USDT","emoji": f"{e('usdc', '💻')}"},
 ]
 
 
@@ -1476,10 +1476,10 @@ def construir_monitor_btc():
         hay_datos = True
         cambio = info["cambio_pct"]
         if cambio > 0:
-            flecha = "📈"
+            flecha = f"{e('SUBIDA', '💻')}"
             signo = "+"
         elif cambio < 0:
-            flecha = "📉"
+            flecha = f"{e('BAJADA', '💻')}"
             signo = ""
         else:
             flecha = "➖"
@@ -1496,11 +1496,11 @@ def construir_monitor_btc():
 
     cuerpo = "\n\n".join(bloques)
     return (
-        "📊 <b>MONITOR DE MERCADO · BINANCE SPOT</b>\n"
+        f"<blockquote>{e('BINANCE_ESPEJO', '💻')} <b>MONITOR DE MERCADO · BINANCE SPOT</b></blockquote>\n"
         "━━━━━━━━━━━━━━━━━━━━\n\n"
         f"{cuerpo}\n\n"
         "━━━━━━━━━━━━━━━━━━━━\n"
-        f"🕒 <i>Actualizado: {hora_ve} (VET)</i>"
+        f"{e('MUNDO', '💻')} <i>Actualizado: {hora_ve}</i>"
     )
 
 

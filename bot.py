@@ -1415,7 +1415,7 @@ def callback_refrescar_brecha(call):
         bot.answer_callback_query(call.id, "✅ Tasas verificadas sin cambios")
 
 PARES_MERCADO = [
-    {"symbol": "BTCUSDT", "label": "BTC / USDT", "emoji": "🟠"},
+    {"symbol": "BTCUSDT", "label": "BTC / USDT", "emoji": f"{e('btc', '💻')}"},
     {"symbol": "BTCUSD",  "label": "BTC / USD",  "emoji": "💵"},
     {"symbol": "ETHUSDT", "label": "ETH / USDT", "emoji": "🔹"},
     {"symbol": "BNBUSDT", "label": "BNB / USDT", "emoji": "🟡"},

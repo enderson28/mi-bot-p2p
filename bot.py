@@ -1413,7 +1413,222 @@ def callback_refrescar_brecha(call):
         bot.answer_callback_query(call.id, "🔄 Brechas actualizadas al instante")
     except Exception:
         bot.answer_callback_query(call.id, "✅ Tasas verificadas sin cambios")
-            
+
+PARES_MERCADO = [
+    {"symbol": "BTCUSDT", "label": "BTC / USDT", "emoji": "🟠"},
+    {"symbol": "BTCUSD",  "label": "BTC / USD",  "emoji": "💵"},
+    {"symbol": "ETHUSDT", "label": "ETH / USDT", "emoji": "🔹"},
+    {"symbol": "BNBUSDT", "label": "BNB / USDT", "emoji": "🟡"},
+    {"symbol": "USDCUSDT","label": "USDC / USDT","emoji": "🔵"},
+]
+
+
+def _formatear_precio(valor):
+    if valor >= 100:
+        return f"${valor:,.2f}"
+    if valor >= 1:
+        return f"${valor:,.4f}"
+    return f"${valor:,.6f}"
+
+
+def _obtener_ticker_binance(symbol):
+    headers = {"User-Agent": "Mozilla/5.0"}
+    urls = [
+        f"https://api.binance.com/api/v3/ticker/24hr?symbol={symbol}",
+        f"https://api.binance.us/api/v3/ticker/24hr?symbol={symbol}",
+    ]
+    for url in urls:
+        try:
+            r = requests.get(url, headers=headers, timeout=(4.0, 6.0))
+            if r.status_code == 200:
+                data = r.json()
+                precio = float(data.get("lastPrice") or 0)
+                cambio_pct = float(data.get("priceChangePercent") or 0)
+                alto_24h = float(data.get("highPrice") or 0)
+                bajo_24h = float(data.get("lowPrice") or 0)
+                if precio > 0:
+                    return {
+                        "precio": precio,
+                        "cambio_pct": cambio_pct,
+                        "alto_24h": alto_24h,
+                        "bajo_24h": bajo_24h,
+                    }
+        except Exception as e:
+            print(f"⚠️ Error consultando {symbol} en {url}: {e}")
+    return None
+
+
+def construir_monitor_btc():
+    """Construye el monitor spot de Binance con formato HTML para Telegram."""
+    hora_ve = (datetime.now(timezone.utc) - timedelta(hours=4)).strftime("%I:%M:%S %p")
+    bloques = []
+    hay_datos = False
+
+    for par in PARES_MERCADO:
+        info = _obtener_ticker_binance(par["symbol"])
+        if not info:
+            bloques.append(
+                f"{par['emoji']} <b>{par['label']}</b>\n"
+                f"    <i>No disponible en este momento</i>"
+            )
+            continue
+
+        hay_datos = True
+        cambio = info["cambio_pct"]
+        if cambio > 0:
+            flecha = "📈"
+            signo = "+"
+        elif cambio < 0:
+            flecha = "📉"
+            signo = ""
+        else:
+            flecha = "➖"
+            signo = ""
+
+        bloques.append(
+            f"{par['emoji']} <b>{par['label']}</b> — <code>{_formatear_precio(info['precio'])}</code>\n"
+            f"    {flecha} <b>24h:</b> <code>{signo}{cambio:.2f}%</code>  |  "
+            f"<b>Mín–Máx:</b> {_formatear_precio(info['bajo_24h'])} – {_formatear_precio(info['alto_24h'])}"
+        )
+
+    if not hay_datos:
+        return "<b>⚠️ No se pudieron obtener los precios del mercado en Binance en este momento.</b>"
+
+    cuerpo = "\n\n".join(bloques)
+    return (
+        "📊 <b>MONITOR DE MERCADO · BINANCE SPOT</b>\n"
+        "━━━━━━━━━━━━━━━━━━━━\n\n"
+        f"{cuerpo}\n\n"
+        "━━━━━━━━━━━━━━━━━━━━\n"
+        f"🕒 <i>Actualizado: {hora_ve} (VET)</i>"
+    )
+
+
+def _es_admin_o_creador_mercado(bot, chat_id, user_id, message_obj):
+    return (
+        str(user_id) == str(CREADOR_ID)
+        or es_admin_vip(bot, message_obj.from_user)
+        or es_administrador(bot, chat_id, user_id, message_obj)
+    )
+
+
+def _teclado_mercado(chat_id, es_staff=False):
+    markup = types.InlineKeyboardMarkup()
+    if es_staff and str(chat_id) == str(CANAL_PRUEBA):
+        markup.row(
+            types.InlineKeyboardButton(
+                "🔄 Actualizar Mercado",
+                callback_data="actualizar_mercado"
+            ),
+            types.InlineKeyboardButton(
+                "🗑️ Borrar",
+                callback_data="borrar_mensaje"
+            )
+        )
+    else:
+        markup.add(
+            types.InlineKeyboardButton(
+                "🔄 Actualizar Mercado",
+                callback_data="actualizar_mercado"
+            )
+        )
+    return markup
+
+
+@bot.message_handler(commands=["mercado"])
+def cmd_mercado(message):
+    user_id = message.from_user.id if message.from_user else None
+    chat_id = message.chat.id
+
+    # 1. Solo chats / usuarios permitidos
+    if not es_chat_permitido(bot, message, CHATS_PERMITIDOS, USUARIOS_AUTORIZADOS, CREADOR_ID):
+        return
+
+    # 2. Candado VIP activo
+    if not es_usuario_vip_activo(bot, message.from_user, r):
+        responder_sin_acceso_vip(bot, chat_id)
+        return
+
+    # 3. En grupos, borrar el comando para mantener limpio el chat
+    if message.chat.type in ("group", "supergroup"):
+        try:
+            bot.delete_message(chat_id, message.message_id)
+        except Exception:
+            pass
+
+    es_staff = _es_admin_o_creador_mercado(bot, chat_id, user_id, message)
+
+    # Si es usuario normal en grupo, respetar rate limit de aviso
+    if message.chat.type in ("group", "supergroup") and not es_staff:
+        ahora = time.time()
+        ultima_vez = grupos_tiempo_aviso.get(chat_id, 0)
+        if ahora - ultima_vez > RATE_LIMIT_AVISO:
+            try:
+                nombre = (
+                    f"@{message.from_user.username}"
+                    if message.from_user and message.from_user.username
+                    else (message.from_user.first_name if message.from_user else "usuario")
+                )
+                aviso = bot.send_message(
+                    chat_id,
+                    f"<b>🔒 Comando exclusivo para Administradores VIP.</b>\n\n"
+                    f"Hola {nombre}, para consultar el mercado libremente usa el chat privado.",
+                    parse_mode="HTML"
+                )
+                grupos_tiempo_aviso[chat_id] = ahora
+                borrar_mensaje_luego(chat_id, aviso.message_id, 10)
+            except Exception:
+                pass
+        return
+
+    texto = construir_monitor_btc()
+    msg_enviado = bot.send_message(
+        chat_id,
+        texto,
+        parse_mode="HTML",
+        reply_markup=_teclado_mercado(chat_id, es_staff=es_staff)
+    )
+
+    if message.chat.type in ("group", "supergroup") and "TIEMPO_VIDA_TABLA" in globals():
+        borrar_mensaje_luego(chat_id, msg_enviado.message_id, TIEMPO_VIDA_TABLA)
+
+
+@bot.callback_query_handler(func=lambda call: call.data == "actualizar_mercado")
+def cb_actualizar_mercado(call):
+    if not call.message:
+        return
+
+    chat_id = call.message.chat.id
+    user_id = call.from_user.id if call.from_user else None
+
+    # Verifica VIP activo también al pulsar el botón
+    if not es_usuario_vip_activo(bot, call.from_user, r):
+        bot.answer_callback_query(call.id, "🔒 Requiere acceso VIP activo", show_alert=True)
+        return
+
+    nuevo_texto = construir_monitor_btc()
+    es_staff = (
+        str(user_id) == str(CREADOR_ID)
+        or es_admin_vip(bot, call.from_user)
+        or es_administrador(bot, chat_id, user_id, call.message)
+    )
+
+    try:
+        bot.edit_message_text(
+            chat_id=chat_id,
+            message_id=call.message.message_id,
+            text=nuevo_texto,
+            parse_mode="HTML",
+            reply_markup=_teclado_mercado(chat_id, es_staff=es_staff)
+        )
+        bot.answer_callback_query(call.id, "✅ Mercado actualizado")
+    except Exception as e:
+        if "message is not modified" in str(e).lower():
+            bot.answer_callback_query(call.id, "ℹ️ Ya está al día")
+        else:
+            print(f"⚠️ Error al editar mensaje de mercado: {e}")
+            bot.answer_callback_query(call.id, "⚠️ Error al actualizar")
+        
     
     
 # ==========================================

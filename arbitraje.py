@@ -162,7 +162,7 @@ def obtener_tasa_p2p_bdv_por_rango(redis_client, monto_usd):
     return 0.0
 
 
-FACTOR_CONVERT_USD_A_USDT = 1.0008
+FACTOR_CONVERT_USD_A_USDT = 1.0002
 
 
 def obtener_precio_spot_usdt_usd(redis_client):
@@ -187,13 +187,13 @@ def obtener_precio_spot_usdt_usd(redis_client):
     except Exception as e:
         logger.warning(f"⚠️ No se pudo consultar Binance Spot USDTUSD en arbitraje: {e}")
 
-    return round(0.9994 * FACTOR_CONVERT_USD_A_USDT, 5)
+    return round(0.99972 * FACTOR_CONVERT_USD_A_USDT, 5)
 
 
 
 # --- LÓGICA DE CÁLCULO Y ARBITRAJE ---
 
-def calcular_arbitraje_reposicion(monto_usd, comision_banco, tasa_bcv_hoy, tasa_bcv_manana, tasa_p2p_venta, tasa_usd_usdt=1.00018, tasa_zinli_usada=None, banco_key=None):
+def calcular_arbitraje_reposicion(monto_usd, comision_banco, tasa_bcv_hoy, tasa_bcv_manana, tasa_p2p_venta, tasa_usd_usdt=0.99972, tasa_zinli_usada=None, banco_key=None):
     if not tasa_bcv_hoy or float(tasa_bcv_hoy) <= 0:
         tasa_bcv_hoy = 708.326  # Valor por defecto de respaldo
         

@@ -1640,7 +1640,59 @@ def cb_actualizar_mercado(call):
             print(f"⚠️ Error al editar mensaje de mercado: {e}")
             bot.answer_callback_query(call.id, "⚠️ Error al actualizar")
 
-        
+
+@bot.message_handler(commands=["cedula"])
+def cmd_cedula(message):
+    chat_id = message.chat.id
+    user_id = message.from_user.id if message.from_user else None
+
+    if not es_chat_permitido(bot, message, CHATS_PERMITIDOS, USUARIOS_AUTORIZADOS, CREADOR_ID):
+        return
+
+    if not es_usuario_vip_activo(bot, message.from_user, r):
+        responder_sin_acceso_vip(bot, chat_id)
+        return
+
+    msg = bot.send_message(
+        chat_id,
+        "🪪 <b>Verificación de Cédula (P2P Titular)</b>\n"
+        "Escribe el número de cédula (solo números, ej. <code>23007945</code>):",
+        parse_mode="HTML",
+    )
+    bot.register_next_step_handler(msg, _procesar_consulta_cedula)
+
+
+def _procesar_consulta_cedula(message):
+    chat_id = message.chat.id
+    texto = (message.text or "").strip()
+    cedula = "".join(ch for ch in texto if ch.isdigit())
+
+    if not cedula or len(cedula) < 6:
+        bot.send_message(
+            chat_id,
+            "⚠️ Cédula no válida. Escribe solo los dígitos de la cédula (ej. <code>23007945</code>).",
+            parse_mode="HTML",
+        )
+        return
+
+    markup = types.InlineKeyboardMarkup()
+    markup.add(
+        types.InlineKeyboardButton(
+            "🌐 Abrir consulta en navegador",
+            url="https://www.sistemaspnp.com/cedula/",
+        )
+    )
+
+    bot.send_message(
+        chat_id,
+        f"🔎 <b>Cédula a verificar:</b> <code>{cedula}</code>\n"
+        "• Verifica que el nombre coincida exactamente con el titular en Binance antes de liberar USDT.\n"
+        "• Nota: la web externa utiliza CAPTCHA en navegador, por lo que no se consulta automáticamente desde el servidor.",
+        parse_mode="HTML",
+        reply_markup=markup,
+    )
+
+
     
     
 # ==========================================

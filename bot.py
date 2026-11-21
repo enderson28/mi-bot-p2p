@@ -568,7 +568,7 @@ def obtener_tasa_binance_zinli(tipo_operacion, monto_usd=0):
     
 
 # Factor calibrado para aproximar el costo efectivo en USD por 1 USDT al convertir USD -> USDT en Convert
-FACTOR_CONVERT_USD_A_USDT = 1.0002
+FACTOR_CONVERT_USD_A_USDT = 1.0017
 
 
 def obtener_tasa_binance_spot_usdt():

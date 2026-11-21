@@ -1552,7 +1552,7 @@ def cmd_mercado(message):
         return
 
     # 3. En grupos, borrar el comando para mantener limpio el chat
-    if message.chat.type in ("group", "supergroup"):
+    if message.chat.type in ("group", "supergroup", "private"):
         try:
             bot.delete_message(chat_id, message.message_id)
         except Exception:
@@ -1603,25 +1603,34 @@ def cb_actualizar_mercado(call):
     chat_id = call.message.chat.id
     user_id = call.from_user.id if call.from_user else None
 
-    # Verifica VIP activo también al pulsar el botón
+    # 1. Verifica VIP activo también al pulsar el botón
     if not es_usuario_vip_activo(bot, call.from_user, r):
         bot.answer_callback_query(call.id, "🔒 Requiere acceso VIP activo", show_alert=True)
         return
 
-    nuevo_texto = construir_monitor_btc()
-    es_staff = (
-        str(user_id) == str(CREADOR_ID)
-        or es_admin_vip(bot, call.from_user)
-        or es_administrador(bot, chat_id, user_id, call.message)
+    es_staff = _es_admin_o_creador_mercado(bot, chat_id, user_id, call.message)
+    es_grupo_admin = (
+        call.message.chat.type in ("group", "supergroup")
+        and str(chat_id) == str(CANAL_PRUEBA)
     )
 
+    # 2. En grupo de administradores, solo Administradores VIP / staff pueden actualizar
+    if es_grupo_admin and not es_staff:
+        bot.answer_callback_query(
+            call.id,
+            "🔒 Uso exclusivo para Administradores VIP en este grupo. Úsalo en el chat privado.",
+            show_alert=True,
+        )
+        return
+
+    nuevo_texto = construir_monitor_btc()
     try:
         bot.edit_message_text(
             chat_id=chat_id,
             message_id=call.message.message_id,
             text=nuevo_texto,
             parse_mode="HTML",
-            reply_markup=_teclado_mercado(chat_id, es_staff=es_staff)
+            reply_markup=_teclado_mercado(chat_id, es_staff=es_staff),
         )
         bot.answer_callback_query(call.id, "✅ Mercado actualizado")
     except Exception as e:
@@ -1630,6 +1639,7 @@ def cb_actualizar_mercado(call):
         else:
             print(f"⚠️ Error al editar mensaje de mercado: {e}")
             bot.answer_callback_query(call.id, "⚠️ Error al actualizar")
+
         
     
     
@@ -2910,32 +2920,50 @@ def callback_refrescar_intervencion(call):
 # BOTÓN FLOTANTE PARA BORRAR (PRECIO E INTERVENCIÓN)
 # ============================================
 @bot.callback_query_handler(func=lambda call: call.data == "borrar_mensaje")
-def callback_borrar_tabla_admin(call):
-    # 1. Verificamos si es chat privado O si tiene rango en un grupo/canal
-    es_privado = call.message.chat.type == "private"
-    
-    if es_privado:
-        es_admin_o_vip = es_admin_vip(bot, call.from_user)
-    else:
-        es_admin_o_vip = es_admin_vip(bot, call.from_user) or es_administrador(bot, call.message.chat.id, call.from_user.id, call.from_user)
+def cb_borrar_mensaje_mercado(call):
+    if not call.message:
+        return
 
-    if not es_admin_o_vip:
+    chat_id = call.message.chat.id
+    user_id = call.from_user.id if call.from_user else None
+
+    # 1. Verifica acceso VIP activo
+    if not es_usuario_vip_activo(bot, call.from_user, r):
         bot.answer_callback_query(
             call.id,
-            text="❌ Solo los administradores pueden eliminar esta tabla.",
-            show_alert=True
+            "🔒 Requiere acceso VIP activo.",
+            show_alert=True,
         )
         return
 
-    # 2. Borra la tabla al instante (sea de precio o intervención)
+    # 2. Solo el creador/dueño o administradores con acceso VIP pueden borrar la tabla
+    es_admin_vip_autorizado = (
+        str(user_id) == str(CREADOR_ID)
+        or (
+            es_admin_vip(bot, call.from_user)
+            and _es_admin_o_creador_mercado(bot, chat_id, user_id, call.message)
+        )
+    )
+
+    if not es_admin_vip_autorizado:
+        bot.answer_callback_query(
+            call.id,
+            "🔒 Solo el dueño o Administradores VIP pueden borrar esta tabla.",
+            show_alert=True,
+        )
+        return
+
+    # 3. Borra el mensaje de la tabla al instante
     try:
-        bot.delete_message(call.message.chat.id, call.message.message_id)
-        bot.answer_callback_query(call.id, text="🗑️ Mensaje borrado.")
+        bot.delete_message(chat_id, call.message.message_id)
+        bot.answer_callback_query(call.id, "🗑️ Mensaje borrado.")
     except Exception:
         bot.answer_callback_query(
             call.id,
-            text="⚠️ No se pudo eliminar el mensaje o ya fue borrado."
+            "⚠️ No se pudo eliminar el mensaje o ya fue borrado.",
+            show_alert=True,
         )
+
         
 # ==========================================
 # COMANDOS INFORMATIVOS (GROUP HELP)

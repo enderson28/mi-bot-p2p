@@ -567,7 +567,8 @@ def generar_y_enviar_resultado(chat_id, user_id, tasa_p2p_venta, bot, redis_clie
 
     tasa_hoy_val = float(datos_bcv.get("tasa_hoy", 798.326))
     tasa_manana_val = float(datos_bcv.get("tasa_manana", 0.0))
-    
+    fecha_manana_bcv = str(datos_bcv.get("fecha_manana") or "").strip()
+
     banco_key = data_user.get("banco_key")
     comision_banco = data_user.get("comision_banco", 0)
 
@@ -597,75 +598,85 @@ def generar_y_enviar_resultado(chat_id, user_id, tasa_p2p_venta, bot, redis_clie
 
     # --- BLOQUE 1: RESULTADO PRINCIPAL HOY ---
     msj = (
-        f"<blockquote>{TG_EMOJIS['chart']} <b>RESULTADO DE ARBITRAJE & {TG_EMOJIS['clic']} REPOSICIÓN</b></blockquote>\n"
+        f"<blockquote>{TG_EMOJI('chart')}<b>RESULTADO DE ARBITRAJE & {TG_EMOJI('clic')} REPOSICIÓN</b></blockquote>\n"
         f"<b>Banco:</b> {data_user.get('nombre_banco', 'Banco')}\n"
-        f"{TG_EMOJIS['dollar']} <b>Monto Comprado:</b> ${monto_usd:,.2f} USD\n"
-        f"{TG_EMOJIS['bcv']} <b>Tasa Compra (0.5%):</b> {res['tasa_interv_hoy']:.3f} Bs\n"
+        f"{TG_EMOJI('dollar')} <b>Monto Comprado:</b> <code>${monto_usd:,.2f} USD</code>\n"
+        f"{TG_EMOJI('bcv')} <b>Tasa Compra (0.5%):</b> <code>{res['tasa_interv_hoy']:.3f} Bs</code>\n"
     )
 
     if tasa_zinli_usada:
-        usdt_bruto_calc = monto_usd / tasa_zinli_usada
-        comision_extra = usdt_bruto_calc - res['usdt_netos_binance']
-        msj += f"{TG_EMOJIS['green_circle']} <b>Compra Zinli:</b> {tasa_zinli_usada:.3f} $\n"
-        msj += f"<blockquote>{TG_EMOJIS['usdt']} <b>USDT Brutos:</b> {usdt_bruto_calc:.2f}</blockquote>"
-        msj += f"{TG_EMOJIS['calc']} <b>Comisión Binance P2P:</b> -{comision_extra:.2f} USDT\n"
+        usdt_bruta_calc = monto_usd / tasa_zinli_usada
+        comision_extra = usdt_bruta_calc - res['usdt_netos_binance']
+        msj += f"{TG_EMOJI('green_circle')} <b>Compra Zinli:</b> <code>{tasa_zinli_usada:.3f}</code> $\n"
+        msj += f"<blockquote>{TG_EMOJI('usdt')} <b>USDT Brutos:</b> <code>{usdt_bruta_calc:.2f}</code></blockquote>\n"
+        msj += f"{TG_EMOJI('calc')} <b>Comisión Binance P2P:</b> <code>-{comision_extra:.2f} USDT</code>\n"
 
     msj += (
-        f"\n{TG_EMOJIS['red_circle']} <b>Tasa Venta P2P:</b> {tasa_p2p_venta:.2f} Bs/{TG_EMOJIS['usdt']}\n"
-        f"<blockquote>{TG_EMOJIS['usdt']} <b>Líquidos {TG_EMOJIS['binance']} Binance:</b>\n"
-        f"<code>{res['usdt_netos_binance']:.2f}</code> {TG_EMOJIS['usdt']} ({TG_EMOJIS['usd']} / {TG_EMOJIS['usdt']} : {res['tasa_usd_usdt']:.5f})</blockquote>\n"
-        f"<blockquote>{TG_EMOJIS['hand']} <b>Inversión de Hoy:</b> <code>{res['bs_invertidos_hoy']:,.2f}</code> Bs</blockquote>\n"
-        f"-------------------------------\n"
-        f"{TG_EMOJIS['briefcase']} <b>RECUPERAR CAPITAL HOY</b>\n"
-        f"{TG_EMOJIS['binance']} <b>Vender en P2P:</b> <code>{res['usdt_recuperar_hoy']:.2f}</code> {TG_EMOJIS['usdt']}\n"
-        f"<blockquote>{TG_EMOJIS['party']} <b>Ganancia Actual:</b> <code>{res['ganancia_usdt_hoy']:.2f}</code> {TG_EMOJIS['usdt']}</blockquote>\n"
+        f"\n{TG_EMOJI('red_circle')} <b>Tasa Venta P2P:</b> <code>{tasa_p2p_venta:.2f} Bs/{TG_EMOJI('usdt')}</code>\n"
+        f"<blockquote>{TG_EMOJI('usdt')} <b>Líquidos {TG_EMOJI('binance')} Binance:</b>\n"
+        f"<code>{res['usdt_netos_binance']:.2f}</code> {TG_EMOJI('usdt')} ({TG_EMOJI('dollar')} / {TG_EMOJI('usdt')}: {tasa_usd_usdt:.5f})</blockquote>\n"
+        f"<blockquote>{TG_EMOJI('hand')} <b>Inversión de Hoy:</b> <code>{res['bs_invertidos_hoy']:,.2f}</code> Bs</blockquote>\n"
+        f"---------\n"
+        f"{TG_EMOJI('briefcase')} <b>RECUPERAR CAPITAL HOY</b>\n"
+        f"{TG_EMOJI('binance')} <b>Vender en P2P:</b> <code>{res['usdt_recuperar_hoy']:.2f}</code> {TG_EMOJI('usdt')}\n"
+        f"<blockquote>{TG_EMOJI('party')} <b>Ganancia Actual:</b> <code>{res['ganancia_usdt_hoy']:.2f}</code> {TG_EMOJI('usdt')}</blockquote>\n"
     )
-    
-    # ---> AÑADIDO: Línea visible de recarga BDT en Ganancia Actual
+
+    # --- AÑADIDO: Línea visible de recarga BDT en Ganancia Actual ---
     if data_user.get("banco_key") == "bdt" and res.get("costo_recarga_bs_hoy", 0) > 0:
         msj += f"<i>(Recarga tarjeta prepagada: {res['costo_recarga_bs_hoy']:,.2f} Bs)</i>\n"
 
-    msj += "-------------------------\n"
+    msj += "\n"
 
     # --- DETECTAR PRÓXIMO DÍA HÁBIL REAL ---
     hora_ve = datetime.now(timezone.utc) - timedelta(hours=4)
-    dia_semana_num = hora_ve.weekday()  # 0: Lunes, 1: Martes, ..., 6: Domingo
-
-    # Mapeo simple de días hábiles estándar
+    dia_semana_num = hora_ve.weekday()  # 0: Lunes, ..., 6: Domingo
     dias_semana = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
-    
-    # Si es Viernes, Sábado o Domingo, el próximo día hábil es el Lunes
-    if dia_semana_num in [4, 5, 6]:
-        proximo_dia = "Lunes"
-    else:
-        # De lo contrario, es el día siguiente natural (Ej: Martes -> Miércoles)
-        proximo_dia = dias_semana[dia_semana_num + 1]
-                
+    dias_validos = {
+        "lunes", "martes", "miércoles", "miercoles",
+        "jueves", "viernes", "sábado", "sabado", "domingo"
+    }
+
+    proximo_dia = None
+    if fecha_manana_bcv:
+        posible_dia = fecha_manana_bcv.split(",")[0].strip()
+        if posible_dia.lower() in dias_validos:
+            proximo_dia = posible_dia.lower()
+
+    if not proximo_dia:
+        # Mantiene tu lógica estándar (y el comportamiento de fin de semana) como respaldo
+        if dia_semana_num in [4, 5, 6]:
+            proximo_dia = "lunes"
+        else:
+            proximo_dia = dias_semana[dia_semana_num + 1].lower()
 
     # --- BLOQUE 2: REPOSICIÓN O AVISO DE TASA NO PUBLICADA ---
-    hay_tasa_manana_publicada = bool(tasa_bcv_manana and float(tasa_bcv_manana) > 0 and float(tasa_bcv_manana) != float(tasa_bcv_hoy))
+    hay_tasa_manana_publicada = bool(
+        tasa_bcv_manana
+        and float(tasa_bcv_manana) > 0
+        and float(tasa_bcv_manana) != float(tasa_bcv_hoy)
+    )
 
     if hay_tasa_manana_publicada:
         diferencia_bcv = tasa_bcv_manana - tasa_bcv_hoy
         signo_dif = "+" if diferencia_bcv >= 0 else ""
-
         msj += (
-            f"\n-------------------------------\n"
-            f"<blockquote><b>{TG_EMOJIS['clic']} REPOSICIÓN PARA EL {proximo_dia.upper()} (BCV Actualizado)</b></blockquote>\n"
-            f"{TG_EMOJIS['bcv']} <b>Tasa BCV (+0.5%):</b> {res['tasa_interv_manana']:.3f} Bs ({signo_dif}{diferencia_bcv:.2f} Bs)\n"
-            f"<blockquote>{TG_EMOJIS['hand']} <b>Bs Necesarios:</b> <code>{res['bs_necesarios_manana']:,.2f}</code> Bs</blockquote>\n"
-            f"{TG_EMOJIS['binance']} <b>Vender en P2P:</b> <code>{res['usdt_recuperar_manana']:.2f}</code> {TG_EMOJIS['usdt']}\n"
-            f"<blockquote>{TG_EMOJIS['party']} <b>Ganancia Real Aislada:</b> <code>{res['ganancia_usdt_manana']:.2f}</code> {TG_EMOJIS['usdt']}</blockquote>\n"
+            "\n"
+            f"<blockquote>{TG_EMOJI('clic')}<b>REPOSICIÓN PARA EL {proximo_dia.upper()} (BCV Actualizado)</b></blockquote>\n"
+            f"{TG_EMOJI('bcv')} <b>Tasa BCV (+0.5%):</b> <code>{res['tasa_interv_manana']:.3f} Bs</code> ({signo_dif}{diferencia_bcv:.2f} Bs)\n"
+            f"<blockquote>{TG_EMOJI('hand')} <b>Bs Necesarios:</b> <code>{res['bs_necesarios_manana']:,.2f}</code> Bs</blockquote>\n"
+            f"{TG_EMOJI('binance')} <b>Vender en P2P:</b> <code>{res['usdt_recuperar_manana']:.2f}</code> {TG_EMOJI('usdt')}\n"
+            f"<blockquote>{TG_EMOJI('party')} <b>Ganancia Real Aislada:</b> <code>{res['ganancia_usdt_manana']:.2f}</code> {TG_EMOJI('usdt')}</blockquote>\n"
         )
-        
-        # ---> AÑADIDO: Línea visible de recarga BDT en Ganancia Real Aislada
+
+        # --- AÑADIDO: Línea visible de recarga BDT en Ganancia Real Aislada ---
         if data_user.get("banco_key") == "bdt" and res.get("costo_recarga_bs_manana", 0) > 0:
             msj += f"<i>(Recarga tarjeta prepagada: {res['costo_recarga_bs_manana']:,.2f} Bs)</i>\n"
     else:
         msj += (
-            f"\n-------------------------------\n"
-            f"<i>{TG_EMOJIS['bcv']} Tasa del <b>{proximo_dia}</b> aún no publicada por el BCV.</i>\n"
-            f"<i>Usa este cálculo {TG_EMOJIS['calc']} para tu operación de hoy.</i>\n"
+            "\n"
+            f"<i>{TG_EMOJI('bcv')} Tasa del <b>{proximo_dia}</b> aún no publicada por el BCV.</i>\n"
+            f"<i>Usa este cálculo {TG_EMOJI('calc')} para tu operación de hoy.</i>\n"
         )
 
     markup = InlineKeyboardMarkup(row_width=1)
@@ -678,5 +689,6 @@ def generar_y_enviar_resultado(chat_id, user_id, tasa_p2p_venta, bot, redis_clie
 
     if user_id in USER_ARBITRAJE_DATA:
         del USER_ARBITRAJE_DATA[user_id]
+
         
 

@@ -162,7 +162,7 @@ def obtener_tasa_p2p_bdv_por_rango(redis_client, monto_usd):
     return 0.0
 
 
-FACTOR_CONVERT_USD_A_USDT = 1.0002
+FACTOR_CONVERT_USD_A_USDT = 1.0017
 
 
 def obtener_precio_spot_usdt_usd(redis_client):

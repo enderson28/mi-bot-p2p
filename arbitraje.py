@@ -161,33 +161,34 @@ def obtener_tasa_p2p_bdv_por_rango(redis_client, monto_usd):
         logger.error(f"⚠️ Error leyendo p2p_rangos_bdv en arbitraje.py: {e}")
     return 0.0
 
-FACTOR_SPREAD_CONVERT = 1.00025
+
+FACTOR_CONVERT_USD_A_USDT = 1.0008
+
 
 def obtener_precio_spot_usdt_usd(redis_client):
-    """
-    Obtiene la tasa Spot USDT/USD desde Redis guardada por bot.py o consulta directa
-    """
+    """Obtiene de Redis ('usdt_usd_spot') o de Binance Spot la tasa USD -> USDT calibrada a Convert."""
     try:
         if redis_client:
             val = redis_client.get("usdt_usd_spot")
             if val:
                 val_float = float(val)
                 if val_float > 0:
-                    return val_float
+                    return round(val_float, 5)
     except Exception:
         pass
 
-    # Resguardo con consulta a Binance Spot si falla Redis
     try:
         url = "https://api.binance.com/api/v3/ticker/price?symbol=USDTUSD"
         response = requests.get(url, timeout=3)
         if response.status_code == 200:
-            precio_raw = float(response.json().get("price", 0.9999))
-            tasa_base = (1.0 / precio_raw) if precio_raw > 0 else 1.00015
-            return round(tasa_base * FACTOR_SPREAD_CONVERT, 5)
+            precio_raw = float(response.json().get("price", 0.9994))
+            if precio_raw > 0:
+                return round(precio_raw * FACTOR_CONVERT_USD_A_USDT, 5)
     except Exception as e:
         logger.warning(f"⚠️ No se pudo consultar Binance Spot USDTUSD en arbitraje: {e}")
-    return round(1.00018 * FACTOR_SPREAD_CONVERT, 5)
+
+    return round(0.9994 * FACTOR_CONVERT_USD_A_USDT, 5)
+
 
 
 # --- LÓGICA DE CÁLCULO Y ARBITRAJE ---

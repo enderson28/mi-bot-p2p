@@ -1639,6 +1639,31 @@ def cb_actualizar_mercado(call):
         else:
             print(f"⚠️ Error al editar mensaje de mercado: {e}")
             bot.answer_callback_query(call.id, "⚠️ Error al actualizar")
+            
+@bot.message_handler(commands=["cedula"])
+def cmd_cedula(message):
+    chat_id = message.chat.id
+
+    if not es_chat_permitido(bot, message, CHATS_PERMITIDOS, USUARIOS_AUTORIZADOS, CREADOR_ID):
+        return
+
+    if not es_usuario_vip_activo(bot, message.from_user, r):
+        responder_sin_acceso_vip(bot, chat_id)
+        return
+
+    if message.chat.type == "private":
+        try:
+            bot.delete_message(chat_id, message.message_id)
+        except Exception:
+            pass
+
+    msg = bot.send_message(
+        chat_id,
+        "🪪 <b>Verificación de Cédula (P2P Titular)</b>\n"
+        "Escribe el número de cédula (solo números, ej. <code>23007945</code>):",
+        parse_mode="HTML",
+    )
+    bot.register_next_step_handler(msg, _procesar_consulta_cedula)
 
 
 

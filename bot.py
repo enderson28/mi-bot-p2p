@@ -2945,6 +2945,79 @@ def handle_comando_comandos(message):
 @bot.message_handler(commands=['vips_admin'])
 def handle_comando_admin(message):
     comando_admin(bot, message)
+
+
+@bot.message_handler(commands=["rotar_bcv"])
+def cmd_rotar_bcv_emergencia(message):
+    user_id = message.from_user.id if message.from_user else None
+    chat_id = message.chat.id
+
+    # Exclusivo para el creador del bot
+    if str(user_id) != str(CREADOR_ID):
+        return
+
+    if "r" not in globals() or not r:
+        bot.reply_to(message, "⚠️ Redis no está disponible en este momento.")
+        return
+
+    try:
+        raw = r.get("bcv_datos_v18")
+        if not raw:
+            bot.reply_to(message, "⚠️ No hay datos en `bcv_datos_v18` en Redis.", parse_mode="Markdown")
+            return
+
+        datos = json.loads(raw)
+        tasa_manana = float(datos.get("tasa_manana") or 0.0)
+        fecha_manana = str(datos.get("fecha_manana") or "").strip()
+
+        if tasa_manana <= 0:
+            bot.reply_to(
+                message,
+                "ℹ️ No hay `tasa_manana` pendiente (> 0) para rotar en `bcv_datos_v18`.",
+                parse_mode="Markdown"
+            )
+            return
+
+        hora_ve = datetime.now(timezone.utc) - timedelta(hours=4)
+        dias = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
+        meses = [
+            "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+            "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+        ]
+        fecha_sistema_ve = (
+            f"{dias[hora_ve.weekday()]}, {hora_ve.day:02d} "
+            f"{meses[hora_ve.month - 1]} {hora_ve.year}"
+        )
+
+        # Guardar lo actual como anterior antes de rotar
+        tasa_hoy_previa = float(datos.get("tasa_hoy") or 0.0)
+        fecha_hoy_previa = str(datos.get("fecha_hoy") or "").strip()
+        if tasa_hoy_previa > 0:
+            datos["tasa_anterior"] = tasa_hoy_previa
+            datos["fecha_anterior"] = fecha_hoy_previa
+
+        # Promover mañana -> hoy y limpiar mañana para esperar el próximo raspado
+        datos["tasa_hoy"] = tasa_manana
+        datos["fecha_hoy"] = fecha_manana if fecha_manana else fecha_sistema_ve
+        datos["tasa_manana"] = 0.0
+        datos["fecha_manana"] = ""
+        datos["fecha_ultima_rotacion"] = fecha_sistema_ve
+
+        r.set("bcv_datos_v18", json.dumps(datos))
+
+        bot.reply_to(
+            message,
+            f"✅ <b>Rotación BCV aplicada en Redis (<code>bcv_datos_v18</code>)</b>\n"
+            f"• <b>Nueva Tasa Hoy:</b> <code>{datos['tasa_hoy']}</code> Bs\n"
+            f"• <b>Fecha Hoy:</b> <i>{datos['fecha_hoy']}</i>\n"
+            f"• <b>Tasa Mañana:</b> reseteada a <code>0.0</code>",
+            parse_mode="HTML"
+        )
+    except Exception as e:
+        print(f"❌ Error en /rotar_bcv: {e}")
+        bot.reply_to(message, f"❌ Error al rotar en Redis: <code>{e}</code>", parse_mode="HTML")
+
+
     
 # ==========================================
 # FILTRO DE SEGURIDAD GENERAL (ABAJO)
@@ -2974,17 +3047,17 @@ def filtro_seguridad_chat(message):
 # ===============================================
 # RECEPTOR WEBHOOK PARA EL CAZADOR
 # ===============================================
-
 CLAVE_SECRETA_BCV = os.getenv("CLAVE_SECRETA_BCV")
+
 
 class WebhookHandler(http.server.BaseHTTPRequestHandler):
     def do_POST(self):
-        if self.path == '/actualizar_bcv':
+        if self.path == "/actualizar_bcv":
             try:
-                content_length = int(self.headers.get('Content-Length', 0))
+                content_length = int(self.headers.get("Content-Length", 0))
                 post_data = self.rfile.read(content_length)
 
-                datos = json.loads(post_data.decode('utf-8'))
+                datos = json.loads(post_data.decode("utf-8"))
                 clave = datos.get("clave")
                 tasa_raw = datos.get("tasa")
                 fecha = datos.get("fecha")
@@ -2992,7 +3065,7 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
                 clave_esperada = globals().get("CLAVE_SECRETA_BCV", clave)
                 if clave != clave_esperada:
                     self.send_response(401)
-                    self.send_header('Content-Type', 'application/json')
+                    self.send_header("Content-Type", "application/json")
                     self.end_headers()
                     self.wfile.write(b'{"status": "error", "message": "No autorizado"}')
                     return
@@ -3001,64 +3074,88 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
                     try:
                         tasa_str = str(tasa_raw).replace("Bs.", "").replace("Bs", "").strip()
                         if "," in tasa_str and "." in tasa_str:
-                            tasa_str = tasa_str.replace(".", "").replace(",", ".")
+                            tasa_str = tasa_str.replace(",", "")
                         elif "," in tasa_str:
                             tasa_str = tasa_str.replace(",", ".")
-                        
                         tasa_nueva = float(tasa_str)
                     except Exception as e:
                         print(f"⚠️ Error al convertir tasa ({tasa_raw}): {e}")
                         tasa_nueva = float(tasa_raw)
 
+                    if tasa_nueva <= 0:
+                        self.send_response(400)
+                        self.send_header("Content-Type", "application/json")
+                        self.end_headers()
+                        self.wfile.write(b'{"status": "error", "message": "Tasa invalida"}')
+                        return
+
                     fecha_nueva = str(fecha).strip()
 
-                    datos_bcv = obtener_datos_bcv_validos() if 'obtener_datos_bcv_validos' in globals() else {}
-
-                    tasa_manana_actual = float(datos_bcv.get("tasa_manana", 0.0))
-                    fecha_manana_actual = str(datos_bcv.get("fecha_manana", "")).strip()
-                    tasa_hoy_actual = float(datos_bcv.get("tasa_hoy", 0.0))
-                    fecha_hoy_actual = str(datos_bcv.get("fecha_hoy", "")).strip()
-
-                    fn_norm = str(fecha_nueva or "").strip().lower()
-                    fm_norm = str(fecha_manana_actual or "").strip().lower()
-                    fh_norm = str(fecha_hoy_actual or "").strip().lower()
-
-                    # Verificar si la fecha capturada ya existe en Hoy o Mañana
-                    ya_registrada = (
-                        (fn_norm and fn_norm == fh_norm) or
-                        (fn_norm and fn_norm == fm_norm) or
-                        (tasa_manana_actual > 0 and abs(tasa_nueva - tasa_manana_actual) < 0.0001)
+                    datos_bcv = (
+                        obtener_datos_bcv_validos()
+                        if "obtener_datos_bcv_validos" in globals()
+                        else {}
                     )
 
-                    # SI NO ESTÁ REGISTRADA: Asignarla estrictamente como Tasa de Mañana (para encender Bloque 2)
+                    fecha_manana_actual = str(datos_bcv.get("fecha_manana", "")).strip()
+                    fecha_hoy_actual = str(datos_bcv.get("fecha_hoy", "")).strip()
+
+                    fn_norm = fecha_nueva.lower()
+                    fmn_norm = fecha_manana_actual.lower()
+                    fh_norm = fecha_hoy_actual.lower()
+
+                    # Solo se considera ya registrada si la fecha nueva coincide
+                    # exactamente con la fecha de mañana o la fecha de hoy ya activa
+                    ya_registrada = bool(
+                        fn_norm and (fn_norm == fmn_norm or fn_norm == fh_norm)
+                    )
+
                     if not ya_registrada:
                         datos_bcv["tasa_manana"] = tasa_nueva
                         datos_bcv["fecha_manana"] = fecha_nueva
 
-                        if 'r' in globals() and r:
+                        if "r" in globals() and r:
                             r.set("bcv_datos_v18", json.dumps(datos_bcv))
 
-                        print(f"🔥 [WEBHOOK] Tasa de mañana ({tasa_nueva} Bs) guardada exitosamente en Redis.")
+                        print(
+                            f"✅ [WEBHOOK] Tasa de mañana ({tasa_nueva}) y fecha "
+                            f"({fecha_nueva}) guardadas en Redis."
+                        )
+                        self.send_response(200)
+                        self.send_header("Content-Type", "application/json")
+                        self.end_headers()
+                        self.wfile.write(
+                            b'{"status": "success", "message": "Tasa de manana guardada"}'
+                        )
+                        return
 
-                        self.send_response(200)
-                        self.send_header('Content-Type', 'application/json')
-                        self.end_headers()
-                        self.wfile.write(b'{"status": "success", "message": "Tasa de manana guardada exitosamente"}')
-                        return
-                    else:
-                        print(f"ℹ️ [WEBHOOK] Tasa para '{fecha_nueva}' ya registrada. Se ignora.")
-                        self.send_response(200)
-                        self.send_header('Content-Type', 'application/json')
-                        self.end_headers()
-                        self.wfile.write(b'{"status": "ignored", "message": "Tasa ya conocida"}')
-                        return
+                    print(f"ℹ️ [WEBHOOK] Tasa para '{fecha_nueva}' ya registrada. Se ignora.")
+                    self.send_response(200)
+                    self.send_header("Content-Type", "application/json")
+                    self.end_headers()
+                    self.wfile.write(
+                        b'{"status": "ignored", "message": "Tasa ya conocida"}'
+                    )
+                    return
+
+                self.send_response(400)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(b'{"status": "error", "message": "Faltan tasa o fecha"}')
+                return
 
             except Exception as e:
-                print(f"❌ Error en Webhook: {e}")
+                print(f"❌ Error en webhook: {e}")
                 self.send_response(500)
-                self.send_header('Content-Type', 'application/json')
+                self.send_header("Content-Type", "application/json")
                 self.end_headers()
-                                  
+                self.wfile.write(b'{"status": "error", "message": "Error interno"}')
+                return
+
+    def log_message(self, format, *args):
+        # Evita llenar los logs de Railway con cada ping HTTP estándar
+        return
+
 
 def iniciar_servidor_receptor():
     port = int(os.getenv("PORT", 8080))
@@ -3066,6 +3163,8 @@ def iniciar_servidor_receptor():
     with socketserver.TCPServer(("", port), handler) as httpd:
         print(f"📡 Receptor de tasas escuchando en el puerto {port}")
         httpd.serve_forever()
+
+
                     
 
 # ==========================================

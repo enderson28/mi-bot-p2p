@@ -567,33 +567,35 @@ def obtener_tasa_binance_zinli(tipo_operacion, monto_usd=0):
     return 0.0
     
 
+# Factor calibrado para aproximar el costo efectivo en USD por 1 USDT al convertir USD -> USDT en Convert
+FACTOR_CONVERT_USD_A_USDT = 1.0008
+
 
 def obtener_tasa_binance_spot_usdt():
-    """Obtiene la tasa real del par USD/USDT ajustada al spread de Binance Convert."""
-    # Factor de ajuste para emular el spread de Convert (~1.00015 en lugar del Spot directo)
-    FACTOR_SPREAD_CONVERT = 1.00025
-
+    """Devuelve cuántos USD cuesta 1 USDT al convertir USD -> USDT aproximando Binance Convert."""
     try:
         url_binance = "https://api.binance.com/api/v3/ticker/price?symbol=USDTUSD"
-        r = requests.get(url_binance, timeout=3.0)
-        if r.status_code == 200:
-            precio_raw = float(r.json().get("price", 0.9999))
-            tasa_base = (1.0 / precio_raw) if precio_raw > 0 else 1.00015
-            return round(tasa_base * FACTOR_SPREAD_CONVERT, 5)
+        resp = requests.get(url_binance, timeout=3.0)
+        if resp.status_code == 200:
+            precio_raw = float(resp.json().get("price", 0.9994))
+            if precio_raw > 0:
+                return round(precio_raw * FACTOR_CONVERT_USD_A_USDT, 5)
     except Exception:
         pass
 
     try:
         url_cb = "https://api.coinbase.com/v2/prices/USDT-USD/spot"
-        r = requests.get(url_cb, timeout=3.0)
-        if r.status_code == 200:
-            precio = float(r.json()["data"]["amount"])
-            if precio > 0:
-                return round(precio * FACTOR_SPREAD_CONVERT, 5)
+        resp_cb = requests.get(url_cb, timeout=3.0)
+        if resp_cb.status_code == 200:
+            precio_cb = float(resp_cb.json()["data"]["amount"])
+            if precio_cb > 0:
+                return round(precio_cb * FACTOR_CONVERT_USD_A_USDT, 5)
     except Exception:
         pass
 
-    return (1.00018 * FACTOR_SPREAD_CONVERT, 5)
+    return round(0.9994 * FACTOR_CONVERT_USD_A_USDT, 5)
+
+
 
 # Registramos la calculadora usando la fuente única de verdad en Redis
 solicitar_calculadora = registrar_calculadora(bot, obtener_datos_bcv_validos, obtener_teclado_privado, r)

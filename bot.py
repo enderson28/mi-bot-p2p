@@ -1750,6 +1750,7 @@ def _consultar_respaldo_2_megacreativo_yipiapp(cedula: str):
 
     # Rutas habituales de proyectos comunitarios MegaCreativo / YipiApp
     candidatas.extend([
+        f"https://api.megacreativo.com/public/cedula-ve/v1/?nac=V&cedula={cedula}",
         f"https://api.yipiapp.com/cedula/{cedula}",
         f"https://yipiapp.com/api/cedula/{cedula}",
         f"https://cedulave-api.vercel.app/api/{cedula}",

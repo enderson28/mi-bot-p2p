@@ -1641,25 +1641,123 @@ def cb_actualizar_mercado(call):
             bot.answer_callback_query(call.id, "⚠️ Error al actualizar")
 
 
-@bot.message_handler(commands=["cedula"])
-def cmd_cedula(message):
-    chat_id = message.chat.id
-    user_id = message.from_user.id if message.from_user else None
 
-    if not es_chat_permitido(bot, message, CHATS_PERMITIDOS, USUARIOS_AUTORIZADOS, CREADOR_ID):
-        return
-
-    if not es_usuario_vip_activo(bot, message.from_user, r):
-        responder_sin_acceso_vip(bot, chat_id)
-        return
-
-    msg = bot.send_message(
-        chat_id,
-        "🪪 <b>Verificación de Cédula (P2P Titular)</b>\n"
-        "Escribe el número de cédula (solo números, ej. <code>23007945</code>):",
-        parse_mode="HTML",
+def _extraer_nombre_de_json(obj):
+    """Busca un campo de nombre legible dentro de respuestas JSON comunes."""
+    claves_nombre = (
+        "nombre",
+        "nombre_completo",
+        "fullname",
+        "full_name",
+        "name",
+        "titular",
+        "razon_social",
     )
-    bot.register_next_step_handler(msg, _procesar_consulta_cedula)
+
+    if isinstance(obj, dict):
+        for clave in claves_nombre:
+            valor = obj.get(clave)
+            if isinstance(valor, str) and valor.strip():
+                return valor.strip()
+
+        nombres = (
+            obj.get("nombres")
+            or obj.get("first_name")
+            or obj.get("firstName")
+            or ""
+        ).strip()
+        apellidos = (
+            obj.get("apellidos")
+            or obj.get("last_name")
+            or obj.get("lastName")
+            or ""
+        ).strip()
+        if nombres or apellidos:
+            return f"{nombres} {apellidos}".strip()
+
+        for subclave in ("data", "resultado", "result", "persona", "usuario"):
+            if subclave in obj:
+                encontrado = _extraer_nombre_de_json(obj[subclave])
+                if encontrado:
+                    return encontrado
+
+    elif isinstance(obj, list) and obj:
+        return _extraer_nombre_de_json(obj[0])
+
+    return None
+
+
+def _consultar_url_cedula(url_template: str, cedula: str, timeout: float = 3.5):
+    """Realiza una consulta GET a un endpoint y devuelve (nombre, error)."""
+    try:
+        if "{cedula}" in url_template:
+            url = url_template.format(cedula=cedula)
+            resp = requests.get(url, timeout=timeout)
+        else:
+            resp = requests.get(url_template, params={"cedula": cedula}, timeout=timeout)
+
+        if resp.status_code != 200:
+            return None, f"HTTP {resp.status_code}"
+
+        try:
+            data = resp.json()
+            nombre = _extraer_nombre_de_json(data)
+            if nombre:
+                return nombre, None
+            return None, "Sin nombre en respuesta"
+        except ValueError:
+            texto_plano = (resp.text or "").strip()
+            if texto_plano and len(texto_plano) < 120 and "<html" not in texto_plano.lower():
+                return texto_plano, None
+            return None, "Respuesta no JSON"
+
+    except Exception as e:
+        return None, f"Error de conexión: {e}"
+
+
+def _consultar_respaldo_2_megacreativo_yipiapp(cedula: str):
+    """Respaldo 2: intenta MegaCreativo / YipiApp (o URL configurada en CEDULA_RESPALDO_2_URL)."""
+    custom_url = os.getenv("CEDULA_RESPALDO_2_URL", "").strip()
+    candidatas = []
+
+    if custom_url:
+        candidatas.append(custom_url)
+
+    # Rutas habituales de proyectos comunitarios MegaCreativo / YipiApp
+    candidatas.extend([
+        f"https://api.yipiapp.com/cedula/{cedula}",
+        f"https://yipiapp.com/api/cedula/{cedula}",
+        f"https://cedulave-api.vercel.app/api/{cedula}",
+        f"https://cedulave-api.herokuapp.com/api/{cedula}",
+    ])
+
+    ultimo_error = "Sin respuesta en respaldo 2"
+    for url in candidatas:
+        nombre, err = _consultar_url_cedula(url, cedula, timeout=3.0)
+        if nombre:
+            return nombre, None
+        if err:
+            ultimo_error = err
+
+    return None, ultimo_error
+
+
+def _consultar_cedula_con_respaldos(cedula: str):
+    """1) API principal gratis -> 2) MegaCreativo/YipiApp -> None (activa botón navegador)."""
+    primary_url = os.getenv("CEDULA_API_URL", "").strip()
+    motivo_1 = "API principal no configurada"
+
+    if primary_url:
+        nombre, err = _consultar_url_cedula(primary_url, cedula, timeout=3.5)
+        if nombre:
+            return nombre, "API principal", None
+        motivo_1 = err or "Fallo API principal"
+
+    nombre_r2, err_r2 = _consultar_respaldo_2_megacreativo_yipiapp(cedula)
+    if nombre_r2:
+        return nombre_r2, "Respaldo 2 (MegaCreativo/YipiApp)", None
+
+    return None, None, f"{motivo_1} | Respaldo 2: {err_r2}"
 
 
 def _procesar_consulta_cedula(message):
@@ -1683,14 +1781,29 @@ def _procesar_consulta_cedula(message):
         )
     )
 
+    titular, fuente, motivo_fallo = _consultar_cedula_con_respaldos(cedula)
+
+    if titular:
+        cuerpo = (
+            f"✅ <b>Titular encontrado:</b> <code>{titular}</code>\n"
+            f"🪪 <b>Cédula:</b> <code>{cedula}</code>\n"
+            f"📡 <b>Fuente:</b> <code>{fuente}</code>\n"
+            "• Verifica que coincida con el titular de la orden en Binance antes de liberar USDT."
+        )
+    else:
+        cuerpo = (
+            f"🔎 <b>Cédula a verificar:</b> <code>{cedula}</code>\n"
+            f"ℹ️ Fallback navegador activado ({motivo_fallo}).\n"
+            "• Usa el botón inferior para consultar en el navegador y comparar con Binance."
+        )
+
     bot.send_message(
         chat_id,
-        f"🔎 <b>Cédula a verificar:</b> <code>{cedula}</code>\n"
-        "• Verifica que el nombre coincida exactamente con el titular en Binance antes de liberar USDT.\n"
-        "• Nota: la web externa utiliza CAPTCHA en navegador, por lo que no se consulta automáticamente desde el servidor.",
+        cuerpo,
         parse_mode="HTML",
         reply_markup=markup,
     )
+
 
 
     

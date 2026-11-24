@@ -632,31 +632,33 @@ def generar_y_enviar_resultado(chat_id, user_id, tasa_p2p_venta, bot, redis_clie
     # --- DETECTAR PRÓXIMO DÍA HÁBIL REAL ---
     hora_ve = datetime.now(timezone.utc) - timedelta(hours=4)
     dia_semana_num = hora_ve.weekday()  # 0: Lunes, ..., 6: Domingo
-    dias_semana = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
+    dias_semana = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
     dias_validos = {
         "lunes", "martes", "miércoles", "miercoles",
-        "jueves", "viernes", "sábado", "sabado", "domingo"
+        "jueves", "viernes", "sábado", "sabado", "domingo",
     }
 
     proximo_dia = None
     if fecha_manana_bcv:
-        posible_dia = fecha_manana_bcv.split(",")[0].strip()
-        if posible_dia.lower() in dias_validos:
-            proximo_dia = posible_dia.lower()
+        posible_dia = fecha_manana_bcv.split(",")[0].strip().lower()
+        if posible_dia in dias_validos:
+            proximo_dia = "miércoles" if posible_dia == "miercoles" else ("sábado" if posible_dia == "sabado" else posible_dia)
 
     if not proximo_dia:
-        # Mantiene tu lógica estándar (y el comportamiento de fin de semana) como respaldo
-        if dia_semana_num in [4, 5, 6]:
+        if dia_semana_num in (4, 5, 6):
             proximo_dia = "lunes"
         else:
-            proximo_dia = dias_semana[dia_semana_num + 1].lower()
+            proximo_dia = dias_semana[(dia_semana_num + 1) % len(dias_semana)]
 
     # --- BLOQUE 2: REPOSICIÓN O AVISO DE TASA NO PUBLICADA ---
+    tasa_manana_float = float(tasa_bcv_manana or 0.0)
+    tasa_hoy_float = float(tasa_bcv_hoy or 0.0)
+
     hay_tasa_manana_publicada = bool(
-        tasa_bcv_manana
-        and float(tasa_bcv_manana) > 0
-        and float(tasa_bcv_manana) != float(tasa_bcv_hoy)
+        tasa_manana_float > 0
+        and round(tasa_manana_float, 4) != round(tasa_hoy_float, 4)
     )
+ 
 
     if hay_tasa_manana_publicada:
         diferencia_bcv = tasa_bcv_manana - tasa_bcv_hoy

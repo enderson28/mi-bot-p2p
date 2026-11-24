@@ -321,13 +321,13 @@ setup_verification_handlers(
 
 def obtener_datos_bcv_validos():
     datos_defecto = {
-        "tasa_hoy": 918.766,
-        "fecha_hoy": "Viernes, 20 Noviembre 2026",
+        "tasa_hoy": 919.8227,
+        "fecha_hoy": "Martes, 24 Noviembre 2026",
         "tasa_manana": 0.0,
         "fecha_manana": "",
-        "tasa_anterior": 917.775,
-        "fecha_anterior": "Jueves, 19 Noviembre 2026",
-        "fecha_ultima_rotacion": "Viernes, 20 Noviembre 2026"
+        "tasa_anterior": 918.766,
+        "fecha_anterior": "Lunes, 23 Noviembre 2026",
+        "fecha_ultima_rotacion": "Martes, 24 Noviembre 2026"
     }
 
     try:
@@ -3265,9 +3265,7 @@ def filtro_seguridad_chat(message):
         return
             
 
-# ===============================================
 # RECEPTOR WEBHOOK PARA EL CAZADOR
-# ===============================================
 CLAVE_SECRETA_BCV = os.getenv("CLAVE_SECRETA_BCV")
 
 
@@ -3318,17 +3316,18 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
                         else {}
                     )
 
-                    fecha_manana_actual = str(datos_bcv.get("fecha_manana", "")).strip()
-                    fecha_hoy_actual = str(datos_bcv.get("fecha_hoy", "")).strip()
+                    tasa_hoy_actual = float(datos_bcv.get("tasa_hoy", 0.0) or 0.0)
+                    tasa_manana_actual = float(datos_bcv.get("tasa_manana", 0.0) or 0.0)
+                    fecha_hoy_actual = str(datos_bcv.get("fecha_hoy", "") or "").strip()
+                    fecha_manana_actual = str(datos_bcv.get("fecha_manana", "") or "").strip()
 
-                    fn_norm = fecha_nueva.lower()
-                    fmn_norm = fecha_manana_actual.lower()
-                    fh_norm = fecha_hoy_actual.lower()
+                    misma_tasa_que_hoy = round(tasa_nueva, 4) == round(tasa_hoy_actual, 4)
+                    misma_tasa_que_manana = round(tasa_nueva, 4) == round(tasa_manana_actual, 4)
+                    misma_fecha_que_hoy = fecha_nueva.lower() == fecha_hoy_actual.lower()
 
-                    # Solo se considera ya registrada si la fecha nueva coincide
-                    # exactamente con la fecha de mañana o la fecha de hoy ya activa
                     ya_registrada = bool(
-                        fn_norm and (fn_norm == fmn_norm or fn_norm == fh_norm)
+                        misma_tasa_que_manana
+                        or (misma_tasa_que_hoy and misma_fecha_que_hoy)
                     )
 
                     if not ya_registrada:
@@ -3338,25 +3337,18 @@ class WebhookHandler(http.server.BaseHTTPRequestHandler):
                         if "r" in globals() and r:
                             r.set("bcv_datos_v18", json.dumps(datos_bcv))
 
-                        print(
-                            f"✅ [WEBHOOK] Tasa de mañana ({tasa_nueva}) y fecha "
-                            f"({fecha_nueva}) guardadas en Redis."
-                        )
+                        print(f"✅ [WEBHOOK] Tasa de mañana ({tasa_nueva}) y fecha ({fecha_nueva}) guardadas en Redis.")
                         self.send_response(200)
                         self.send_header("Content-Type", "application/json")
                         self.end_headers()
-                        self.wfile.write(
-                            b'{"status": "success", "message": "Tasa de manana guardada"}'
-                        )
+                        self.wfile.write(b'{"status": "success", "message": "Tasa de manana guardada"}')
                         return
 
                     print(f"ℹ️ [WEBHOOK] Tasa para '{fecha_nueva}' ya registrada. Se ignora.")
                     self.send_response(200)
                     self.send_header("Content-Type", "application/json")
                     self.end_headers()
-                    self.wfile.write(
-                        b'{"status": "ignored", "message": "Tasa ya conocida"}'
-                    )
+                    self.wfile.write(b'{"status": "ignored", "message": "Tasa ya conocida"}')
                     return
 
                 self.send_response(400)
@@ -3384,6 +3376,7 @@ def iniciar_servidor_receptor():
     with socketserver.TCPServer(("", port), handler) as httpd:
         print(f"📡 Receptor de tasas escuchando en el puerto {port}")
         httpd.serve_forever()
+
 
 
                     

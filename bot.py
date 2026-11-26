@@ -509,15 +509,17 @@ def obtener_tasa_binance_zinli(tipo_operacion, monto_usd=0):
     """
     Obtiene la tasa P2P de Binance para Zinli (USD).
     tipo_operacion: 'BUY' o 'SELL'
-    monto_usd: 50, 150, 500, etc.
+    monto_usd: monto de referencia en USD (ej. 50, 100, 300, 500, 750)
     """
     url = "https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search"
     headers = {
         "Accept": "*/*",
         "Content-Type": "application/json",
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
     }
-    
+
+    monto_float = float(monto_usd or 0)
+
     payload = {
         "asset": "USDT",
         "fiat": "USD",
@@ -525,46 +527,73 @@ def obtener_tasa_binance_zinli(tipo_operacion, monto_usd=0):
         "publisherType": "merchant",
         "payTypes": ["Zinli"],
         "page": 1,
-        "rows": 10,
+        "rows": 20,
         "tradeType": tipo_operacion.upper(),
-        "transAmount": str(int(monto_usd)) if monto_usd > 0 else "",
+        "transAmount": str(int(monto_float)) if monto_float > 0 else "",
         "filterType": "tradable",
         "additionalKycVerifyFilter": 0,
-        "periods": []
+        "periods": [],
     }
 
     try:
-        r = requests.post(url, json=payload, headers=headers, timeout=(5.0, 5.0))
-        if r.status_code == 200:
-            datos = r.json().get('data', [])
-            precios_validos = []
+        resp = requests.post(url, json=payload, headers=headers, timeout=(5.0, 5.0))
+        if resp.status_code == 200:
+            datos = resp.json().get("data", [])
+            precios_filtrados = []
+            precios_respaldo = []
+
             for elemento in datos:
-                adv = elemento.get('adv', {})
-                advertiser = elemento.get('advertiser', {})
-                 
+                adv = elemento.get("adv", {})
+                advertiser = elemento.get("advertiser", {})
+
                 # 1. Descartar cuentas inactivas o bloqueadas
-                if advertiser.get('userStatus') in ["BLOCKED", "INACTIVE"]:
+                if advertiser.get("userStatus") in ["BLOCKED", "INACTIVE"]:
                     continue
 
-                # 2. Descartar anuncios con restricciones de cuenta/clase
-                is_restricted = adv.get('isRestricted', False)
-                trade_conds = adv.get('tradeConditions') or []
-                class_conds = adv.get('classConditions') or []
-
+                # 2. Descartar anuncios con restricciones de cuenta/clase o no comerciables
+                is_restricted = adv.get("isRestricted", False)
+                trade_conds = adv.get("tradeConditions") or []
+                class_conds = adv.get("classConditions") or []
                 if is_restricted or len(trade_conds) > 0 or len(class_conds) > 0:
                     continue
 
-                # 3. Extraer precio válido
-                precio = adv.get('price')
-                if precio and float(precio) > 0:
-                    precios_validos.append(float(precio))
-            
-            if precios_validos:
-                return precios_validos[0]
+                # 3. Extraer precio y límites
+                precio_raw = adv.get("price")
+                if not precio_raw or float(precio_raw) <= 0:
+                    continue
+                precio = float(precio_raw)
+
+                # Filtrar anuncios promocionados/atípicos excesivamente caros en BUY
+                if tipo_operacion.upper() == "BUY" and precio > 1.25:
+                    continue
+
+                min_amt = float(adv.get("minSingleTransAmount") or 0)
+                max_amt = float(
+                    adv.get("dynamicMaxSingleTransAmount")
+                    or adv.get("maxSingleTransAmount")
+                    or 0
+                )
+
+                precios_respaldo.append(precio)
+
+                if monto_float > 0:
+                    cumple_min = monto_float >= min_amt if min_amt > 0 else True
+                    cumple_max = monto_float <= max_amt if max_amt > 0 else True
+                    if cumple_min and cumple_max:
+                        precios_filtrados.append(precio)
+                else:
+                    precios_filtrados.append(precio)
+
+            if precios_filtrados:
+                return precios_filtrados[0]
+            if precios_respaldo:
+                return precios_respaldo[0]
+
     except Exception as e:
         print(f"⚠️ Error al obtener P2P Zinli: {e}")
-    
+
     return 0.0
+
     
 
 # Factor calibrado para aproximar el costo efectivo en USD por 1 USDT al convertir USD -> USDT en Convert
@@ -1122,41 +1151,40 @@ def construir_monitor_bdv_texto_html():
 
 def construir_monitor_zinli_html():
     """Genera la ficha desglosada por rangos para Zinli USD / USDT"""
-    
-    # Configuración de rangos (Monto, Etiqueta, Emoji)
-    emojis_rangos = [
-        (50.0, e("RANGO_3", "🥉"), "Rango Menor (50 - 100)"),
-        (150.0, e("RANGO_2", "🥈"), "Rango Medio (100 - 300)"),
-        (500.0, e("RANGO_1", "🥇"), "Rango Mayor (500+)")
+    emojis_ranges = [
+        (50.0, e("RANGO_3", "🥉"), "Rango Menor (50 - 100$)"),
+        (150.0, e("RANGO_2", "🥈"), "Rango Medio (100 - 300$)"),
+        (400.0, e("RANGO_1", "🥇"), "Rango Intermedio (300 - 500$)"),
+        (750.0, e("RANGO_1", "💎"), "Rango Alto (500 - 1000$)"),
     ]
-    
-    hora_actual = (datetime.now() - timedelta(hours=4)).strftime("%I:%M:%S %p")
-    
+
+    hora_actual = (datetime.now(timezone.utc) - timedelta(hours=4)).strftime("%I:%M:%S %p")
+
     texto = (
-        f"<blockquote>{e('MONITOR', '💻')} Monitor {e('zinli', '🔹')} Zinli / {e('USDT', '🪙')}</blockquote>\n\n"
-        f"{e('ETIQUETA', '🔖')} <b>Filtros Activos:</b> Verificados | Comercializables {e('BOMBILLA', '💡')} | Pago :{e('zinli', '🔹')} {e('CHINCHE', '📌')}\n"
-        f"-----------------------------------------\n\n"
+        f"<blockquote>{e('MONITOR', '🖥️')} <b>Monitor {e('zinli', '⚡')} Zinli / {e('USDT', '🟡')}</b></blockquote>\n"
+        f"{e('ETIQUETA', '🏷️')} <b>Filtros Activos:</b> Verificados | Comercializables {e('BOMBILLA', '💡')} | Pago :{e('zinli', '⚡')}📌\n"
+        f"-------------------------------------\n"
     )
 
-    for monto_ref, emoji_rango, nombre_rango in emojis_rangos:
+    for monto_ref, emoji_range, nombre_rango in emojis_ranges:
         compra = obtener_tasa_binance_zinli("buy", monto_ref)
         venta = obtener_tasa_binance_zinli("sell", monto_ref)
-        
+
         spread = round(venta - compra, 3)
-        porcentaje_spread = round((spread / compra) * 100, 2) if compra > 0 else 0.0
-        
+        porcentaje_spread = round((spread / compra) * 100, 2) if compra else 0.0
         emoji_spread = e("SUBIDA", "📈") if spread >= 0 else e("BAJADA", "📉")
-        
+
         texto += (
-            f"{emoji_rango} <b>{nombre_rango}</b>\n"
-            f"{e('USDT', '🪙')} {e('VERDE', '🟢')} <b>Compra:</b> <code>${compra:.3f}</code>\n"
-            f"{e('USDT', '🪙')} {e('ROJO', '🔴')} <b>Venta:</b> <code>${venta:.3f}</code>\n\n"
+            f"{emoji_range} <b>{nombre_rango}</b>\n"
+            f"{e('USDT', '🟡')} {e('VERDE', '🟢')} <b>Compra:</b> <code>${compra:.3f}</code>\n"
+            f"{e('USDT', '🟡')} {e('ROJO', '🔴')} <b>Venta:</b> <code>${venta:.3f}</code>\n"
             f"{emoji_spread} <b>Spread:</b> <code>${spread:+.3f}</code> (<code>{porcentaje_spread:+.2f}%</code>)\n"
-            f"-----------------------------------------\n"
+            f"-------------------------------------\n"
         )
 
     texto += f"\n{e('MUNDO', '🌐')} <i>Última actualización: {hora_actual}</i>"
     return texto
+
     
 
 def construir_intervencion_texto_html(user=None, porcentaje=None):

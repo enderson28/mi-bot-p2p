@@ -507,9 +507,8 @@ def obtener_tasa_binance_p2p_bdv(tipo_operacion, monto_bs):
 
 def obtener_tasa_binance_zinli(tipo_operacion, monto_usd=0):
     """
-    Obtiene la tasa P2P de Binance para Zinli (USD).
-    tipo_operacion: 'BUY' o 'SELL'
-    monto_usd: monto de referencia en USD (ej. 50, 100, 300, 500, 750)
+    Obtiene la tasa P2P de Binance para Zinli (USD) acercándose al precio directo
+    comerciable para el monto consultado.
     """
     url = "https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search"
     headers = {
@@ -519,6 +518,7 @@ def obtener_tasa_binance_zinli(tipo_operacion, monto_usd=0):
     }
 
     monto_float = float(monto_usd or 0)
+    op = tipo_operacion.upper()
 
     payload = {
         "asset": "USDT",
@@ -528,7 +528,7 @@ def obtener_tasa_binance_zinli(tipo_operacion, monto_usd=0):
         "payTypes": ["Zinli"],
         "page": 1,
         "rows": 20,
-        "tradeType": tipo_operacion.upper(),
+        "tradeType": op,
         "transAmount": str(int(monto_float)) if monto_float > 0 else "",
         "filterType": "tradable",
         "additionalKycVerifyFilter": 0,
@@ -539,32 +539,26 @@ def obtener_tasa_binance_zinli(tipo_operacion, monto_usd=0):
         resp = requests.post(url, json=payload, headers=headers, timeout=(5.0, 5.0))
         if resp.status_code == 200:
             datos = resp.json().get("data", [])
-            precios_filtrados = []
-            precios_respaldo = []
+            candidatos_exactos = []
+            candidatos_cercanos = []
 
             for elemento in datos:
                 adv = elemento.get("adv", {})
                 advertiser = elemento.get("advertiser", {})
 
-                # 1. Descartar cuentas inactivas o bloqueadas
                 if advertiser.get("userStatus") in ["BLOCKED", "INACTIVE"]:
                     continue
 
-                # 2. Descartar anuncios con restricciones de cuenta/clase o no comerciables
-                is_restricted = adv.get("isRestricted", False)
-                trade_conds = adv.get("tradeConditions") or []
-                class_conds = adv.get("classConditions") or []
-                if is_restricted or len(trade_conds) > 0 or len(class_conds) > 0:
+                if adv.get("isRestricted", False) or (adv.get("tradeConditions") or []) or (adv.get("classConditions") or []):
                     continue
 
-                # 3. Extraer precio y límites
                 precio_raw = adv.get("price")
                 if not precio_raw or float(precio_raw) <= 0:
                     continue
                 precio = float(precio_raw)
 
-                # Filtrar anuncios promocionados/atípicos excesivamente caros en BUY
-                if tipo_operacion.upper() == "BUY" and precio > 1.25:
+                # Filtrar anuncios promocionados/atípicos inflados en BUY
+                if op == "BUY" and precio > 1.15:
                     continue
 
                 min_amt = float(adv.get("minSingleTransAmount") or 0)
@@ -573,26 +567,35 @@ def obtener_tasa_binance_zinli(tipo_operacion, monto_usd=0):
                     or adv.get("maxSingleTransAmount")
                     or 0
                 )
+                disponible_usdt = float(adv.get("tradableQuantity") or 0)
 
-                precios_respaldo.append(precio)
+                # Exigir liquidez mínima coherente con el monto si está disponible
+                if monto_float > 0 and disponible_usdt > 0:
+                    if disponible_usdt * precio < monto_float * 0.5:
+                        continue
 
                 if monto_float > 0:
                     cumple_min = monto_float >= min_amt if min_amt > 0 else True
                     cumple_max = monto_float <= max_amt if max_amt > 0 else True
                     if cumple_min and cumple_max:
-                        precios_filtrados.append(precio)
+                        candidatos_exactos.append(precio)
+                    elif min_amt <= monto_float * 1.25 and (max_amt == 0 or max_amt >= monto_float * 0.75):
+                        candidatos_cercanos.append(precio)
                 else:
-                    precios_filtrados.append(precio)
+                    candidatos_exactos.append(precio)
 
-            if precios_filtrados:
-                return precios_filtrados[0]
-            if precios_respaldo:
-                return precios_respaldo[0]
+            pool = candidatos_exactos or candidatos_cercanos
+            if pool:
+                # Ordenar y promediar los 2 mejores precios del pool para mayor estabilidad
+                pool_ordenado = sorted(pool) if op == "BUY" else sorted(pool, reverse=True)
+                top_n = pool_ordenado[:2]
+                return round(sum(top_n) / len(top_n), 3)
 
     except Exception as e:
         print(f"⚠️ Error al obtener P2P Zinli: {e}")
 
     return 0.0
+
 
     
 

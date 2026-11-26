@@ -507,8 +507,8 @@ def obtener_tasa_binance_p2p_bdv(tipo_operacion, monto_bs):
 
 def obtener_tasa_binance_zinli(tipo_operacion, monto_usd=0):
     """
-    Obtiene la tasa P2P de Binance para Zinli (USD) acercándose al precio directo
-    comerciable para el monto consultado.
+    Obtiene la tasa P2P de Binance para Zinli (USD) priorizando anuncios
+    comerciables y no restringidos que cubran el monto consultado.
     """
     url = "https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search"
     headers = {
@@ -540,16 +540,24 @@ def obtener_tasa_binance_zinli(tipo_operacion, monto_usd=0):
         if resp.status_code == 200:
             datos = resp.json().get("data", [])
             candidatos_exactos = []
-            candidatos_cercanos = []
+            candidatos_flexibles = []
 
             for elemento in datos:
                 adv = elemento.get("adv", {})
                 advertiser = elemento.get("advertiser", {})
 
+                # 1. Descartar cuentas inactivas o bloqueadas
                 if advertiser.get("userStatus") in ["BLOCKED", "INACTIVE"]:
                     continue
 
-                if adv.get("isRestricted", False) or (adv.get("tradeConditions") or []) or (adv.get("classConditions") or []):
+                # 2. Descartar anuncios restringidos o no comerciables
+                if adv.get("isTradable") is False:
+                    continue
+                if adv.get("isRestricted", False):
+                    continue
+                if (adv.get("tradeConditions") or []) or (adv.get("classConditions") or []):
+                    continue
+                if adv.get("advVisibleRetMsg"):
                     continue
 
                 precio_raw = adv.get("price")
@@ -557,7 +565,7 @@ def obtener_tasa_binance_zinli(tipo_operacion, monto_usd=0):
                     continue
                 precio = float(precio_raw)
 
-                # Filtrar anuncios promocionados/atípicos inflados en BUY
+                # Descartar anuncios promocionados/atípicos inflados en BUY
                 if op == "BUY" and precio > 1.15:
                     continue
 
@@ -569,7 +577,6 @@ def obtener_tasa_binance_zinli(tipo_operacion, monto_usd=0):
                 )
                 disponible_usdt = float(adv.get("tradableQuantity") or 0)
 
-                # Exigir liquidez mínima coherente con el monto si está disponible
                 if monto_float > 0 and disponible_usdt > 0:
                     if disponible_usdt * precio < monto_float * 0.5:
                         continue
@@ -579,17 +586,15 @@ def obtener_tasa_binance_zinli(tipo_operacion, monto_usd=0):
                     cumple_max = monto_float <= max_amt if max_amt > 0 else True
                     if cumple_min and cumple_max:
                         candidatos_exactos.append(precio)
-                    elif min_amt <= monto_float * 1.25 and (max_amt == 0 or max_amt >= monto_float * 0.75):
-                        candidatos_cercanos.append(precio)
+                    elif min_amt <= monto_float * 1.15 and (max_amt == 0 or max_amt >= monto_float * 0.85):
+                        candidatos_flexibles.append(precio)
                 else:
                     candidatos_exactos.append(precio)
 
-            pool = candidatos_exactos or candidatos_cercanos
+            pool = candidatos_exactos or candidatos_flexibles
             if pool:
-                # Ordenar y promediar los 2 mejores precios del pool para mayor estabilidad
-                pool_ordenado = sorted(pool) if op == "BUY" else sorted(pool, reverse=True)
-                top_n = pool_ordenado[:2]
-                return round(sum(top_n) / len(top_n), 3)
+                # En BUY toma el mejor precio disponible; en SELL el más alto disponible
+                return round(min(pool) if op == "BUY" else max(pool), 3)
 
     except Exception as e:
         print(f"⚠️ Error al obtener P2P Zinli: {e}")
@@ -597,7 +602,6 @@ def obtener_tasa_binance_zinli(tipo_operacion, monto_usd=0):
     return 0.0
 
 
-    
 
 # Factor calibrado para aproximar el costo efectivo en USD por 1 USDT al convertir USD -> USDT en Convert
 FACTOR_CONVERT_USD_A_USDT = 1.0017

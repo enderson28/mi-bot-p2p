@@ -1,4 +1,10 @@
+import os
+import time
 import threading
+from collections import deque
+from captcha import registrar_solicitud_pendiente
+from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
+
 
 # ==========================================
 # CONFIGURACIÓN DE ROLES Y EXCEPCIONES VIP

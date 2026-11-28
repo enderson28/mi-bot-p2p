@@ -96,7 +96,7 @@ ADMINS_VIP = [
 ADMIN_ESPECIAL_1_PORCIENTO = "8418480698"
 
 # ID del grupo nuevo exclusivo del bot secundario
-CANAL_PRUEBA = -1001612248350
+CANAL_PRUEBA = -1001612840350
 
 
 # ==========================================

@@ -38,7 +38,7 @@ TOKEN_TELEGRAM = os.getenv("TOKEN_TELEGRAM")
 bot = telebot.TeleBot(TOKEN_TELEGRAM)
 
 
-BOT_USERNAME = "BancoIDV_bot" # Reemplaza con el alias de tu bot sin el @
+BOT_USERNAME = "BancoIDV2_bot" # Reemplaza con el alias de tu bot sin el @
 
 # ==========================================
 # CONFIGURACIÓN Y VARIABLES GLOBALES (PRODUCCIÓN)

@@ -5,6 +5,72 @@ from collections import deque
 from captcha import registrar_solicitud_pendiente
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
+# ==========================================
+# LISTA NEGRA GLOBAL (BLOQUEO ABSOLUTO)
+# ==========================================
+
+LISTA_NEGRA = []
+
+
+def es_lista_negra(user):
+    """Devuelve True si el usuario o su ID están en la lista negra global."""
+    if not user:
+        return False
+
+    user_id = str(user.id)
+    username = f"@{user.username.lower()}" if getattr(user, "username", None) else ""
+
+    lista_lower = [str(u).lower() for u in LISTA_NEGRA]
+
+    if user_id in lista_lower or (username and username in lista_lower):
+        return True
+
+    return False
+
+
+# ==========================================
+# PROTECCIÓN CONTRA COPIA Y PEGA DE CONTENIDO
+# ==========================================
+
+FRASES_PROHIBIDAS = [
+    "monitor de tasas",
+    "vigencia bcv",
+    "bcv oficial",
+    "calculadora de intervención",
+    "intervención bancaria",
+    "spread",
+    "aprovecha al máximo las herramientas del bot",
+    "consulta en privado sin límites",
+    "consulta las tasas y guías en privado",
+    "para mantener al grupo libre de spam",
+    "comando exclusivo para administradores",
+    "comando exclusivo del creador del bot",
+]
+
+
+def validar_copia_pega(bot, message, es_admin_vip):
+    """
+    Si un usuario normal pega cualquier texto oficial del bot o sus reportes,
+    el bot borra el mensaje de inmediato para evitar spam o confusión.
+    """
+    if getattr(message, "is_automatic_forward", False):
+        return False
+
+    if es_admin:
+        return False
+
+    texto = message.text.lower() if message and getattr(message, "text", None) else ""
+
+    for frase in FRASES_PROHIBIDAS:
+        if frase in texto:
+            try:
+                bot.delete_message(message.chat.id, message.message_id)
+            except Exception:
+                pass
+            return True
+
+    return False
+
 
 # ==========================================
 # CONFIGURACIÓN DE ROLES Y EXCEPCIONES VIP

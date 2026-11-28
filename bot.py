@@ -49,7 +49,7 @@ BOT_USERNAME = "BancoIDV_bot" # Reemplaza con el alias de tu bot sin el @
 # ==========================================
 
 # Canales de Pruebas (puedes mantenerlos o cambiarlos)
-CANAL_PRUEBA = -1004473532809
+CANAL_PRUEBA = --1001612840350
 CANAL_PRINCIPAL_IDV = -1003950050807
 
 # USUARIOS AUTORIZADOS Y CREADOR (¡Restaurar estas líneas!)
@@ -2470,7 +2470,7 @@ def procesar_precio(message):
                 pass
 
         if not usuario_esta_unido(user_id):
-            bot.reply_to(message, "❌ No tienes acceso. Debes solitar unirte al grupo de charla 👉🏼 @COMUNIDV , ↪️ volver al bot, ✏️ escribir /start , resolver el captcha ✅🔍 e ingresar al grupo.")
+            bot.reply_to(message, "❌ No tienes acceso. Debes solitar unirte al grupo de charla 👉🏼 @COMUNIDADAS04 , ↪️ volver al bot, ✏️ escribir /start , resolver el captcha ✅🔍 e ingresar al grupo.")
             return
 
         try:
@@ -2582,7 +2582,7 @@ def procesar_precio_bdv(message):
                 pass
 
         if not usuario_esta_unido(user_id):
-            bot.reply_to(message, "❌ No tienes acceso. Debes solicitar unirte al grupo de charla 👉🏼 @COMUNIDV , ↪️ volver al bot, ✏️ escribir /start , resolver el captcha ✅🔍 e ingresar al grupo.")
+            bot.reply_to(message, "❌ No tienes acceso. Debes solicitar unirte al grupo de charla 👉🏼 @COMUNIDADAS04 , ↪️ volver al bot, ✏️ escribir /start , resolver el captcha ✅🔍 e ingresar al grupo.")
             return
 
         try:
@@ -2682,7 +2682,7 @@ def procesar_intervencion(message):
                 pass
 
         if not usuario_esta_unido(user_id):
-            bot.reply_to(message, "❌ No tienes acceso. Debes solicitar unirte al grupo de charla 👉🏼 @COMUNIDV , ↪️ volver al bot, ✏️ escribír /start , resolver el captcha ✅🔍 e ingresar al grupo.")
+            bot.reply_to(message, "❌ No tienes acceso. Debes solicitar unirte al grupo de charla 👉🏼 @COMUNIDADAS04 , ↪️ volver al bot, ✏️ escribír /start , resolver el captcha ✅🔍 e ingresar al grupo.")
             return
 
         # Creamos el botón flotante para actualizar
@@ -2799,7 +2799,7 @@ def procesar_guias(message):
                 pass
 
         if not usuario_esta_unido(user_id):
-            bot.reply_to(message, "❌ No tienes acceso. Debes solicitar unirte al grupo de charla 👉🏼 @COMUNIDV , ↪️ volver al bot, ✏️ escribir  /start , resolver el captcha ✅🔍 e ingresar al grupo.")
+            bot.reply_to(message, "❌ No tienes acceso. Debes solicitar unirte al grupo de charla 👉🏼 @COMUNIDADAS04 , ↪️ volver al bot, ✏️ escribir  /start , resolver el captcha ✅🔍 e ingresar al grupo.")
             return   
             
         texto_guia = TEXTO_BPAY if es_bpay else TEXTO_GPAY
@@ -2832,7 +2832,7 @@ def procesar_regla_oro(message):
                 pass
 
         if not usuario_esta_unido(user_id):
-            bot.reply_to(message, "❌ No tienes acceso. Debes solicitar unirte al grupo de charla 👉🏼 @COMUNIDV , ↪️ volver al bot, ✏️ escribir  /start , resolver el captcha ✅🔍 e ingresar al grupo.")
+            bot.reply_to(message, "❌ No tienes acceso. Debes solicitar unirte al grupo de charla 👉🏼 @COMUNIDADAS04 , ↪️ volver al bot, ✏️ escribir  /start , resolver el captcha ✅🔍 e ingresar al grupo.")
             return
 
         enviar_o_reemplazar_privado(

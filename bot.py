@@ -18,7 +18,6 @@ from seguridad import es_usuario_vip_activo, responder_sin_acceso_vip
 from calculadora import registrar_calculadora
 from ia_consulta import registrar_ia_consulta
 from arbitraje import registrar_handlers_arbitraje
-from anuncios import iniciar_modulo_anuncios, setup_comando_aviso
 from emojis import TG_EMOJIS, e
 from comandos import comando_comandos, comando_admin
 import re
@@ -3426,13 +3425,6 @@ if __name__ == "__main__":
     except Exception:
         pass
 
-    # 🟢 1. Definimos los canales/grupos donde rotará el anuncio de captcha
-    CHATS_ANUNCIOS = [CANAL_PRUEBA]
-
-    # 🟢 2. Activamos el ciclo de anuncios pasando bot y la lista de chats
-    iniciar_modulo_anuncios(bot, CHATS_ANUNCIOS)
-
-    print("🚀 Bot Maestro en línea con limpieza automática y temporizador de 5 min...")
 
     # Inicia el receptor webhook en segundo plano
     threading.Thread(target=iniciar_servidor_receptor, daemon=True).start()

@@ -48,7 +48,7 @@ FRASES_PROHIBIDAS = [
 ]
 
 
-def validar_copia_pega(bot, message, es_admin_vip):
+def validar_copia_pega(bot, message, es_admin):
     """
     Si un usuario normal pega cualquier texto oficial del bot o sus reportes,
     el bot borra el mensaje de inmediato para evitar spam o confusión.

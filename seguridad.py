@@ -101,7 +101,7 @@ def es_admin_especial(user):
 
 COMANDOS_GROUP_HELP = [
     "/reload", "/ban", "/mute", "/warn",
-    "/unban", "/unmute", "/info", "/config", "/start", "/rules", "/staff
+    "/unban", "/unmute", "/info", "/config", "/start", "/rules", "/staff"
 ]
 
 

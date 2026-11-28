@@ -4,17 +4,18 @@ from emojis import TG_EMOJIS, e
 PROPIETARIO_ID = 5073264705  # Tu ID
 
 ADMINS_IDS = [
-    8418460698,  # Carlos
-    5470672620, # Alejandro
-    5971008307, # dip
-    6299629267, # Osvaldo
-    693849279,  # Sylar
-    6422576568, # J D
-    7816422089, # Enderson secundario
-    1676933074,  #Antony
-    8166481937, # Cilita
-    8573557834, # Lionel messi
-    1920750484 # CR7
+    "5073264705",   # Enderson Principal
+    "1676933074",   # Antony
+    "1920750484",   #Cr7
+    "8166481937",   #cilita
+    "6299629267",   #Osvaldo osito
+    "7616851192",   #Chino
+    "8757407672",   #Cris
+    "7249758098",   #Conejo
+    "1746316458",   #Cucu
+    "8971327009",   #Maxi
+    "6107750160",   #Kuro
+    "5103278703"   #Kilómetro
 ]
 
 def comando_comandos(bot, message):
@@ -52,6 +53,7 @@ def comando_comandos(bot, message):
         f"▫️ <code>/p</code>\n"
         f"▫️ <code>/p_bdv</code>\n"
         f"▫️ <code>/brecha</code>\n"
+        f"▫️ <code>/mercado</code>\n\n"
         f"▫️ <code>/tasa</code>\n\n"
         
         f"<blockquote>{e('BOTS', '❇️')} <b>USUARIOS VIP ACTIVOS DEL GRUPO:</b></blockquote>\n"
@@ -69,7 +71,6 @@ def comando_comandos(bot, message):
         f"▫️ <code>/bp</code> {e('FLECHA_DERECHA', '❇️')} Guía práctica de uso sobre BPay.\n"
         f"▫️ <code>/gp</code> {e('FLECHA_DERECHA', '❇️')} Guía práctica de uso sobre GPay.\n\n"
         f"───────────────\n"
-        f"{e('clic', '❇️')}<i>Usa /comandos para consultar este panel cuando lo necesites.</i>"
     )
     
     bot.send_message(message.chat.id, texto, parse_mode="HTML")

@@ -241,7 +241,7 @@ TEXTO_ANUNCIO_VIP = (
 def usuario_esta_unido(user, user_id=None):
     """
     Verifica si un usuario tiene acceso permitido al bot.
-    Funciona si recibe un objeto 'user' de Telegram O un 'user_id' (entero/string).
+    Funciona si recibe un objeto 'user' de Telegram o un 'user_id' (entero/string).
     """
     # Determinar el ID real sin importar cómo lo envíe captcha.py
     if hasattr(user, 'id'):
@@ -270,12 +270,15 @@ def usuario_esta_unido(user, user_id=None):
     for chat_id in CHATS_PERMITIDOS:
         try:
             miembro = bot.get_chat_member(chat_id, actual_id)
-            if miembro.status in ['creator', 'administrator', 'member']:
+            print(f"[DEBUG UNIDO] user={actual_id} chat={chat_id} status={getattr(miembro, 'status', None)}")
+            if miembro.status in ['creator', 'administrator', 'member', 'restricted']:
                 return True
-        except Exception:
+        except Exception as e:
+            print(f"[DEBUG UNIDO ERR] user={actual_id} chat={chat_id} err={e}")
             continue
 
     return False
+
 
 # ===============================================
 # DESPACHADOR DE MENÚ Y CAPTCHA

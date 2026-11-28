@@ -17,7 +17,7 @@ def rechazar_solicitud_expirada(bot, chat_id, user_id):
                     user_id,
                     "⏳ <b>Tiempo agotado</b>\n\n"
                     "Tu solicitud de ingreso ha caducado por no completar la verificación en 1 hora.\n"
-                    "Si deseas ingresar, por favor vuelve a presionar el enlace de unirte o solicitud al grupo 👉🏼 @COMUNIDV .",
+                    "Si deseas ingresar, por favor vuelve a presionar el enlace de unirte o solicitud al grupo 👉🏼 @COMUNIDADAS04 .",
                     parse_mode="HTML"
                 )
             except Exception:
@@ -103,7 +103,7 @@ def setup_verification_handlers(bot, target_channel_id=None, funcion_menu=None, 
             message.chat.id,
             "⚠️ <b>Acceso Restringido</b>\n\n"
             "Este bot es de uso exclusivo para nuestra comunidad.\n"
-            "Solicita tu ingreso a través del grupo oficial 👉🏼 @COMUNIDV , despues de hacer la solicitud 🕜, ↪️ vuelve a este menu y ✏️ escribe /start , seras aprobado automáticamente al resolver el captcha ✅ .",
+            "Solicita tu ingreso a través del grupo oficial 👉🏼 @COMUNIDADAS04 , despues de hacer la solicitud 🕜, ↪️ vuelve a este menu y ✏️ escribe /start , seras aprobado automáticamente al resolver el captcha ✅ .",
             parse_mode="HTML"
         )
 

@@ -3435,8 +3435,11 @@ if __name__ == "__main__":
     # Inicia el receptor webhook en segundo plano
     threading.Thread(target=iniciar_servidor_receptor, daemon=True).start()
 
-    # Arranca el polling limpio
-    bot.infinity_polling()
+    # Arranca el polling limpio incluyendo solicitudes de ingreso
+    bot.infinity_polling(
+        allowed_updates=["message", "callback_query", "chat_join_request"]
+    )
+
     
 
     

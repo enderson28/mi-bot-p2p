@@ -52,9 +52,6 @@ CANAL_PRINCIPAL_IDV = -1003950050807
 USUARIOS_AUTORIZADOS = [5073264705]
 CREADOR_ID = 5073264705
 
-# 🟢 REGISTRAR COMANDOS PRIORITARIOS AQUÍ (Arriba de los demás handlers)
-setup_comando_aviso(bot, es_admin_vip, USUARIOS_AUTORIZADOS)
-
 # Lista unificada de chats donde el bot responderá a comandos de canal (/p, /i, /tasas)
 CHATS_PERMITIDOS = [ 
     CANAL_PRUEBA

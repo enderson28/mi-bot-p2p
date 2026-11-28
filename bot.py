@@ -300,6 +300,12 @@ def enviar_menu_principal(bot, user, chat_id):
         bot.send_message(chat_id, TEXTO_START, parse_mode="HTML", reply_markup=markup)
 
 
+@bot.chat_join_request_handler(func=lambda req: str(req.chat.id) == str(CANAL_PRUEBA))
+def _on_join_request_grupo_idv(req):
+    if req.from_user and req.chat:
+        registrar_solicitud_pendiente(bot, req.from_user.id, req.chat.id)
+
+
 # Inicialización del captcha
 setup_verification_handlers(
     bot=bot,

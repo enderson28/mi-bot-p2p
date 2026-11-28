@@ -45,7 +45,7 @@ BOT_USERNAME = "BancoIDV2_bot" # Reemplaza con el alias de tu bot sin el @
 # ==========================================
 
 # Canales de Pruebas (puedes mantenerlos o cambiarlos)
-CANAL_PRUEBA = --1001612840350
+CANAL_PRUEBA = -1001612840350
 CANAL_PRINCIPAL_IDV = -1003950050807
 
 # USUARIOS AUTORIZADOS Y CREADOR (¡Restaurar estas líneas!)
